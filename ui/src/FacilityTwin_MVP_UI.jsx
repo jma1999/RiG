@@ -7,9 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Database, Network, Send, Plus, FileUp, CheckCircle2, Factory, Wrench, MessageSquare, GitBranch } from "lucide-react";
 import ForceGraph2D from "react-force-graph-2d";
+import { API_BASE } from "@/lib/env";
 
 // === Tiny helpers ===
-const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/?$/, "") || "http://127.0.0.1:8000";
 const api = (p) => `${API_BASE}${p}`;
 const pill = (ok) => (ok ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700");
 const DEFAULT_IFC_URL = "/ifc/sample-house.ifc";
