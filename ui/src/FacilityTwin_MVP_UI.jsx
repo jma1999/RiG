@@ -258,6 +258,7 @@ export default function FacilityTwin_MVP_UI() {
 
         viewer.axes.setAxes();
         viewer.grid.setGrid();
+        viewer.IFC.setWasmPath("/ifc/");
         viewerRef.current = viewer;
 
         if (!defaultIfcLoadedRef.current) {
