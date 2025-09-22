@@ -39,6 +39,7 @@ def load_nodes_with_context() -> List[Dict[str, Any]]:
         OPTIONAL MATCH (st:IfcBuildingStorey)-[:CONTAINS*1..4]->(n)
         OPTIONAL MATCH (sp:IfcSpace)-[:CONTAINS*0..4]->(n)
         OPTIONAL MATCH (n)-[:ASSIGNED_TO_SYSTEM]->(sys:IfcSystem)
+        WHERE NOT n:IfcDistributionPort
         WITH n,
              collect(DISTINCT st.name) AS storeys,
              collect(DISTINCT sp.name) AS spaces,
@@ -49,7 +50,7 @@ def load_nodes_with_context() -> List[Dict[str, Any]]:
             n.name      AS name,
             n.type      AS ifcType,
             n.source    AS source,
-            n.psets_json AS psets_json,
+            n.psets_json AS psets,
             storeys, spaces, systems
         """
         for r in s.run(q):

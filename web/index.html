@@ -1,0 +1,214 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>RiG MVP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    body { font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 20px; }
+    header { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    input, button, select { padding: 8px; font-size: 14px; }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px; }
+    .card { border: 1px solid #ddd; border-radius:12px; padding: 12px; }
+    .muted { color:#666; }
+    ul { margin: 0; padding-left: 18px; }
+    pre { white-space: pre-wrap; word-break: break-word; }
+    .hit { cursor: pointer; }
+    .hit:hover { background: #f6f6f6; }
+    .pill { display:inline-block; padding:2px 8px; margin-right:6px; border-radius: 12px; background:#f0f0f0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h2 style="margin:0">RiG GraphRAG Demo</h2>
+    <span class="muted">/search & /asset</span>
+  </header>
+
+  <section style="margin-top: 10px;">
+    <input id="q" size="50" placeholder="Try: Which terminals are downstream of Apparecchiatura 2881?">
+    <label>k <input id="k" type="number" value="10" style="width:60px"></label>
+    <label>hops <input id="hops" type="number" value="2" style="width:60px"></label>
+    <button id="go">Search</button>
+    <span id="status" class="muted"></span>
+  </section>
+
+  <div class="row">
+    <div class="card">
+      <h3>Hits</h3>
+      <div id="hits" class="muted">No results yet.</div>
+    </div>
+    <div class="card">
+      <h3>Asset Details</h3>
+      <div id="asset" class="muted">Click a hit to load details…</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <h3>Subgraph (per-seed)</h3>
+    <div id="subs" class="muted">Will appear after search.</div>
+  </div>
+
+<script>
+const api = (path) => `http://127.0.0.1:8000${path}`;
+
+function pickCountType(q) {
+  const lex = {
+    window: "IfcWindow", windows: "IfcWindow",
+    door: "IfcDoor", doors: "IfcDoor",
+    diffuser: "IfcDuctTerminal", diffusers: "IfcDuctTerminal",
+    grille: "IfcDuctTerminal", register: "IfcDuctTerminal"
+  };
+  const lo = q.toLowerCase();
+  for (const k of Object.keys(lex)) {
+    if (lo.includes(k)) return lex[k];
+  }
+  return null;
+}
+
+function parseClosest(q) {
+  // naive parser: "… closest to …"
+  const m = q.toLowerCase().match(/closest\s+to\s+(.+)$/);
+  if (!m) return null;
+  const right = m[1];
+  const lex = {
+    "air terminal": "IfcDuctTerminal",
+    "terminal": "IfcDuctTerminal",
+    "door": "IfcDoor", "doors": "IfcDoor",
+    "window": "IfcWindow", "windows": "IfcWindow"
+  };
+  let typeB = null;
+  for (const k of Object.keys(lex)) if (right.includes(k)) { typeB = lex[k]; break; }
+  let typeA = null;
+  const lo = q.toLowerCase();
+  if (lo.includes("which door")) typeA = "IfcDoor";
+  if (lo.includes("which window")) typeA = "IfcWindow";
+  return (typeA && typeB) ? {typeA, typeB} : null;
+}
+
+async function doSearch() {
+  const q = document.getElementById('q').value.trim();
+  const k = document.getElementById('k').value || 10;
+  const hops = document.getElementById('hops').value || 2;
+  const status = document.getElementById('status');
+  const hitsDiv = document.getElementById('hits');
+  const subsDiv = document.getElementById('subs');
+  status.textContent = 'Working…';
+  hitsDiv.textContent = '';
+  subsDiv.textContent = '';
+
+  try {
+    // NEW: closest pattern
+    const closest = parseClosest(q);
+    if (closest) {
+      const res = await fetch(api(`/nearest?typeA=${encodeURIComponent(closest.typeA)}&typeB=${encodeURIComponent(closest.typeB)}&limit=5`));
+      const data = await res.json();
+      if (!res.ok) throw new Error(JSON.stringify(data));
+      hitsDiv.innerHTML = `<div><b>Nearest ${closest.typeA} → ${closest.typeB}</b></div>` +
+        `<ul>${data.pairs.map(p => `<li>${p.A.name || '(door)'} ↔ ${p.B.name || '(terminal)'} &nbsp;<span class="muted">${p.distance.toFixed(2)}</span></li>`).join('')}</ul>`;
+      subsDiv.textContent = 'Nearest results do not include subgraphs.';
+      status.textContent = '';
+      return;
+    }
+
+    // If this looks like a counting question, use /count instead
+    if (q.match(/^how\s+many\b/i)) {
+      const t = pickCountType(q);
+      const res = await fetch(api(`/count?${t ? `type=${encodeURIComponent(t)}` : `q=${encodeURIComponent(q)}`}`));
+      const data = await res.json();
+      if (!res.ok) throw new Error(JSON.stringify(data));
+      hitsDiv.innerHTML = `<div><b>Total</b>: ${data.total}</div>` +
+        (data.types?.length ? `<ul>${data.types.map(x=>`<li>${x.type}: ${x.count}</li>`).join("")}</ul>` : "");
+      subsDiv.textContent = 'Counts do not show subgraphs.';
+      status.textContent = '';
+      return;
+    }
+
+    // regular semantic search
+    const res = await fetch(api(`/search?q=${encodeURIComponent(q)}&k=${k}&hops=${hops}`));
+    const data = await res.json();
+    if (!res.ok) throw new Error(JSON.stringify(data));
+    status.textContent = '';
+
+    if (!data.hits || data.hits.length === 0) {
+      hitsDiv.textContent = 'No hits.';
+    } else {
+      const ul = document.createElement('ul');
+      data.hits.forEach(h => {
+        const li = document.createElement('li');
+        li.className = 'hit';
+        li.innerHTML = `
+          <strong>${h.name || '(unnamed)'} </strong>
+          <span class="muted">[${h.id}]</span><br/>
+          <span class="pill">${h.type || ''}</span>
+          ${(h.storeys && h.storeys.length) ? `<span class="pill">storeys: ${h.storeys.join(', ')}</span>` : ''}
+          ${(h.rooms && h.rooms.length) ? `<span class="pill">rooms: ${h.rooms.join(', ')}</span>` : ''}
+          <div class="muted">score: ${h.score.toFixed(3)}</div>
+        `;
+        li.onclick = () => loadAsset(h.id);
+        ul.appendChild(li);
+      });
+      hitsDiv.innerHTML = '';
+      hitsDiv.appendChild(ul);
+    }
+
+    if (!data.subgraphs || data.subgraphs.length === 0) {
+      subsDiv.textContent = 'No subgraphs returned.';
+    } else {
+      subsDiv.innerHTML = '';
+      data.subgraphs.forEach(sg => {
+        const wrap = document.createElement('div');
+        wrap.style.marginBottom = '14px';
+        const title = document.createElement('div');
+        title.innerHTML = `<b>Seed:</b> ${sg.seed}`;
+        const nodes = document.createElement('pre');
+        nodes.textContent = `nodes (${sg.nodes.length}):\n` + sg.nodes.map(n => `- ${n.name || '(unnamed)'} [${n.type || ''}] ${n.id}`).join('\n');
+        const edges = document.createElement('pre');
+        edges.textContent = `edges (${sg.edges.length}):\n` + sg.edges.map(e => `${e.src} -[${e.type}]-> ${e.dst}`).join('\n');
+        wrap.appendChild(title);
+        wrap.appendChild(nodes);
+        wrap.appendChild(edges);
+        subsDiv.appendChild(wrap);
+      });
+    }
+  } catch (e) {
+    status.textContent = 'Error: ' + e;
+    console.error(e);
+  }
+}
+
+async function loadAsset(id) {
+  const assetDiv = document.getElementById('asset');
+  assetDiv.textContent = 'Loading…';
+  try {
+    const res = await fetch(api(`/asset/${encodeURIComponent(id)}`));
+    if (!res.ok) {
+      const t = await res.text();
+      assetDiv.textContent = `Error: ${res.status} ${t}`;
+      return;
+    }
+    const a = await res.json();
+    assetDiv.innerHTML = `
+      <div><b>${a.name || '(unnamed)'}</b> <span class="muted">[${a.id}]</span></div>
+      <div>${(a.labels || []).map(l => `<span class="pill">${l}</span>`).join(' ')}</div>
+      ${a.storeys && a.storeys.length ? `<div><b>Storeys:</b> ${a.storeys.join(', ')}</div>` : ''}
+      ${a.rooms && a.rooms.length ? `<div><b>Rooms:</b> ${a.rooms.join(', ')}</div>` : ''}
+      <div style="margin-top:8px;"><b>Upstream</b> (${(a.upstream||[]).length})</div>
+      <ul>${(a.upstream||[]).map(x => `<li>${x.name || '(unnamed)'} <span class="muted">[${x.type}] ${x.id}</span></li>`).join('')}</ul>
+      <div><b>Downstream</b> (${(a.downstream||[]).length})</div>
+      <ul>${(a.downstream||[]).map(x => `<li>${x.name || '(unnamed)'} <span class="muted">[${x.type}] ${x.id}</span></li>`).join('')}</ul>
+      <details style="margin-top:8px;">
+        <summary>Property Sets</summary>
+        <pre>${JSON.stringify(a.props || {}, null, 2)}</pre>
+      </details>
+    `;
+  } catch (e) {
+    assetDiv.textContent = 'Error: ' + e;
+  }
+}
+
+document.getElementById('go').onclick = doSearch;
+// sensible default
+document.getElementById('q').value = 'Which terminals are downstream of Apparecchiatura 2881?';
+</script>
+</body>
+</html>
