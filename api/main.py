@@ -209,10 +209,10 @@ UNWIND $seeds AS seed
 MATCH (n:IfcEntity {globalId: seed})
 OPTIONAL MATCH p=(n)-[r:ASSIGNED_TO_SYSTEM|CONTAINS|CONNECTED_TO|FEEDS*1..__HOPS__]-(m:IfcEntity)
 WITH seed, n, collect(DISTINCT m) AS nb, collect(DISTINCT r) AS rels
-WITH seed, apoc.coll.toSet(nb + [n]) AS nodes, rels
+WITH seed, apoc.coll.toSet(nb + [n]) AS nodes, apoc.coll.flatten(rels) AS flat_rels
 RETURN seed,
   [x IN nodes | { id:x.globalId, name:coalesce(x.name,''), type:x.type, labels:labels(x) }] AS nodes,
-  [r IN rels  | { src:startNode(r).globalId, dst:endNode(r).globalId, type:type(r) }]      AS edges
+  [r IN flat_rels | { src:startNode(r).globalId, dst:endNode(r).globalId, type:type(r) }]  AS edges
 """
 FALLBACK_SUBGRAPH_CYPHER_TEMPLATE = """
             UNWIND $seeds AS seed
@@ -222,10 +222,12 @@ FALLBACK_SUBGRAPH_CYPHER_TEMPLATE = """
             WITH seed, [x IN nb WHERE x IS NOT NULL] + [n] AS nodes, rels
             UNWIND nodes AS xn
             WITH seed, nodes, rels,
-                 collect(DISTINCT {id:xn.globalId, name:coalesce(xn.name,''), type:xn.type, labels:labels(xn)}) AS nodeinfo,
-                 rels AS rels_list
-            RETURN seed, nodeinfo AS nodes,
-                   [rr IN rels_list | {src:startNode(rr).globalId, dst:endNode(rr).globalId, type:type(rr)}] AS edges
+                 collect(DISTINCT {id:xn.globalId, name:coalesce(xn.name,''), type:xn.type, labels:labels(xn)}) AS nodeinfo
+            UNWIND rels AS rel_list
+            UNWIND rel_list AS rel
+            WITH seed, nodeinfo AS nodes, collect(DISTINCT rel) AS flat_rels
+            RETURN seed, nodes,
+                   [rr IN flat_rels | {src:startNode(rr).globalId, dst:endNode(rr).globalId, type:type(rr)}] AS edges
         """
 
 ASSET_CYPHER = """
