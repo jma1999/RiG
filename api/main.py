@@ -204,16 +204,29 @@ RETURN id, coalesce(n.name,'') AS name, n.type AS type, labels(n) AS labels,
        collect(DISTINCT st.name) AS storeys, collect(DISTINCT sp.name) AS rooms
 """
 
-SUBGRAPH_CYPHER = """
+SUBGRAPH_CYPHER_TEMPLATE = """
 UNWIND $seeds AS seed
 MATCH (n:IfcEntity {globalId: seed})
-OPTIONAL MATCH p=(n)-[r:ASSIGNED_TO_SYSTEM|CONTAINS|CONNECTED_TO|FEEDS*1..$hops]-(m:IfcEntity)
+OPTIONAL MATCH p=(n)-[r:ASSIGNED_TO_SYSTEM|CONTAINS|CONNECTED_TO|FEEDS*1..__HOPS__]-(m:IfcEntity)
 WITH seed, n, collect(DISTINCT m) AS nb, collect(DISTINCT r) AS rels
 WITH seed, apoc.coll.toSet(nb + [n]) AS nodes, rels
 RETURN seed,
   [x IN nodes | { id:x.globalId, name:coalesce(x.name,''), type:x.type, labels:labels(x) }] AS nodes,
   [r IN rels  | { src:startNode(r).globalId, dst:endNode(r).globalId, type:type(r) }]      AS edges
 """
+FALLBACK_SUBGRAPH_CYPHER_TEMPLATE = """
+            UNWIND $seeds AS seed
+            MATCH (n:IfcEntity {globalId: seed})
+            OPTIONAL MATCH p=(n)-[r:ASSIGNED_TO_SYSTEM|CONTAINS|CONNECTED_TO|FEEDS*1..__HOPS__]-(m:IfcEntity)
+            WITH seed, n, collect(DISTINCT m) AS nb, collect(DISTINCT r) AS rels
+            WITH seed, [x IN nb WHERE x IS NOT NULL] + [n] AS nodes, rels
+            UNWIND nodes AS xn
+            WITH seed, nodes, rels,
+                 collect(DISTINCT {id:xn.globalId, name:coalesce(xn.name,''), type:xn.type, labels:labels(xn)}) AS nodeinfo
+            UNWIND rels AS rr
+            RETURN seed, nodeinfo AS nodes,
+                   collect(DISTINCT {src:startNode(rr).globalId, dst:endNode(rr).globalId, type:type(rr)}) AS edges
+        """
 
 ASSET_CYPHER = """
 MATCH (n:IfcEntity {globalId:$id})
@@ -252,6 +265,9 @@ def health():
         info["neo4j_error"] = str(e)
     return info
 
+MAX_HOPS = 5
+
+
 @app.get("/search", response_model=SearchResponse)
 def search(q: str = Query(..., min_length=1), k: int = 10, hops: int = 2):
     idx, idlist, _ = load_index_and_meta()
@@ -262,6 +278,12 @@ def search(q: str = Query(..., min_length=1), k: int = 10, hops: int = 2):
     scores = [float(x) for x in D[0][:len(ids)]]
     if not ids:
         return SearchResponse(query=q, hits=[], subgraphs=[])
+
+    try:
+        hops_int = int(hops)
+    except (TypeError, ValueError):
+        hops_int = 2
+    hops_int = max(1, min(hops_int, MAX_HOPS))
 
     # details
     rows = neo4j_query(DETAILS_CYPHER, ids=ids)
@@ -281,23 +303,13 @@ def search(q: str = Query(..., min_length=1), k: int = 10, hops: int = 2):
 
     # subgraphs
     subs: List[Subgraph] = []
+    subgraph_cypher = SUBGRAPH_CYPHER_TEMPLATE.replace("__HOPS__", str(hops_int))
     try:
-        srows = neo4j_query(SUBGRAPH_CYPHER, seeds=ids, hops=hops)
+        srows = neo4j_query(subgraph_cypher, seeds=ids)
     except Exception:
         # no APOC – fallback without apoc
-        srows = neo4j_query("""
-            UNWIND $seeds AS seed
-            MATCH (n:IfcEntity {globalId: seed})
-            OPTIONAL MATCH p=(n)-[r:ASSIGNED_TO_SYSTEM|CONTAINS|CONNECTED_TO|FEEDS*1..$hops]-(m:IfcEntity)
-            WITH seed, n, collect(DISTINCT m) AS nb, collect(DISTINCT r) AS rels
-            WITH seed, [x IN nb WHERE x IS NOT NULL] + [n] AS nodes, rels
-            UNWIND nodes AS xn
-            WITH seed, nodes, rels,
-                 collect(DISTINCT {id:xn.globalId, name:coalesce(xn.name,''), type:xn.type, labels:labels(xn)}) AS nodeinfo
-            UNWIND rels AS rr
-            RETURN seed, nodeinfo AS nodes,
-                   collect(DISTINCT {src:startNode(rr).globalId, dst:endNode(rr).globalId, type:type(rr)}) AS edges
-        """, seeds=ids, hops=hops)
+        fallback_cypher = FALLBACK_SUBGRAPH_CYPHER_TEMPLATE.replace("__HOPS__", str(hops_int))
+        srows = neo4j_query(fallback_cypher, seeds=ids)
     for sr in srows:
         subs.append(Subgraph(seed=sr["seed"], nodes=sr["nodes"], edges=sr["edges"]))
     return SearchResponse(query=q, hits=hits, subgraphs=subs)
