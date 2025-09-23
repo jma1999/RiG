@@ -14,6 +14,31 @@ const api = (p) => `${API_BASE}${p}`;
 const pill = (ok) => (ok ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700");
 const DEFAULT_IFC_URL = "/ifc/sample-house.ifc";
 
+const FRIENDLY_TYPES = {
+  IfcDistributionPort: "Distribution Port",
+  IfcFlowTerminal: "Terminal",
+  IfcFlowSegment: "Duct Segment",
+  IfcFlowFitting: "Duct Fitting",
+  IfcSpace: "Space",
+  IfcBuildingStorey: "Building Level",
+  IfcValve: "Valve",
+  IfcFan: "Fan",
+};
+
+const FRIENDLY_RELATIONS = {
+  CONNECTED_TO: "Connected To",
+  FEEDS: "Feeds",
+  CONTAINS: "Contains",
+  ASSIGNED_TO_SYSTEM: "Assigned To System",
+};
+
+const friendlyType = (t) => {
+  if (!t) return t;
+  return FRIENDLY_TYPES[t] ?? t.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+};
+
+const friendlyRelation = (r) => FRIENDLY_RELATIONS[r] ?? r;
+
 // Minimal message bubble
 function ChatBubble({ role, text }) {
   const isUser = role === "user";
@@ -119,7 +144,7 @@ export default function FacilityTwin_MVP_UI() {
     async (id) => {
       try {
         const data = await fetchAsset(id);
-        setAsset(data);
+        setAsset({ ...data, friendlyType: friendlyType(data.type) });
         setWoDraft((prev) => ({ ...prev, assetId: id }));
         addMsg({ role: "assistant", text: `Loaded asset ${id}` });
       } catch (e) {
@@ -188,7 +213,11 @@ export default function FacilityTwin_MVP_UI() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || JSON.stringify(data));
 
-      setHits(data.hits || []);
+      const formattedHits = (data.hits || []).map((h) => ({
+        ...h,
+        friendlyType: friendlyType(h.type),
+      }));
+      setHits(formattedHits);
 
       const nodes = [];
       const links = [];
@@ -201,11 +230,17 @@ export default function FacilityTwin_MVP_UI() {
             id: n.id,
             name: n.name || "(unnamed)",
             type: n.type || "",
+            friendlyType: friendlyType(n.type || ""),
             source: n.source || "",
           });
         });
         (sg.edges || []).forEach((e) => {
-          links.push({ source: e.src, target: e.dst, type: e.type });
+          links.push({
+            source: e.src,
+            target: e.dst,
+            type: e.type,
+            friendlyType: friendlyRelation(e.type),
+          });
         });
       });
 
@@ -481,7 +516,7 @@ export default function FacilityTwin_MVP_UI() {
                     <div className="font-medium">{h.name || "(unnamed)"}</div>
                     <div className="text-xs text-slate-500">{h.id}</div>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                      <Badge variant="outline">{h.type}</Badge>
+                      <Badge variant="outline">{h.friendlyType || friendlyType(h.type)}</Badge>
                       {h.rooms?.length ? <Badge variant="secondary">rooms: {h.rooms.join(", ")}</Badge> : null}
                       {h.storeys?.length ? <Badge variant="secondary">storeys: {h.storeys.join(", ")}</Badge> : null}
                       {typeof h.score === "number" && (
@@ -506,7 +541,7 @@ export default function FacilityTwin_MVP_UI() {
                     <div className="text-xs text-slate-400">{asset.id}</div>
                     <div className="text-lg font-semibold leading-tight">{asset.name || "(unnamed asset)"}</div>
                     <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <Badge variant="outline">{asset.type}</Badge>
+                      <Badge variant="outline">{asset.friendlyType || friendlyType(asset.type)}</Badge>
                       {asset.source && <Badge variant="secondary">{asset.source}</Badge>}
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-sm">
