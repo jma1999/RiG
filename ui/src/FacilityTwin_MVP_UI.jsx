@@ -362,10 +362,10 @@ export default function FacilityTwin_MVP_UI() {
 
   const recentMessages = messages.slice(-6);
   const railActions = [
-    { icon: Factory, label: "Overview" },
-    { icon: Network, label: "Graph" },
-    { icon: MessageSquare, label: "Assist" },
-    { icon: Wrench, label: "Work" },
+    { icon: Factory, label: "Overview", target: "hero" },
+    { icon: Network, label: "Graph", target: "graph" },
+    { icon: MessageSquare, label: "Assist", target: "assist" },
+    { icon: Wrench, label: "Work", target: "work" },
   ];
 
   return (
@@ -393,11 +393,15 @@ export default function FacilityTwin_MVP_UI() {
       <div className="flex flex-1 overflow-hidden">
         <aside className="hidden w-24 flex-col justify-between border-r border-slate-200 bg-white/70 px-4 py-8 xl:flex">
           <div className="space-y-6">
-            {railActions.map(({ icon: Icon, label }) => (
+            {railActions.map(({ icon: Icon, label, target }) => (
               <button
                 key={label}
                 className="flex w-full flex-col items-center gap-2 rounded-2xl border border-transparent p-3 text-xs font-medium text-slate-500 transition hover:border-slate-300 hover:bg-white"
                 type="button"
+                onClick={() => {
+                  const el = target ? document.getElementById(`rig-section-${target}`) : null;
+                  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
               >
                 <Icon className="h-5 w-5" />
                 {label}
@@ -413,7 +417,7 @@ export default function FacilityTwin_MVP_UI() {
         <main className="flex-1 overflow-hidden">
           <div className="mx-auto flex h-full max-w-[1500px] flex-col gap-6 px-6 py-6">
             <div className="grid flex-1 gap-6 xl:grid-cols-[2fr,1fr]">
-              <section className="relative flex min-h-[520px] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
+              <section id="rig-section-hero" className="relative flex min-h-[520px] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg transition-all duration-300">
                 <div className="flex-1 overflow-hidden bg-slate-50">
                   <div ref={ifcContainerRef} className="h-full w-full" />
                 </div>
@@ -439,7 +443,7 @@ export default function FacilityTwin_MVP_UI() {
               </section>
 
               <section className="flex min-h-0 flex-col gap-4 overflow-hidden">
-                <Card className="flex-1 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <Card id="rig-section-graph" className="flex-1 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300">
                   <CardHeader className="flex items-center justify-between py-3">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Network className="h-4 w-4" /> Model Graph
@@ -463,7 +467,7 @@ export default function FacilityTwin_MVP_UI() {
                   </CardContent>
                 </Card>
 
-                <Card className="flex-[1.1] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <Card id="rig-section-assist" className="flex-[1.1] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300">
                   <CardHeader className="py-3">
                     <CardTitle className="text-base">Asset Details</CardTitle>
                   </CardHeader>
@@ -510,7 +514,7 @@ export default function FacilityTwin_MVP_UI() {
                   </CardContent>
                 </Card>
 
-                <Card className="flex-1 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <Card className="flex-1 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300">
                   <CardHeader className="py-3">
                     <CardTitle className="text-base">Related Hits</CardTitle>
                   </CardHeader>
@@ -538,7 +542,7 @@ export default function FacilityTwin_MVP_UI() {
                   </CardContent>
                 </Card>
 
-                <Card className="flex-[0.9] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <Card id="rig-section-work" className="flex-[0.9] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300">
                   <CardHeader className="py-3">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Wrench className="h-4 w-4" /> Work Orders
@@ -639,7 +643,7 @@ export default function FacilityTwin_MVP_UI() {
         </main>
       </div>
 
-      <footer className="border-t border-slate-200 bg-white/95 px-6 py-5 backdrop-blur">
+      <footer className="sticky bottom-0 border-t border-slate-200 bg-white/95 px-6 py-5 backdrop-blur">
         <div className="mx-auto max-w-[1400px] space-y-3">
           <div className="flex gap-2 overflow-x-auto pb-1">
             {recentMessages.map((m, i) => (
