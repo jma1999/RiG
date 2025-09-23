@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Database, Network, Send, Plus, FileUp, CheckCircle2, Factory, Wrench, MessageSquare, GitBranch } from "lucide-react";
 import ForceGraph2D from "react-force-graph-2d";
 import { API_BASE } from "@/lib/env";
+import { cn } from "@/lib/utils";
 
 // === Tiny helpers ===
 const api = (p) => `${API_BASE}${p}`;
@@ -38,6 +39,9 @@ const friendlyType = (t) => {
 };
 
 const friendlyRelation = (r) => FRIENDLY_RELATIONS[r] ?? r;
+const sectionIds = ["hero", "graph", "assist", "work"];
+const primaryButtonClass =
+  "bg-sky-500 text-white hover:bg-sky-400 focus-visible:ring-sky-200 focus-visible:ring-2 ring-offset-1";
 
 // Minimal message bubble
 function ChatBubble({ role, text }) {
@@ -95,6 +99,7 @@ export default function FacilityTwin_MVP_UI() {
   const fileInputRef = useRef(null);
   const defaultIfcLoadedRef = useRef(false);
   const bootstrappedSearchRef = useRef(false);
+  const [selectedIfc, setSelectedIfc] = useState(null);
 
   // Search / chat
   const [q, setQ] = useState("Which terminals are downstream of Apparecchiatura 2881?");
@@ -116,10 +121,52 @@ export default function FacilityTwin_MVP_UI() {
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const graphContainerRef = useRef(null);
   const [graphSize, setGraphSize] = useState({ width: 0, height: 0 });
+  const [activeSection, setActiveSection] = useState("hero");
 
   // Work orders
   const [orders, setOrders] = useLocalOrders();
   const [woDraft, setWoDraft] = useState({ title: "", priority: "Medium", assetId: "" });
+  const railActions = useMemo(
+    () => [
+      { icon: Factory, label: "Overview", target: "hero" },
+      { icon: Network, label: "Graph", target: "graph" },
+      { icon: MessageSquare, label: "Assist", target: "assist" },
+      { icon: Wrench, label: "Work", target: "work" },
+    ],
+    []
+  );
+
+
+  const handleSelectedNeighbors = useCallback(() => {
+    if (!selectedIfc) return;
+    const label = selectedIfc.name || selectedIfc.globalId;
+    if (!label) return;
+    const prompt = `Show connections around ${label}`;
+    runQuery(prompt);
+  }, [selectedIfc, runQuery]);
+
+  const clearSelectedIfc = useCallback(() => {
+    setSelectedIfc(null);
+    try {
+      viewerRef.current?.IFC?.selector?.unpickIfcItems?.();
+    } catch (err) {
+      console.warn("Failed to clear IFC selection", err);
+    }
+  }, []);
+
+  const focusSelectedIfc = useCallback(() => {
+    if (!selectedIfc || !viewerRef.current) return;
+    try {
+      viewerRef.current.IFC.selector.highlightIfcItemByID?.(
+        selectedIfc.modelID,
+        selectedIfc.expressID,
+        true
+      );
+      viewerRef.current.IFC.selector.pickIfcItem(true);
+    } catch (err) {
+      console.warn("Unable to focus IFC element", err);
+    }
+  }, [selectedIfc]);
 
   useEffect(() => {
     (async () => {
@@ -181,11 +228,16 @@ export default function FacilityTwin_MVP_UI() {
     return null;
   }, []);
 
-  const runQuery = useCallback(async () => {
-    const text = q.trim();
-    if (!text) return;
+  const runQuery = useCallback(
+    async (incomingText) => {
+      const raw = incomingText ?? q;
+      const text = raw.trim();
+      if (!text) return;
+      if (incomingText !== undefined) {
+        setQ(incomingText);
+      }
 
-    addMsg({ role: "user", text });
+      addMsg({ role: "user", text });
 
     const countTypes = pickCountTypes(text);
     setBusy(true);
@@ -298,6 +350,32 @@ export default function FacilityTwin_MVP_UI() {
         viewer.IFC.setWasmPath("/ifc/");
         viewerRef.current = viewer;
 
+        const onClick = async () => {
+          const result = await viewer.IFC.selector.pickIfcItem(false, true);
+          if (!result) {
+            setSelectedIfc(null);
+            return;
+          }
+          try {
+            const { modelID, id: expressID } = result;
+            const props = await viewer.IFC.getProperties(modelID, expressID, true, true);
+            const globalId = props?.GlobalId?.value;
+            const name = props?.Name?.value || props?.Tag?.value || "Unnamed";
+            const typeName = props?.type || props?.expressType || props?.EntityLabel;
+            setSelectedIfc({ modelID, expressID, globalId, name, typeName });
+            if (globalId) {
+              await openAsset(globalId);
+            }
+          } catch (err) {
+            console.warn("IFC selection failed", err);
+          }
+        };
+        const controlsEl = viewer.context.ifcCamera?.controls?.domElement;
+        controlsEl?.addEventListener("click", onClick);
+
+        viewer.IFC.selector.prePickIfcItem = true;
+        viewer.IFC.selector.highlightIfcItem();
+
         if (!defaultIfcLoadedRef.current) {
           try {
             const response = await fetch(DEFAULT_IFC_URL);
@@ -325,6 +403,11 @@ export default function FacilityTwin_MVP_UI() {
 
     return () => {
       cancelled = true;
+      try {
+        viewerRef.current?.context?.ifcCamera?.controls?.domElement?.removeEventListener("click", onClick);
+      } catch (err) {
+        console.warn("Failed to detach IFC click handler", err);
+      }
       viewerRef.current?.dispose?.();
       viewerRef.current = null;
     };
@@ -344,6 +427,36 @@ export default function FacilityTwin_MVP_UI() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
+    const elements = sectionIds
+      .map((id) => document.getElementById(`rig-section-${id}`))
+      .filter(Boolean);
+    if (!elements.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible.length) {
+          const id = visible[0].target.id.replace("rig-section-", "");
+          setActiveSection(id);
+        }
+      },
+      {
+        threshold: [0.35, 0.6],
+        rootMargin: "-120px 0px -40%",
+      }
+    );
+
+    elements.forEach((el) => observer.observe(el));
+    return () => {
+      elements.forEach((el) => observer.unobserve(el));
+      observer.disconnect();
+    };
+  }, [railActions]);
+
   const drawNode = useCallback((node, ctx, scale) => {
     const radius = 4 + Math.log((node.degree || 1) + 1) * 2;
     ctx.beginPath();
@@ -361,12 +474,6 @@ export default function FacilityTwin_MVP_UI() {
   }, []);
 
   const recentMessages = messages.slice(-6);
-  const railActions = [
-    { icon: Factory, label: "Overview", target: "hero" },
-    { icon: Network, label: "Graph", target: "graph" },
-    { icon: MessageSquare, label: "Assist", target: "assist" },
-    { icon: Wrench, label: "Work", target: "work" },
-  ];
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-100 text-slate-900">
@@ -396,7 +503,12 @@ export default function FacilityTwin_MVP_UI() {
             {railActions.map(({ icon: Icon, label, target }) => (
               <button
                 key={label}
-                className="flex w-full flex-col items-center gap-2 rounded-2xl border border-transparent p-3 text-xs font-medium text-slate-500 transition hover:border-slate-300 hover:bg-white"
+                className={cn(
+                  "flex w-full flex-col items-center gap-2 rounded-2xl border p-3 text-xs font-medium transition",
+                  activeSection === target
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-700 shadow-sm"
+                    : "border-transparent text-slate-500 hover:border-slate-300 hover:bg-white"
+                )}
                 type="button"
                 onClick={() => {
                   const el = target ? document.getElementById(`rig-section-${target}`) : null;
@@ -417,7 +529,15 @@ export default function FacilityTwin_MVP_UI() {
         <main className="flex-1 overflow-hidden">
           <div className="mx-auto flex h-full max-w-[1500px] flex-col gap-6 px-6 py-6">
             <div className="grid flex-1 gap-6 xl:grid-cols-[2fr,1fr]">
-              <section id="rig-section-hero" className="relative flex min-h-[520px] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg transition-all duration-300">
+              <section
+                id="rig-section-hero"
+                className={cn(
+                  "relative flex min-h-[520px] flex-col overflow-hidden rounded-3xl border bg-white transition-all duration-300",
+                  activeSection === "hero"
+                    ? "border-emerald-200 shadow-xl ring-2 ring-emerald-200"
+                    : "border-slate-200 shadow-lg opacity-90"
+                )}
+              >
                 <div className="flex-1 overflow-hidden bg-slate-50">
                   <div ref={ifcContainerRef} className="h-full w-full" />
                 </div>
@@ -430,20 +550,50 @@ export default function FacilityTwin_MVP_UI() {
                     <span>{graphData.links.length} links</span>
                   </div>
                 </div>
-                {asset && (
+                {(selectedIfc || asset) && (
                   <div className="absolute bottom-6 right-6 w-80 rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-lg">
-                    <div className="text-xs text-slate-400">Selected asset</div>
-                    <div className="mt-1 text-lg font-semibold">{asset.name || "(unnamed)"}</div>
-                    <div className="text-xs text-slate-500">{asset.friendlyType || friendlyType(asset.type)}</div>
-                    <Button className="mt-3 w-full" variant="outline" size="sm" onClick={() => openAsset(asset.id)}>
-                      Open full details
-                    </Button>
+                    <div className="text-xs text-slate-400">Selected element</div>
+                    <div className="mt-1 text-lg font-semibold">
+                      {selectedIfc?.name || asset?.name || "(unnamed)"}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {friendlyType(selectedIfc?.typeName || asset?.type)}
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        className={primaryButtonClass}
+                        onClick={() => {
+                          const id = selectedIfc?.globalId || asset?.id;
+                          if (id) openAsset(id);
+                        }}
+                      >
+                        Open asset
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={handleSelectedNeighbors}>
+                        Graph context
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={focusSelectedIfc}>
+                        Highlight
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={clearSelectedIfc}>
+                        Clear
+                      </Button>
+                    </div>
                   </div>
                 )}
               </section>
 
               <section className="flex min-h-0 flex-col gap-4 overflow-hidden">
-                <Card id="rig-section-graph" className="flex-1 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300">
+                <Card
+                  id="rig-section-graph"
+                  className={cn(
+                    "flex-1 overflow-hidden rounded-3xl border bg-white transition-all duration-300",
+                    activeSection === "graph"
+                      ? "border-emerald-200 shadow-lg"
+                      : "border-slate-200 shadow-sm opacity-95"
+                  )}
+                >
                   <CardHeader className="flex items-center justify-between py-3">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Network className="h-4 w-4" /> Model Graph
@@ -467,7 +617,15 @@ export default function FacilityTwin_MVP_UI() {
                   </CardContent>
                 </Card>
 
-                <Card id="rig-section-assist" className="flex-[1.1] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300">
+                <Card
+                  id="rig-section-assist"
+                  className={cn(
+                    "flex-[1.1] overflow-hidden rounded-3xl border bg-white transition-all duration-300",
+                    activeSection === "assist"
+                      ? "border-emerald-200 shadow-lg"
+                      : "border-slate-200 shadow-sm opacity-95"
+                  )}
+                >
                   <CardHeader className="py-3">
                     <CardTitle className="text-base">Asset Details</CardTitle>
                   </CardHeader>
@@ -514,7 +672,14 @@ export default function FacilityTwin_MVP_UI() {
                   </CardContent>
                 </Card>
 
-                <Card className="flex-1 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300">
+                <Card
+                  className={cn(
+                    "flex-1 overflow-hidden rounded-3xl border bg-white transition-all duration-300",
+                    activeSection === "assist"
+                      ? "border-emerald-200/80 shadow-md"
+                      : "border-slate-200 shadow-sm opacity-95"
+                  )}
+                >
                   <CardHeader className="py-3">
                     <CardTitle className="text-base">Related Hits</CardTitle>
                   </CardHeader>
@@ -542,7 +707,15 @@ export default function FacilityTwin_MVP_UI() {
                   </CardContent>
                 </Card>
 
-                <Card id="rig-section-work" className="flex-[0.9] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300">
+                <Card
+                  id="rig-section-work"
+                  className={cn(
+                    "flex-[0.9] overflow-hidden rounded-3xl border bg-white transition-all duration-300",
+                    activeSection === "work"
+                      ? "border-emerald-200 shadow-lg"
+                      : "border-slate-200 shadow-sm opacity-95"
+                  )}
+                >
                   <CardHeader className="py-3">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Wrench className="h-4 w-4" /> Work Orders
@@ -586,6 +759,7 @@ export default function FacilityTwin_MVP_UI() {
                     <div className="flex gap-2">
                       <Button
                         size="sm"
+                        className={primaryButtonClass}
                         onClick={() => {
                           if (!woDraft.title) return;
                           setOrders([{ id: Date.now().toString(36), status: "Open", ...woDraft }, ...orders]);
@@ -705,7 +879,7 @@ export default function FacilityTwin_MVP_UI() {
                   onChange={(e) => setHops(Math.max(1, Number(e.target.value) || 2))}
                 />
               </div>
-              <Button className="h-10" onClick={runQuery} disabled={busy}>
+              <Button className={cn("h-10", primaryButtonClass)} onClick={runQuery} disabled={busy}>
                 <Send className="mr-1 h-4 w-4" />
                 {busy ? "Working…" : "Send"}
               </Button>
