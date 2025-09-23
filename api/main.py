@@ -222,10 +222,10 @@ FALLBACK_SUBGRAPH_CYPHER_TEMPLATE = """
             WITH seed, [x IN nb WHERE x IS NOT NULL] + [n] AS nodes, rels
             UNWIND nodes AS xn
             WITH seed, nodes, rels,
-                 collect(DISTINCT {id:xn.globalId, name:coalesce(xn.name,''), type:xn.type, labels:labels(xn)}) AS nodeinfo
-            UNWIND rels AS rr
+                 collect(DISTINCT {id:xn.globalId, name:coalesce(xn.name,''), type:xn.type, labels:labels(xn)}) AS nodeinfo,
+                 rels AS rels_list
             RETURN seed, nodeinfo AS nodes,
-                   collect(DISTINCT {src:startNode(rr).globalId, dst:endNode(rr).globalId, type:type(rr)}) AS edges
+                   [rr IN rels_list | {src:startNode(rr).globalId, dst:endNode(rr).globalId, type:type(rr)}] AS edges
         """
 
 ASSET_CYPHER = """
