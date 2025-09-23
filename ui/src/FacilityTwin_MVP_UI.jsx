@@ -89,6 +89,8 @@ export default function FacilityTwin_MVP_UI() {
 
   // Graph
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
+  const graphContainerRef = useRef(null);
+  const [graphSize, setGraphSize] = useState({ width: 0, height: 0 });
 
   // Work orders
   const [orders, setOrders] = useLocalOrders();
@@ -293,6 +295,20 @@ export default function FacilityTwin_MVP_UI() {
     };
   }, [addMsg]);
 
+  useEffect(() => {
+    const el = graphContainerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+
+    const updateSize = () => {
+      setGraphSize({ width: el.clientWidth, height: el.clientHeight });
+    };
+    updateSize();
+
+    const observer = new ResizeObserver(() => updateSize());
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const drawNode = useCallback((node, ctx, scale) => {
     const radius = 4 + Math.log((node.degree || 1) + 1) * 2;
     ctx.beginPath();
@@ -432,15 +448,19 @@ export default function FacilityTwin_MVP_UI() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-[350px] overflow-hidden rounded-b-2xl bg-white p-0">
-                <div className="h-full w-full overflow-hidden">
-                  <ForceGraph2D
-                    graphData={graphData}
-                    nodeId="id"
-                    nodeCanvasObject={drawNode}
-                    linkDirectionalArrowLength={4}
-                    linkColor={() => "#94a3b8"}
-                    onNodeClick={(n) => openAsset(n.id)}
-                  />
+                <div ref={graphContainerRef} className="h-full w-full">
+                  {graphSize.width > 0 && graphSize.height > 0 && (
+                    <ForceGraph2D
+                      graphData={graphData}
+                      nodeId="id"
+                      nodeCanvasObject={drawNode}
+                      linkDirectionalArrowLength={4}
+                      linkColor={() => "#94a3b8"}
+                      onNodeClick={(n) => openAsset(n.id)}
+                      width={graphSize.width}
+                      height={graphSize.height}
+                    />
+                  )}
                 </div>
               </CardContent>
             </Card>
