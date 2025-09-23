@@ -538,8 +538,19 @@ export default function FacilityTwin_MVP_UI() {
                     : "border-slate-200 shadow-lg opacity-90"
                 )}
               >
-                <div className="flex-1 overflow-hidden bg-slate-50">
-                  <div ref={ifcContainerRef} className="h-full w-full" />
+                <div className="relative flex-1 overflow-hidden bg-gradient-to-br from-slate-100 via-slate-50 to-white">
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(148,163,184,0.18),_transparent_60%)]" />
+                  <div className="pointer-events-none absolute inset-y-12 inset-x-16 rounded-[38px] border border-white/60 shadow-[0_30px_120px_-40px_rgba(15,23,42,0.35)]" />
+                  <div ref={ifcContainerRef} className="relative z-10 h-full w-full" />
+                  {!defaultIfcLoadedRef.current && (
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                      <div className="rounded-3xl border border-slate-200 bg-white/80 px-6 py-5 text-center shadow-lg backdrop-blur">
+                        <div className="text-xs uppercase tracking-wide text-slate-400">IFC viewer</div>
+                        <div className="mt-2 text-lg font-semibold text-slate-700">Loading facility model…</div>
+                        <div className="mt-2 text-xs text-slate-500">Drop an IFC file or wait for the default sample.</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white" />
                 <div className="absolute left-6 top-6 space-y-2 rounded-2xl bg-white/85 px-4 py-3 text-sm shadow-md">
@@ -551,15 +562,24 @@ export default function FacilityTwin_MVP_UI() {
                   </div>
                 </div>
                 {(selectedIfc || asset) && (
-                  <div className="absolute bottom-6 right-6 w-80 rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-lg">
-                    <div className="text-xs text-slate-400">Selected element</div>
-                    <div className="mt-1 text-lg font-semibold">
+                  <div className="absolute bottom-6 right-6 w-80 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur">
+                    <div className="flex items-center justify-between text-xs text-slate-400">
+                      <span>Selected element</span>
+                      <button
+                        type="button"
+                        className="text-slate-400 transition hover:text-slate-600"
+                        onClick={clearSelectedIfc}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <div className="mt-2 text-lg font-semibold text-slate-800">
                       {selectedIfc?.name || asset?.name || "(unnamed)"}
                     </div>
                     <div className="text-xs text-slate-500">
                       {friendlyType(selectedIfc?.typeName || asset?.type)}
                     </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                       <Button
                         size="sm"
                         className={primaryButtonClass}
@@ -573,11 +593,11 @@ export default function FacilityTwin_MVP_UI() {
                       <Button size="sm" variant="outline" onClick={handleSelectedNeighbors}>
                         Graph context
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={focusSelectedIfc}>
+                      <Button size="sm" variant="outline" onClick={focusSelectedIfc}>
                         Highlight
                       </Button>
                       <Button size="sm" variant="ghost" onClick={clearSelectedIfc}>
-                        Clear
+                        Dismiss
                       </Button>
                     </div>
                   </div>
