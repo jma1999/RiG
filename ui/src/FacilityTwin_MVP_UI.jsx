@@ -329,9 +329,9 @@ export default function FacilityTwin_MVP_UI() {
           </div>
         </header>
 
-        <div className="grid gap-5 xl:grid-cols-3">
+        <div className="grid items-start gap-5 xl:grid-cols-3">
           <div className="space-y-5">
-            <Card className="h-[420px] border-slate-200 shadow-sm">
+            <Card className="h-[420px] border-slate-200 bg-white shadow-sm">
               <CardHeader className="py-3">
                 <CardTitle className="flex items-center justify-between text-base">
                   <span>IFC Geometry Viewer</span>
@@ -354,11 +354,11 @@ export default function FacilityTwin_MVP_UI() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-[350px] p-0">
-                <div ref={ifcContainerRef} className="h-full w-full rounded-b-2xl bg-slate-50" />
+                <div ref={ifcContainerRef} className="h-full w-full overflow-hidden rounded-b-2xl bg-slate-50" />
               </CardContent>
             </Card>
 
-            <Card className="h-[360px] border-slate-200 shadow-sm">
+            <Card className="h-[360px] border-slate-200 bg-white shadow-sm">
               <CardHeader className="py-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <MessageSquare className="h-4 w-4" /> Ask the model
@@ -425,25 +425,27 @@ export default function FacilityTwin_MVP_UI() {
           </div>
 
           <div className="space-y-5">
-            <Card className="h-[420px] border-slate-200 shadow-sm">
+            <Card className="h-[420px] border-slate-200 bg-white shadow-sm">
               <CardHeader className="py-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Network className="h-4 w-4" /> Model Graph
                 </CardTitle>
               </CardHeader>
-              <CardContent className="h-[350px] rounded-b-2xl bg-white p-0">
-                <ForceGraph2D
-                  graphData={graphData}
-                  nodeId="id"
-                  nodeCanvasObject={drawNode}
-                  linkDirectionalArrowLength={4}
-                  linkColor={() => "#94a3b8"}
-                  onNodeClick={(n) => openAsset(n.id)}
-                />
+              <CardContent className="h-[350px] overflow-hidden rounded-b-2xl bg-white p-0">
+                <div className="h-full w-full overflow-hidden">
+                  <ForceGraph2D
+                    graphData={graphData}
+                    nodeId="id"
+                    nodeCanvasObject={drawNode}
+                    linkDirectionalArrowLength={4}
+                    linkColor={() => "#94a3b8"}
+                    onNodeClick={(n) => openAsset(n.id)}
+                  />
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="h-[360px] border-slate-200 shadow-sm">
+            <Card className="h-[360px] border-slate-200 bg-white shadow-sm">
               <CardHeader className="py-3">
                 <CardTitle className="text-base">Hits</CardTitle>
               </CardHeader>
@@ -473,7 +475,7 @@ export default function FacilityTwin_MVP_UI() {
           </div>
 
           <div className="space-y-5">
-            <Card className="h-[420px] border-slate-200 shadow-sm">
+            <Card className="h-[420px] border-slate-200 bg-white shadow-sm">
               <CardHeader className="py-3">
                 <CardTitle className="text-base">Asset Details</CardTitle>
               </CardHeader>
@@ -520,7 +522,7 @@ export default function FacilityTwin_MVP_UI() {
               </CardContent>
             </Card>
 
-            <Card className="h-[360px] border-slate-200 shadow-sm">
+            <Card className="h-[360px] border-slate-200 bg-white shadow-sm">
               <CardHeader className="py-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Wrench className="h-4 w-4" /> Work Orders
