@@ -469,19 +469,19 @@ export default function FacilityTwin_MVP_UI() {
   }, [railActions]);
 
   const drawNode = useCallback((node, ctx, scale) => {
-    const radius = 4 + Math.log((node.degree || 1) + 1) * 2;
+    const radius = 5 + Math.log((node.degree || 1) + 1) * 2;
     ctx.beginPath();
     ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI, false);
     ctx.fillStyle = node.type?.startsWith("IfcFlow")
-      ? "#0ea5e9"
+      ? "#38bdf8"
       : node.type?.startsWith("IfcSpace")
-      ? "#22c55e"
-      : "#cbd5e1";
+      ? "#34d399"
+      : "#e2e8f0";
     ctx.fill();
-    ctx.font = `${Math.max(10 / scale, 8)}px Inter, system-ui`;
+    ctx.font = `${Math.max(11 / scale, 8)}px Inter, system-ui`;
     ctx.fillStyle = "#0f172a";
-    const label = node.name?.slice(0, 42) || node.id;
-    ctx.fillText(label, node.x + radius + 3, node.y + 3);
+    const label = node.friendlyType || node.name?.slice(0, 36) || node.id;
+    ctx.fillText(label, node.x + radius + 4, node.y + 4);
   }, []);
 
   const recentMessages = messages.slice(-6);
@@ -541,11 +541,11 @@ export default function FacilityTwin_MVP_UI() {
 
         <main className="flex-1 overflow-hidden">
           <div className="mx-auto flex h-full max-w-[1500px] flex-col gap-6 px-6 pb-24 pt-6">
-            <div className="grid flex-1 gap-6 xl:grid-cols-[2fr,1fr]">
+            <div className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
               <section
                 id="rig-section-hero"
                 className={cn(
-                  "relative flex min-h-[calc(100vh-220px)] flex-col overflow-hidden rounded-3xl border bg-white transition-all duration-300",
+                  "relative flex min-h-[calc(100vh-200px)] flex-col overflow-hidden rounded-3xl border bg-white transition-all duration-300",
                   activeSection === "hero"
                     ? "border-emerald-200 shadow-xl ring-2 ring-emerald-200"
                     : "border-slate-200 shadow-lg opacity-90"
