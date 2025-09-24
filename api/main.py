@@ -41,6 +41,8 @@ _meta: Dict[str, Any] = {}
 _lock = threading.Lock()
 
 # very small noun → IFC type mapping (extend as you need)
+COUNT_PATTERN = re.compile(r"^\s*how\s+many\b", re.IGNORECASE)
+
 NOUN2IFC = {
     "window": ["IfcWindow"], "windows": ["IfcWindow"],
     "door": ["IfcDoor"], "doors": ["IfcDoor"],
@@ -85,6 +87,19 @@ def _resolve_types(type_param: str | None, q: str | None) -> List[str]:
             if suggestions:
                 return suggestions
     return []
+
+
+def pick_count_types(text: str | None) -> Optional[List[str]]:
+    if not text:
+        return None
+    if not COUNT_PATTERN.match(text):
+        return None
+    lo = text.lower()
+    for noun, types in NOUN2IFC.items():
+        if noun in lo:
+            return list(types)
+    resolved = _resolve_types(None, text)
+    return resolved or None
 
 
 def _have_coords(t: str) -> bool:
@@ -270,8 +285,7 @@ def health():
 MAX_HOPS = 5
 
 
-@app.get("/search", response_model=SearchResponse)
-def search(q: str = Query(..., min_length=1), k: int = 10, hops: int = 2):
+def semantic_search(q: str, k: int = 10, hops: int = 2) -> tuple[List[Hit], List[Subgraph]]:
     idx, idlist, _ = load_index_and_meta()
     qv = embed([q])
     import faiss
@@ -279,7 +293,7 @@ def search(q: str = Query(..., min_length=1), k: int = 10, hops: int = 2):
     ids = [idlist[i] for i in I[0] if 0 <= i < len(idlist)]
     scores = [float(x) for x in D[0][:len(ids)]]
     if not ids:
-        return SearchResponse(query=q, hits=[], subgraphs=[])
+        return [], []
 
     try:
         hops_int = int(hops)
@@ -287,7 +301,6 @@ def search(q: str = Query(..., min_length=1), k: int = 10, hops: int = 2):
         hops_int = 2
     hops_int = max(1, min(hops_int, MAX_HOPS))
 
-    # details
     rows = neo4j_query(DETAILS_CYPHER, ids=ids)
     details = { r["id"]: r for r in rows }
     hits: List[Hit] = []
@@ -303,17 +316,22 @@ def search(q: str = Query(..., min_length=1), k: int = 10, hops: int = 2):
             rooms  = r.get("rooms") or [],
         ))
 
-    # subgraphs
     subs: List[Subgraph] = []
     subgraph_cypher = SUBGRAPH_CYPHER_TEMPLATE.replace("__HOPS__", str(hops_int))
     try:
         srows = neo4j_query(subgraph_cypher, seeds=ids)
     except Exception:
-        # no APOC – fallback without apoc
         fallback_cypher = FALLBACK_SUBGRAPH_CYPHER_TEMPLATE.replace("__HOPS__", str(hops_int))
         srows = neo4j_query(fallback_cypher, seeds=ids)
     for sr in srows:
         subs.append(Subgraph(seed=sr["seed"], nodes=sr["nodes"], edges=sr["edges"]))
+
+    return hits, subs
+
+
+@app.get("/search", response_model=SearchResponse)
+def search(q: str = Query(..., min_length=1), k: int = 10, hops: int = 2):
+    hits, subs = semantic_search(q, k=k, hops=hops)
     return SearchResponse(query=q, hits=hits, subgraphs=subs)
 
 @app.get("/asset/{id}", response_model=AssetResponse)
@@ -391,3 +409,7 @@ def nearest(typeA: str, typeB: str, limit: int = 1):
             best.append({"A": a, "B": nearest_b, "distance": best_d})
     best.sort(key=lambda r: r["distance"])
     return {"pairs": best[:max(1, int(limit))]}
+
+
+# register additional chat routes
+import api.chat  # noqa: E402  pylint: disable=wrong-import-position
