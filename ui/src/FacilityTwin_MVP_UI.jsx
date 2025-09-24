@@ -136,38 +136,6 @@ export default function FacilityTwin_MVP_UI() {
     []
   );
 
-
-  const handleSelectedNeighbors = useCallback(() => {
-    if (!selectedIfc) return;
-    const label = selectedIfc.name || selectedIfc.globalId;
-    if (!label) return;
-    const prompt = `Show connections around ${label}`;
-    runQuery(prompt);
-  }, [selectedIfc, runQuery]);
-
-  const clearSelectedIfc = useCallback(() => {
-    setSelectedIfc(null);
-    try {
-      viewerRef.current?.IFC?.selector?.unpickIfcItems?.();
-    } catch (err) {
-      console.warn("Failed to clear IFC selection", err);
-    }
-  }, []);
-
-  const focusSelectedIfc = useCallback(() => {
-    if (!selectedIfc || !viewerRef.current) return;
-    try {
-      viewerRef.current.IFC.selector.highlightIfcItemByID?.(
-        selectedIfc.modelID,
-        selectedIfc.expressID,
-        true
-      );
-      viewerRef.current.IFC.selector.pickIfcItem(true);
-    } catch (err) {
-      console.warn("Unable to focus IFC element", err);
-    }
-  }, [selectedIfc]);
-
   useEffect(() => {
     (async () => {
       try {
@@ -318,6 +286,37 @@ export default function FacilityTwin_MVP_UI() {
       setBusy(false);
     }
   }, [addMsg, k, hops, openAsset, pickCountTypes, q]);
+
+  const handleSelectedNeighbors = useCallback(() => {
+    if (!selectedIfc) return;
+    const label = selectedIfc.name || selectedIfc.globalId;
+    if (!label) return;
+    const prompt = `Show connections around ${label}`;
+    runQuery(prompt);
+  }, [selectedIfc, runQuery]);
+
+  const clearSelectedIfc = useCallback(() => {
+    setSelectedIfc(null);
+    try {
+      viewerRef.current?.IFC?.selector?.unpickIfcItems?.();
+    } catch (err) {
+      console.warn("Failed to clear IFC selection", err);
+    }
+  }, []);
+
+  const focusSelectedIfc = useCallback(() => {
+    if (!selectedIfc || !viewerRef.current) return;
+    try {
+      viewerRef.current.IFC.selector.highlightIfcItemByID?.(
+        selectedIfc.modelID,
+        selectedIfc.expressID,
+        true
+      );
+      viewerRef.current.IFC.selector.pickIfcItem(true);
+    } catch (err) {
+      console.warn("Unable to focus IFC element", err);
+    }
+  }, [selectedIfc]);
 
   useEffect(() => {
     if (!health || health.error || bootstrappedSearchRef.current) return;
