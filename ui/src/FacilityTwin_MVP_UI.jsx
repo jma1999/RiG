@@ -491,7 +491,7 @@ export default function FacilityTwin_MVP_UI() {
       <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-8 py-5 shadow-sm">
         <Factory className="h-6 w-6" />
         <div>
-          <h1 className="text-xl font-semibold">Facility Twin Command</h1>
+          <h1 className="text-xl font-semibold">RiG <em>it</em></h1>
           <p className="text-xs text-slate-500">Monitor, explore, and act across your facility in one console.</p>
         </div>
         <Badge className="ml-2">GraphRAG + IFC</Badge>
@@ -515,7 +515,7 @@ export default function FacilityTwin_MVP_UI() {
               <button
                 key={label}
                 className={cn(
-                  "flex w-full flex-col items-center gap-2 rounded-2xl border p-3 text-xs font-medium shadow-sm transition",
+                  "flex w-full flex-col items-center justify-center gap-1.5 rounded-2xl border px-3 py-4 text-[11px] font-semibold leading-tight shadow-sm transition whitespace-normal text-center",
                   activeSection === target
                     ? "border-sky-300 bg-sky-500 text-white shadow-lg"
                     : "border-slate-200 bg-white/85 text-slate-500 hover:bg-sky-100 hover:text-sky-700"
@@ -599,33 +599,34 @@ export default function FacilityTwin_MVP_UI() {
                           Clear
                         </button>
                       </div>
-                    <div className="mt-2 text-lg font-semibold text-slate-800">
-                      {selectedIfc?.name || asset?.name || "(unnamed)"}
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {friendlyType(selectedIfc?.typeName || asset?.type)}
-                    </div>
-                    <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                      <Button
-                        size="sm"
-                        className={primaryButtonClass}
-                        onClick={() => {
-                          const id = selectedIfc?.globalId || asset?.id;
-                          if (id) openAsset(id);
-                        }}
-                      >
-                        Open asset
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={handleSelectedNeighbors}>
-                        Graph context
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={focusSelectedIfc}>
-                        Highlight
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={clearSelectedIfc}>
-                        Dismiss
-                      </Button>
-                    </div>
+                      <div className="mt-2 text-lg font-semibold text-slate-800">
+                        {selectedIfc?.name || asset?.name || "(unnamed)"}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {friendlyType(selectedIfc?.typeName || asset?.type)}
+                      </div>
+                      <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className={primaryButtonClass}
+                          onClick={() => {
+                            const id = selectedIfc?.globalId || asset?.id;
+                            if (id) openAsset(id);
+                          }}
+                        >
+                          Open asset
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={handleSelectedNeighbors}>
+                          Graph context
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={focusSelectedIfc}>
+                          Highlight
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={clearSelectedIfc}>
+                          Dismiss
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -782,6 +783,7 @@ export default function FacilityTwin_MVP_UI() {
                         <div className="flex gap-2">
                           <Button
                             size="sm"
+                            variant="ghost"
                             className={primaryButtonClass}
                             onClick={() => {
                               if (!woDraft.title) return;
@@ -905,7 +907,12 @@ export default function FacilityTwin_MVP_UI() {
                   onChange={(e) => setHops(Math.max(1, Number(e.target.value) || 2))}
                 />
               </div>
-              <Button className={cn("h-10", primaryButtonClass)} onClick={runQuery} disabled={busy}>
+              <Button
+                variant="ghost"
+                className={cn("h-10 px-6", primaryButtonClass)}
+                onClick={runQuery}
+                disabled={busy}
+              >
                 <Send className="mr-1 h-4 w-4" />
                 {busy ? "Working…" : "Send"}
               </Button>
