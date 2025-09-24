@@ -541,7 +541,7 @@ export default function FacilityTwin_MVP_UI() {
 
         <main className="flex-1 overflow-hidden">
           <div className="mx-auto flex h-full max-w-[1500px] flex-col gap-6 px-6 pb-24 pt-6">
-            <div className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+            <div className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,1.1fr)]">
               <section
                 id="rig-section-hero"
                 className={cn(
@@ -574,8 +574,8 @@ export default function FacilityTwin_MVP_UI() {
                     <span>{graphData.links.length} links</span>
                   </div>
                 </div>
-                <div className="absolute right-6 top-6 flex flex-col items-end gap-3">
-                  <div className="flex gap-2">
+                <div className="absolute right-6 top-6 z-20 flex flex-col items-end gap-3">
+                  <div className="flex flex-wrap justify-end gap-2">
                     {decisionActions.map((action) => (
                       <button
                         key={action.label}
@@ -635,14 +635,14 @@ export default function FacilityTwin_MVP_UI() {
               <aside className="relative" id="rig-section-panel">
                 <div className="sticky top-6 space-y-4">
                   {activePanel === "graph" && (
-                    <Card className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg transition-all">
+                    <Card className="min-h-[calc(100vh-240px)] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg transition-all">
                       <CardHeader className="flex items-center justify-between py-3">
                         <CardTitle className="flex items-center gap-2 text-base">
                           <Network className="h-4 w-4" /> Model Graph
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="flex-1 overflow-hidden rounded-b-[22px] bg-white p-0">
-                        <div ref={graphContainerRef} className="h-full w-full">
+                        <div ref={graphContainerRef} className="h-full min-h-[520px] w-full">
                           {graphSize.width > 0 && graphSize.height > 0 && (
                             <ForceGraph2D
                               graphData={graphData}
