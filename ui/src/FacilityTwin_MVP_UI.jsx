@@ -122,6 +122,7 @@ export default function FacilityTwin_MVP_UI() {
   const graphContainerRef = useRef(null);
   const [graphSize, setGraphSize] = useState({ width: 0, height: 0 });
   const [activeSection, setActiveSection] = useState("hero");
+  const [activePanel, setActivePanel] = useState("graph");
 
   // Work orders
   const [orders, setOrders] = useLocalOrders();
@@ -238,6 +239,8 @@ export default function FacilityTwin_MVP_UI() {
         friendlyType: friendlyType(h.type),
       }));
       setHits(formattedHits);
+      setActivePanel("graph");
+      setActiveSection("graph");
 
       const nodes = [];
       const links = [];
@@ -317,6 +320,15 @@ export default function FacilityTwin_MVP_UI() {
       console.warn("Unable to focus IFC element", err);
     }
   }, [selectedIfc]);
+
+  const decisionActions = useMemo(
+    () => [
+      { label: "Show HVAC", prompt: "Show HVAC assets and their status" },
+      { label: "Open Issues", prompt: "List assets with open work orders" },
+      { label: "Energy Hotspots", prompt: "Highlight zones with high energy usage" },
+    ],
+    []
+  );
 
   useEffect(() => {
     if (!health || health.error || bootstrappedSearchRef.current) return;
@@ -503,15 +515,17 @@ export default function FacilityTwin_MVP_UI() {
               <button
                 key={label}
                 className={cn(
-                  "flex w-full flex-col items-center gap-2 rounded-2xl border p-3 text-xs font-medium transition",
+                  "flex w-full flex-col items-center gap-2 rounded-2xl border p-3 text-xs font-medium shadow-sm transition",
                   activeSection === target
-                    ? "border-emerald-300 bg-emerald-50 text-emerald-700 shadow-sm"
-                    : "border-transparent text-slate-500 hover:border-slate-300 hover:bg-white"
+                    ? "border-sky-300 bg-sky-500 text-white shadow-lg"
+                    : "border-slate-200 bg-white/85 text-slate-500 hover:bg-sky-100 hover:text-sky-700"
                 )}
                 type="button"
                 onClick={() => {
                   const el = target ? document.getElementById(`rig-section-${target}`) : null;
                   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  setActiveSection(target);
+                  setActivePanel(target === "hero" ? "graph" : target);
                 }}
               >
                 <Icon className="h-5 w-5" />
@@ -526,7 +540,7 @@ export default function FacilityTwin_MVP_UI() {
         </aside>
 
         <main className="flex-1 overflow-hidden">
-          <div className="mx-auto flex h-full max-w-[1500px] flex-col gap-6 px-6 py-6">
+          <div className="mx-auto flex h-full max-w-[1500px] flex-col gap-6 px-6 pb-24 pt-6">
             <div className="grid flex-1 gap-6 xl:grid-cols-[2fr,1fr]">
               <section
                 id="rig-section-hero"
@@ -560,18 +574,31 @@ export default function FacilityTwin_MVP_UI() {
                     <span>{graphData.links.length} links</span>
                   </div>
                 </div>
-                {(selectedIfc || asset) && (
-                  <div className="absolute bottom-6 right-6 w-80 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur">
-                    <div className="flex items-center justify-between text-xs text-slate-400">
-                      <span>Selected element</span>
+                <div className="absolute right-6 top-6 flex flex-col items-end gap-3">
+                  <div className="flex gap-2">
+                    {decisionActions.map((action) => (
                       <button
+                        key={action.label}
                         type="button"
-                        className="text-slate-400 transition hover:text-slate-600"
-                        onClick={clearSelectedIfc}
+                        className="rounded-full border border-sky-200 bg-white/90 px-4 py-2 text-xs font-semibold text-sky-700 shadow-sm backdrop-blur transition hover:border-sky-300 hover:bg-sky-100"
+                        onClick={() => runQuery(action.prompt)}
                       >
-                        Clear
+                        {action.label}
                       </button>
-                    </div>
+                    ))}
+                  </div>
+                  {(selectedIfc || asset) && (
+                    <div className="absolute bottom-6 right-6 w-80 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur">
+                      <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span>Selected element</span>
+                        <button
+                          type="button"
+                          className="text-slate-400 transition hover:text-slate-600"
+                          onClick={clearSelectedIfc}
+                        >
+                          Clear
+                        </button>
+                      </div>
                     <div className="mt-2 text-lg font-semibold text-slate-800">
                       {selectedIfc?.name || asset?.name || "(unnamed)"}
                     </div>
@@ -599,238 +626,218 @@ export default function FacilityTwin_MVP_UI() {
                         Dismiss
                       </Button>
                     </div>
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
               </section>
 
-              <section className="flex min-h-0 flex-col gap-4 overflow-hidden">
-                <Card
-                  id="rig-section-graph"
-                  className={cn(
-                    "flex-1 overflow-hidden rounded-3xl border bg-white transition-all duration-300",
-                    activeSection === "graph"
-                      ? "border-emerald-200 shadow-lg"
-                      : "border-slate-200 shadow-sm opacity-95"
-                  )}
-                >
-                  <CardHeader className="flex items-center justify-between py-3">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Network className="h-4 w-4" /> Model Graph
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex-1 overflow-hidden rounded-b-[22px] bg-white p-0">
-                    <div ref={graphContainerRef} className="h-full w-full">
-                      {graphSize.width > 0 && graphSize.height > 0 && (
-                        <ForceGraph2D
-                          graphData={graphData}
-                          nodeId="id"
-                          nodeCanvasObject={drawNode}
-                          linkDirectionalArrowLength={4}
-                          linkColor={() => "#94a3b8"}
-                          onNodeClick={(n) => openAsset(n.id)}
-                          width={graphSize.width}
-                          height={graphSize.height}
-                        />
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card
-                  id="rig-section-assist"
-                  className={cn(
-                    "flex-[1.1] overflow-hidden rounded-3xl border bg-white transition-all duration-300",
-                    activeSection === "assist"
-                      ? "border-emerald-200 shadow-lg"
-                      : "border-slate-200 shadow-sm opacity-95"
-                  )}
-                >
-                  <CardHeader className="py-3">
-                    <CardTitle className="text-base">Asset Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="h-full space-y-3 overflow-auto pr-2">
-                    {!asset && <div className="text-sm text-slate-500">Select a node, hit, or work order to view details.</div>}
-                    {asset && (
-                      <div className="space-y-3">
-                        <div className="text-xs text-slate-400">{asset.id}</div>
-                        <div className="text-lg font-semibold leading-tight">{asset.name || "(unnamed asset)"}</div>
-                        <div className="flex flex-wrap items-center gap-2 text-xs">
-                          <Badge variant="outline">{asset.friendlyType || friendlyType(asset.type)}</Badge>
-                          {asset.source && <Badge variant="secondary">{asset.source}</Badge>}
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-sm">
-                          {asset.x !== undefined && (
-                            <div className="rounded-lg bg-slate-100 px-2 py-1">
-                              <div className="text-xs uppercase text-slate-500">coord.x</div>
-                              <div className="font-mono text-sm">{Math.round(asset.x)}</div>
-                            </div>
-                          )}
-                          {asset.y !== undefined && (
-                            <div className="rounded-lg bg-slate-100 px-2 py-1">
-                              <div className="text-xs uppercase text-slate-500">coord.y</div>
-                              <div className="font-mono text-sm">{Math.round(asset.y)}</div>
-                            </div>
-                          )}
-                          {asset.z !== undefined && (
-                            <div className="rounded-lg bg-slate-100 px-2 py-1">
-                              <div className="text-xs uppercase text-slate-500">coord.z</div>
-                              <div className="font-mono text-sm">{Math.round(asset.z)}</div>
-                            </div>
+              <aside className="relative" id="rig-section-panel">
+                <div className="sticky top-6 space-y-4">
+                  {activePanel === "graph" && (
+                    <Card className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg transition-all">
+                      <CardHeader className="flex items-center justify-between py-3">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <Network className="h-4 w-4" /> Model Graph
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex-1 overflow-hidden rounded-b-[22px] bg-white p-0">
+                        <div ref={graphContainerRef} className="h-full w-full">
+                          {graphSize.width > 0 && graphSize.height > 0 && (
+                            <ForceGraph2D
+                              graphData={graphData}
+                              nodeId="id"
+                              nodeCanvasObject={drawNode}
+                              linkDirectionalArrowLength={4}
+                              linkColor={() => "#94a3b8"}
+                              onNodeClick={(n) => openAsset(n.id)}
+                              width={graphSize.width}
+                              height={graphSize.height}
+                            />
                           )}
                         </div>
-                        {asset.psets && (
-                          <div>
-                            <div className="text-sm font-medium">Property Sets</div>
-                            <pre className="max-h-48 overflow-auto rounded-xl bg-slate-100 p-3 text-xs">
-                              {JSON.stringify(asset.psets, null, 2)}
-                            </pre>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card
-                  className={cn(
-                    "flex-1 overflow-hidden rounded-3xl border bg-white transition-all duration-300",
-                    activeSection === "assist"
-                      ? "border-emerald-200/80 shadow-md"
-                      : "border-slate-200 shadow-sm opacity-95"
+                      </CardContent>
+                    </Card>
                   )}
-                >
-                  <CardHeader className="py-3">
-                    <CardTitle className="text-base">Related Hits</CardTitle>
-                  </CardHeader>
-                  <CardContent className="h-full space-y-2 overflow-auto pr-2">
-                    {!hits.length && <div className="text-sm text-slate-500">No results yet.</div>}
-                    {hits.map((h, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50"
-                        onClick={() => openAsset(h.id)}
-                      >
-                        <div className="font-medium">{h.name || "(unnamed)"}</div>
-                        <div className="text-xs text-slate-500">{h.id}</div>
-                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                          <Badge variant="outline">{h.friendlyType || friendlyType(h.type)}</Badge>
-                          {h.rooms?.length ? <Badge variant="secondary">rooms: {h.rooms.join(", ")}</Badge> : null}
-                          {h.storeys?.length ? <Badge variant="secondary">storeys: {h.storeys.join(", ")}</Badge> : null}
-                          {typeof h.score === "number" && (
-                            <span className="ml-auto text-slate-400">score {h.score.toFixed(3)}</span>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </CardContent>
-                </Card>
 
-                <Card
-                  id="rig-section-work"
-                  className={cn(
-                    "flex-[0.9] overflow-hidden rounded-3xl border bg-white transition-all duration-300",
-                    activeSection === "work"
-                      ? "border-emerald-200 shadow-lg"
-                      : "border-slate-200 shadow-sm opacity-95"
-                  )}
-                >
-                  <CardHeader className="py-3">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Wrench className="h-4 w-4" /> Work Orders
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex h-full flex-col gap-3">
-                    <div className="grid grid-cols-6 items-end gap-2 text-xs">
-                      <div className="col-span-3 space-y-1">
-                        <Label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Title</Label>
-                        <Input
-                          className="bg-white"
-                          placeholder="title"
-                          value={woDraft.title}
-                          onChange={(e) => setWoDraft({ ...woDraft, title: e.target.value })}
-                        />
-                      </div>
-                      <div className="col-span-1 space-y-1">
-                        <Label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Priority</Label>
-                        <Select value={woDraft.priority} onValueChange={(v) => setWoDraft({ ...woDraft, priority: v })}>
-                          <SelectTrigger className="bg-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Low">Low</SelectItem>
-                            <SelectItem value="Medium">Medium</SelectItem>
-                            <SelectItem value="High">High</SelectItem>
-                            <SelectItem value="Critical">Critical</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="col-span-2 space-y-1">
-                        <Label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Asset ID</Label>
-                        <Input
-                          className="bg-white"
-                          placeholder="asset id"
-                          value={woDraft.assetId}
-                          onChange={(e) => setWoDraft({ ...woDraft, assetId: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        className={primaryButtonClass}
-                        onClick={() => {
-                          if (!woDraft.title) return;
-                          setOrders([{ id: Date.now().toString(36), status: "Open", ...woDraft }, ...orders]);
-                          setWoDraft({ title: "", priority: "Medium", assetId: woDraft.assetId });
-                        }}
-                      >
-                        <Plus className="mr-1 h-4 w-4" /> Add
-                      </Button>
-                      {asset && (
-                        <Button variant="outline" size="sm" onClick={() => setWoDraft((w) => ({ ...w, assetId: asset.id }))}>
-                          Use current asset
-                        </Button>
-                      )}
-                    </div>
-                    <div className="flex-1 space-y-2 overflow-auto pr-1">
-                      {!orders.length && <div className="text-sm text-slate-500">No work orders.</div>}
-                      {orders.map((o) => (
-                        <div key={o.id} className="rounded-xl border border-slate-200 bg-white p-3 text-sm shadow-sm">
-                          <div className="flex items-center gap-2">
-                            <div className="font-medium">{o.title}</div>
-                            <Badge variant={o.priority === "Critical" ? "destructive" : "secondary"}>{o.priority}</Badge>
-                            {o.assetId && (
-                              <Badge
-                                variant="outline"
-                                className="ml-auto cursor-pointer"
-                                onClick={() => openAsset(o.assetId)}
-                              >
-                                {o.assetId}
-                              </Badge>
+                  {activePanel === "assist" && (
+                    <Card className="max-h-[calc(100vh-200px)] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
+                      <CardHeader className="py-3">
+                        <CardTitle className="text-base">Asset Details</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3 overflow-auto pr-2">
+                        {!asset && <div className="text-sm text-slate-500">Select a node, hit, or work order to view details.</div>}
+                        {asset && (
+                          <div className="space-y-3">
+                            <div className="text-xs text-slate-400">{asset.id}</div>
+                            <div className="text-lg font-semibold leading-tight">{asset.name || "(unnamed asset)"}</div>
+                            <div className="flex flex-wrap items-center gap-2 text-xs">
+                              <Badge variant="outline">{asset.friendlyType || friendlyType(asset.type)}</Badge>
+                              {asset.source && <Badge variant="secondary">{asset.source}</Badge>}
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 text-sm">
+                              {asset.x !== undefined && (
+                                <div className="rounded-lg bg-slate-100 px-2 py-1">
+                                  <div className="text-xs uppercase text-slate-500">coord.x</div>
+                                  <div className="font-mono text-sm">{Math.round(asset.x)}</div>
+                                </div>
+                              )}
+                              {asset.y !== undefined && (
+                                <div className="rounded-lg bg-slate-100 px-2 py-1">
+                                  <div className="text-xs uppercase text-slate-500">coord.y</div>
+                                  <div className="font-mono text-sm">{Math.round(asset.y)}</div>
+                                </div>
+                              )}
+                              {asset.z !== undefined && (
+                                <div className="rounded-lg bg-slate-100 px-2 py-1">
+                                  <div className="text-xs uppercase text-slate-500">coord.z</div>
+                                  <div className="font-mono text-sm">{Math.round(asset.z)}</div>
+                                </div>
+                              )}
+                            </div>
+                            {asset.psets && (
+                              <div>
+                                <div className="text-sm font-medium">Property Sets</div>
+                                <pre className="max-h-48 overflow-auto rounded-xl bg-slate-100 p-3 text-xs">
+                                  {JSON.stringify(asset.psets, null, 2)}
+                                </pre>
+                              </div>
                             )}
                           </div>
-                          <div className="mt-2 flex items-center gap-2 text-xs">
-                            <span className="text-slate-500">{o.status}</span>
-                            <Button
-                              size="xs"
-                              variant="outline"
-                              onClick={() =>
-                                setOrders(orders.map((x) => (x.id === o.id ? { ...x, status: "Done" } : x)))
-                              }
-                            >
-                              <CheckCircle2 className="mr-1 h-3 w-3" /> Mark done
-                            </Button>
-                            <Button size="xs" variant="ghost" onClick={() => setOrders(orders.filter((x) => x.id !== o.id))}>
-                              Delete
-                            </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {activePanel === "graph" && hits.length > 0 && (
+                    <Card className="max-h-[300px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
+                      <CardHeader className="py-3">
+                        <CardTitle className="text-base">Related Hits</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2 overflow-auto pr-2">
+                        {hits.map((h, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50"
+                            onClick={() => openAsset(h.id)}
+                          >
+                            <div className="font-medium">{h.name || "(unnamed)"}</div>
+                            <div className="text-xs text-slate-500">{h.id}</div>
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                              <Badge variant="outline">{h.friendlyType || friendlyType(h.type)}</Badge>
+                              {h.rooms?.length ? <Badge variant="secondary">rooms: {h.rooms.join(", ")}</Badge> : null}
+                              {h.storeys?.length ? <Badge variant="secondary">storeys: {h.storeys.join(", ")}</Badge> : null}
+                              {typeof h.score === "number" && (
+                                <span className="ml-auto text-slate-400">score {h.score.toFixed(3)}</span>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {activePanel === "work" && (
+                    <Card className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
+                      <CardHeader className="py-3">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <Wrench className="h-4 w-4" /> Work Orders
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex h-full flex-col gap-3">
+                        <div className="grid grid-cols-6 items-end gap-2 text-xs">
+                          <div className="col-span-3 space-y-1">
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Title</Label>
+                            <Input
+                              className="bg-white"
+                              placeholder="title"
+                              value={woDraft.title}
+                              onChange={(e) => setWoDraft({ ...woDraft, title: e.target.value })}
+                            />
+                          </div>
+                          <div className="col-span-1 space-y-1">
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Priority</Label>
+                            <Select value={woDraft.priority} onValueChange={(v) => setWoDraft({ ...woDraft, priority: v })}>
+                              <SelectTrigger className="bg-white">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Low">Low</SelectItem>
+                                <SelectItem value="Medium">Medium</SelectItem>
+                                <SelectItem value="High">High</SelectItem>
+                                <SelectItem value="Critical">Critical</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="col-span-2 space-y-1">
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Asset ID</Label>
+                            <Input
+                              className="bg-white"
+                              placeholder="asset id"
+                              value={woDraft.assetId}
+                              onChange={(e) => setWoDraft({ ...woDraft, assetId: e.target.value })}
+                            />
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </section>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className={primaryButtonClass}
+                            onClick={() => {
+                              if (!woDraft.title) return;
+                              setOrders([{ id: Date.now().toString(36), status: "Open", ...woDraft }, ...orders]);
+                              setWoDraft({ title: "", priority: "Medium", assetId: woDraft.assetId });
+                            }}
+                          >
+                            <Plus className="mr-1 h-4 w-4" /> Add
+                          </Button>
+                          {asset && (
+                            <Button variant="outline" size="sm" onClick={() => setWoDraft((w) => ({ ...w, assetId: asset.id }))}>
+                              Use current asset
+                            </Button>
+                          )}
+                        </div>
+                        <div className="flex-1 space-y-2 overflow-auto pr-1">
+                          {!orders.length && <div className="text-sm text-slate-500">No work orders.</div>}
+                          {orders.map((o) => (
+                            <div key={o.id} className="rounded-xl border border-slate-200 bg-white p-3 text-sm shadow-sm">
+                              <div className="flex items-center gap-2">
+                                <div className="font-medium">{o.title}</div>
+                                <Badge variant={o.priority === "Critical" ? "destructive" : "secondary"}>{o.priority}</Badge>
+                                {o.assetId && (
+                                  <Badge
+                                    variant="outline"
+                                    className="ml-auto cursor-pointer"
+                                    onClick={() => openAsset(o.assetId)}
+                                  >
+                                    {o.assetId}
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="mt-2 flex items-center gap-2 text-xs">
+                                <span className="text-slate-500">{o.status}</span>
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  onClick={() =>
+                                    setOrders(orders.map((x) => (x.id === o.id ? { ...x, status: "Done" } : x)))
+                                  }
+                                >
+                                  <CheckCircle2 className="mr-1 h-3 w-3" /> Mark done
+                                </Button>
+                                <Button size="xs" variant="ghost" onClick={() => setOrders(orders.filter((x) => x.id !== o.id))}>
+                                  Delete
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </aside>
+
             </div>
           </div>
         </main>
