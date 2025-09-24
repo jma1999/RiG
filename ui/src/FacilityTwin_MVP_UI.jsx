@@ -539,7 +539,7 @@ export default function FacilityTwin_MVP_UI() {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-hidden">
+        <main className="flex-1 overflow-y-auto">
           <div className="mx-auto flex h-full max-w-[1500px] flex-col gap-6 px-6 pb-24 pt-6">
             <div className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,1.1fr)]">
               <section
@@ -709,30 +709,70 @@ export default function FacilityTwin_MVP_UI() {
                     </Card>
                   )}
 
-                  {activePanel === "graph" && hits.length > 0 && (
-                    <Card className="max-h-[300px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
+                  {activePanel === "graph" && (
+                    <Card className="max-h-[360px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
                       <CardHeader className="py-3">
                         <CardTitle className="text-base">Related Hits</CardTitle>
+                        <p className="text-xs text-slate-500">
+                          {hits.length
+                            ? `Showing ${hits.length} items linked to your last question.`
+                            : "Run a search to populate this panel."}
+                        </p>
                       </CardHeader>
-                      <CardContent className="space-y-2 overflow-auto pr-2">
+                      <CardContent className="space-y-3 overflow-auto pr-2">
+                        {!hits.length && (
+                          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                            Results will appear here once you ask the model about the facility.
+                          </div>
+                        )}
                         {hits.map((h, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50"
-                            onClick={() => openAsset(h.id)}
+                          <div
+                            key={h.id || i}
+                            className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm transition hover:border-sky-200 hover:bg-sky-50"
                           >
-                            <div className="font-medium">{h.name || "(unnamed)"}</div>
-                            <div className="text-xs text-slate-500">{h.id}</div>
-                            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                              <Badge variant="outline">{h.friendlyType || friendlyType(h.type)}</Badge>
-                              {h.rooms?.length ? <Badge variant="secondary">rooms: {h.rooms.join(", ")}</Badge> : null}
-                              {h.storeys?.length ? <Badge variant="secondary">storeys: {h.storeys.join(", ")}</Badge> : null}
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1">
+                                <div className="font-semibold leading-tight">{h.name || "(unnamed)"}</div>
+                                <div className="text-xs text-slate-500">{h.id}</div>
+                              </div>
                               {typeof h.score === "number" && (
-                                <span className="ml-auto text-slate-400">score {h.score.toFixed(3)}</span>
+                                <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-500">
+                                  {(h.score * 100).toFixed(1)}%
+                                </span>
                               )}
                             </div>
-                          </button>
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                              <Badge variant="outline">{h.friendlyType || friendlyType(h.type)}</Badge>
+                              {h.storeys?.length ? (
+                                <span className="rounded-full bg-slate-100 px-2 py-1">{h.storeys.join(", ")}</span>
+                              ) : null}
+                              {h.rooms?.length ? (
+                                <span className="rounded-full bg-slate-100 px-2 py-1">{h.rooms.join(", ")}</span>
+                              ) : null}
+                            </div>
+                            <div className="mt-3 flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  openAsset(h.id);
+                                  setActivePanel("assist");
+                                }}
+                              >
+                                View asset
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  runQuery(`Show neighboring assets for ${h.name || h.id}`);
+                                  setActiveSection("graph");
+                                }}
+                              >
+                                Expand graph
+                              </Button>
+                            </div>
+                          </div>
                         ))}
                       </CardContent>
                     </Card>
