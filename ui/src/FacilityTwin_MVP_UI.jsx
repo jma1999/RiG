@@ -545,7 +545,7 @@ export default function FacilityTwin_MVP_UI() {
               <section
                 id="rig-section-hero"
                 className={cn(
-                  "relative flex min-h-[520px] flex-col overflow-hidden rounded-3xl border bg-white transition-all duration-300",
+                  "relative flex min-h-[calc(100vh-220px)] flex-col overflow-hidden rounded-3xl border bg-white transition-all duration-300",
                   activeSection === "hero"
                     ? "border-emerald-200 shadow-xl ring-2 ring-emerald-200"
                     : "border-slate-200 shadow-lg opacity-90"
