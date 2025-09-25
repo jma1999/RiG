@@ -30,6 +30,7 @@ allowed_origins = [
     "https://gemino.pro",
     "https://gemino-ffw7smvjc-jma1999s-projects.vercel.app",
     "https://gemino-ash6crwcm-jma1999s-projects.vercel.app",
+    "https://gemino-pav0otpau-jma1999s-projects.vercel.app",
 ]
 
 extra_origins = os.getenv("FRONTEND_ORIGINS")

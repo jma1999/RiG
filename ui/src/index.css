@@ -4,77 +4,70 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
+  color-scheme: dark;
+  color: rgba(243, 233, 255, 0.92);
+  background-color: #240046;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.69 0.07 205);
-  --primary-foreground: oklch(0.98 0.02 215);
-  --secondary: oklch(0.96 0.02 215);
-  --secondary-foreground: oklch(0.28 0.02 230);
-  --muted: oklch(0.95 0.01 230);
-  --muted-foreground: oklch(0.44 0.02 232);
-  --accent: oklch(0.91 0.03 180);
-  --accent-foreground: oklch(0.28 0.02 215);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: #240046;
+  --foreground: #F3E9FF;
+  --card: #3C096C;
+  --card-foreground: #F3E9FF;
+  --popover: #3C096C;
+  --popover-foreground: #F3E9FF;
+  --primary: #FF6D00;
+  --primary-foreground: #2B0B3D;
+  --secondary: #5A189A;
+  --secondary-foreground: #F5EBFF;
+  --muted: #2F0A4A;
+  --muted-foreground: #CBBFE8;
+  --accent: #FF9100;
+  --accent-foreground: #2B0B3D;
+  --destructive: #E63946;
+  --border: #3F1A56;
+  --input: #3F1A56;
+  --ring: #FF7900;
+  --chart-1: #FF6D00;
+  --chart-2: #FF9E00;
+  --chart-3: #7B2CBF;
+  --chart-4: #5A189A;
+  --chart-5: #9D4EDD;
+  --sidebar: #2E0C4A;
+  --sidebar-foreground: #F3E9FF;
+  --sidebar-primary: #FF6D00;
+  --sidebar-primary-foreground: #2B0B3D;
+  --sidebar-accent: #5A189A;
+  --sidebar-accent-foreground: #F3E9FF;
+  --sidebar-border: #3F1A56;
+  --sidebar-ring: #FF7900;
 }
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: #FF9E00;
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: #FFB347;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #f8fafc;
-  color: #0f172a;
-  display: block;
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-.button-surface, button {
-  border-radius: 10px;
+.button-surface,
+button {
+  border-radius: 0.625rem;
   border: 1px solid transparent;
   padding: 0.55em 1.15em;
   font-size: 0.95em;
@@ -85,29 +78,19 @@ h1 {
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
-.button-surface:hover, button:hover {
+
+.button-surface:hover,
+button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 20px -18px rgba(15, 23, 42, 0.55);
+  box-shadow: 0 14px 22px -18px rgba(0, 0, 0, 0.7);
 }
+
 .button-surface:focus,
 .button-surface:focus-visible,
 button:focus,
 button:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
 }
 
 @theme inline {
@@ -149,37 +132,37 @@ button:focus-visible {
 }
 
 .dark {
-  --background: oklch(0.19 0.01 235);
-  --foreground: oklch(0.95 0.02 220);
-  --card: oklch(0.24 0.02 230);
-  --card-foreground: oklch(0.92 0.02 220);
-  --popover: oklch(0.24 0.02 230);
-  --popover-foreground: oklch(0.92 0.02 220);
-  --primary: oklch(0.72 0.06 205);
-  --primary-foreground: oklch(0.17 0.02 220);
-  --secondary: oklch(0.27 0.02 235);
-  --secondary-foreground: oklch(0.9 0.02 220);
-  --muted: oklch(0.27 0.015 240);
-  --muted-foreground: oklch(0.68 0.02 240);
-  --accent: oklch(0.32 0.02 200);
-  --accent-foreground: oklch(0.9 0.02 220);
-  --destructive: oklch(0.55 0.13 24);
-  --border: oklch(0.35 0.01 235);
-  --input: oklch(0.35 0.01 235);
-  --ring: oklch(0.66 0.06 205);
-  --chart-1: oklch(0.6 0.07 205);
-  --chart-2: oklch(0.56 0.08 170);
-  --chart-3: oklch(0.6 0.09 140);
-  --chart-4: oklch(0.58 0.07 260);
-  --chart-5: oklch(0.54 0.08 230);
-  --sidebar: oklch(0.24 0.02 230);
-  --sidebar-foreground: oklch(0.92 0.02 220);
-  --sidebar-primary: oklch(0.66 0.06 205);
-  --sidebar-primary-foreground: oklch(0.12 0.02 220);
-  --sidebar-accent: oklch(0.3 0.02 200);
-  --sidebar-accent-foreground: oklch(0.9 0.02 220);
-  --sidebar-border: oklch(0.35 0.01 235);
-  --sidebar-ring: oklch(0.64 0.06 205);
+  --background: #1d0036;
+  --foreground: #F6EFFF;
+  --card: #32085A;
+  --card-foreground: #F6EFFF;
+  --popover: #32085A;
+  --popover-foreground: #F6EFFF;
+  --primary: #FF7900;
+  --primary-foreground: #2C0B3D;
+  --secondary: #7B2CBF;
+  --secondary-foreground: #F9EDFF;
+  --muted: #290944;
+  --muted-foreground: #CBBFE8;
+  --accent: #FF9E00;
+  --accent-foreground: #2C0B3D;
+  --destructive: #F25D5D;
+  --border: #380D5C;
+  --input: #380D5C;
+  --ring: #FF8900;
+  --chart-1: #FF7900;
+  --chart-2: #FF9E00;
+  --chart-3: #7B2CBF;
+  --chart-4: #5A189A;
+  --chart-5: #9D4EDD;
+  --sidebar: #1F0035;
+  --sidebar-foreground: #F6EFFF;
+  --sidebar-primary: #FF6D00;
+  --sidebar-primary-foreground: #2C0B3D;
+  --sidebar-accent: #5A189A;
+  --sidebar-accent-foreground: #F6EFFF;
+  --sidebar-border: #350A57;
+  --sidebar-ring: #FF8900;
 }
 
 @layer base {
