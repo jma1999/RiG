@@ -24,8 +24,18 @@ os.environ.setdefault("TRANSFORMERS_NO_TORCH_FLEX_ATTENTION", "1")
 
 app = FastAPI(title="RiG GraphRAG API", version="0.1")
 app.mount("/app", StaticFiles(directory="web", html=True), name="app")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://gemino.pro",
+        "https://gemino-ffw7smvjc-jma1999s-projects.vercel.app",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.exception_handler(Exception)
 async def unhandled(request: Request, exc: Exception):
