@@ -41,9 +41,16 @@ if extra_origins:
         if origin.strip()
     )
 
+# In development you can set DEV_ALLOW_ALL_ORIGINS=1 to simplify CORS while
+# testing. In production prefer specifying `FRONTEND_ORIGINS` precisely.
+if os.getenv("DEV_ALLOW_ALL_ORIGINS") == "1":
+    cors_origins = ["*"]
+else:
+    cors_origins = allowed_origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -53,6 +60,20 @@ app.add_middleware(
 async def unhandled(request: Request, exc: Exception):
     # Always send JSON so the web UI doesn't choke on HTML error pages
     return JSONResponse(status_code=500, content={"error": str(exc)})
+
+
+# Helpful root endpoint so external GET / won't return 404 spam
+@app.get("/")
+def root():
+    return {"message": "RiG API running. Visit /app for the UI or /health for status."}
+
+
+# OPTIONS catch-all: some scanners send OPTIONS without the usual preflight
+# headers which Starlette may treat as a bad request. Return 200 OK for
+# OPTIONS on any path to reduce 400 logs from malformed probes.
+@app.options("/{path:path}")
+def options_handler(path: str):
+    return JSONResponse(status_code=200, content={})
 
 # lazy globals
 _driver = None

@@ -41,7 +41,7 @@ const friendlyType = (t) => {
 const friendlyRelation = (r) => FRIENDLY_RELATIONS[r] ?? r;
 const sectionIds = ["hero", "graph", "assist", "work"];
 const primaryButtonClass =
-  "bg-sky-500 text-white hover:bg-sky-400 focus-visible:ring-sky-200 focus-visible:ring-2 ring-offset-1";
+  "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 focus-visible:ring-[var(--ring)] focus-visible:ring-2 ring-offset-1";
 
 // Minimal message bubble
 function ChatBubble({ role, text }) {
@@ -49,7 +49,7 @@ function ChatBubble({ role, text }) {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-snug shadow-sm ${isUser ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-900"}`}
+        className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-snug shadow-sm ${isUser ? "bg-[var(--chart-1)] text-[var(--foreground)]" : "bg-[var(--card)] text-[var(--card-foreground)]"}`}
       >
         {text}
       </div>
@@ -462,15 +462,15 @@ export default function FacilityTwin_MVP_UI() {
   const recentMessages = messages.slice(-6);
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-100 text-slate-900">
-      <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-8 py-5 shadow-sm">
-        <Factory className="h-6 w-6" />
+    <div className="flex min-h-screen flex-col bg-[#240046] text-[#F5EBFF]">
+      <header className="flex items-center gap-3 border-b border-[#3F1A56] bg-[#2E0C4A] px-8 py-5 shadow-sm">
+        <Factory className="h-6 w-6 text-[#FF6D00]" />
         <div>
           <h1 className="text-xl font-semibold">RiG <em>it</em></h1>
-          <p className="text-xs text-slate-500">Monitor, explore, and act across your facility in one console.</p>
+          <p className="text-xs text-[#CBBFE8]">Monitor, explore, and act across your facility in one console.</p>
         </div>
-        <Badge className="ml-2">GraphRAG + IFC</Badge>
-        <div className="ml-auto flex items-center gap-2 text-xs">
+        <Badge className="ml-2 bg-[#5A189A] text-[#F5EBFF]">GraphRAG + IFC</Badge>
+        <div className="ml-auto flex items-center gap-2 text-xs text-[#F5EBFF]">
           <Badge className={pill(!!health)}>
             <Database className="mr-1 h-3 w-3" /> API
           </Badge>
