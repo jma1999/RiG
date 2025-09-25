@@ -75,19 +75,6 @@ function useLocalOrders() {
   return [orders, setOrders];
 }
 
-const COUNT_LEXICON = {
-  window: ["IfcWindow"],
-  windows: ["IfcWindow"],
-  door: ["IfcDoor"],
-  doors: ["IfcDoor"],
-  wall: ["IfcWall", "IfcWallStandardCase"],
-  walls: ["IfcWall", "IfcWallStandardCase"],
-  terminal: ["IfcDuctTerminal", "IfcDistributionTerminal"],
-  terminals: ["IfcDuctTerminal", "IfcDistributionTerminal"],
-  diffuser: ["IfcDuctTerminal"],
-  diffusers: ["IfcDuctTerminal"],
-};
-
 export default function FacilityTwin_MVP_UI() {
   // Health/Status
   const [health, setHealth] = useState(null);
@@ -188,15 +175,6 @@ export default function FacilityTwin_MVP_UI() {
     [addMsg]
   );
 
-  const pickCountTypes = useCallback((text) => {
-    const lo = text.toLowerCase();
-    if (!/^how\s+many\b/.test(lo)) return null;
-    for (const key of Object.keys(COUNT_LEXICON)) {
-      if (lo.includes(key)) return COUNT_LEXICON[key];
-    }
-    return null;
-  }, []);
-
   const runQuery = useCallback(
     async (incomingText) => {
       const raw = incomingText ?? q;
@@ -207,88 +185,85 @@ export default function FacilityTwin_MVP_UI() {
       }
 
       addMsg({ role: "user", text });
+      setBusy(true);
 
-    const countTypes = pickCountTypes(text);
-    setBusy(true);
+      try {
+        const res = await fetch(api("/chat"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: text,
+            history: messages.map((m) => ({ role: m.role, content: m.text })),
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || JSON.stringify(data));
 
-    try {
-      if (countTypes) {
-        const parts = [];
-        let total = 0;
-        for (const t of countTypes) {
-          const r = await fetch(api(`/count?type=${encodeURIComponent(t)}`));
-          const d = await r.json();
-          if (!r.ok) throw new Error(d.detail || d.error || JSON.stringify(d));
-          const c = d.total ?? d.count ?? 0;
-          parts.push(`${t}: ${c}`);
-          total += c;
+        const tool = data.tool || {};
+        if (tool.action === "count") {
+          setHits([]);
+          setGraphData({ nodes: [], links: [] });
+          setAsset(null);
+          addMsg({ role: "assistant", text: data.reply });
+        } else if (tool.action === "search") {
+          const hitsPayload = (tool.hits || []).map((h) => ({
+            ...h,
+            friendlyType: friendlyType(h.type),
+          }));
+          setHits(hitsPayload);
+          setActivePanel("graph");
+          setActiveSection("graph");
+
+          const nodes = [];
+          const links = [];
+          const seen = new Set();
+          (tool.subgraphs || []).forEach((sg) => {
+            (sg.nodes || []).forEach((n) => {
+              if (seen.has(n.id)) return;
+              seen.add(n.id);
+              nodes.push({
+                id: n.id,
+                name: n.name || "(unnamed)",
+                type: n.type || "",
+                friendlyType: friendlyType(n.type || ""),
+                source: n.source || "",
+              });
+            });
+            (sg.edges || []).forEach((e) => {
+              links.push({
+                source: e.src,
+                target: e.dst,
+                type: e.type,
+                friendlyType: friendlyRelation(e.type),
+              });
+            });
+          });
+
+          const degree = {};
+          links.forEach((edge) => {
+            if (edge.source) degree[edge.source] = (degree[edge.source] || 0) + 1;
+            if (edge.target) degree[edge.target] = (degree[edge.target] || 0) + 1;
+          });
+          const enrichedNodes = nodes.map((n) => ({ ...n, degree: degree[n.id] || 0 }));
+
+          setGraphData({ nodes: enrichedNodes, links });
+
+          const primary = hitsPayload[0]?.id || enrichedNodes[0]?.id;
+          if (primary) await openAsset(primary);
+
+          addMsg({ role: "assistant", text: data.reply });
+        } else {
+          addMsg({ role: "assistant", text: data.reply || "I’m here if you need anything else." });
         }
-        addMsg({ role: "assistant", text: `Total ${total} (${parts.join(", ")})` });
-        setHits([]);
-        setGraphData({ nodes: [], links: [] });
-        setAsset(null);
-        return;
+      } catch (e) {
+        console.error(e);
+        addMsg({ role: "assistant", text: `Error: ${String(e.message || e)}` });
+      } finally {
+        setBusy(false);
       }
-
-      const res = await fetch(api(`/search?q=${encodeURIComponent(text)}&k=${k}&hops=${hops}`));
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || JSON.stringify(data));
-
-      const formattedHits = (data.hits || []).map((h) => ({
-        ...h,
-        friendlyType: friendlyType(h.type),
-      }));
-      setHits(formattedHits);
-      setActivePanel("graph");
-      setActiveSection("graph");
-
-      const nodes = [];
-      const links = [];
-      const seen = new Set();
-      (data.subgraphs || []).forEach((sg) => {
-        (sg.nodes || []).forEach((n) => {
-          if (seen.has(n.id)) return;
-          seen.add(n.id);
-          nodes.push({
-            id: n.id,
-            name: n.name || "(unnamed)",
-            type: n.type || "",
-            friendlyType: friendlyType(n.type || ""),
-            source: n.source || "",
-          });
-        });
-        (sg.edges || []).forEach((e) => {
-          links.push({
-            source: e.src,
-            target: e.dst,
-            type: e.type,
-            friendlyType: friendlyRelation(e.type),
-          });
-        });
-      });
-
-      const degree = {};
-      links.forEach((edge) => {
-        if (edge.source) degree[edge.source] = (degree[edge.source] || 0) + 1;
-        if (edge.target) degree[edge.target] = (degree[edge.target] || 0) + 1;
-      });
-      const enrichedNodes = nodes.map((n) => ({ ...n, degree: degree[n.id] || 0 }));
-
-      setGraphData({ nodes: enrichedNodes, links });
-      addMsg({
-        role: "assistant",
-        text: `Found ${data.hits?.length || 0} hits; expanded ${data.subgraphs?.length || 0} neighborhoods.`,
-      });
-
-      const primary = data.hits?.[0]?.id || enrichedNodes[0]?.id;
-      if (primary) await openAsset(primary);
-    } catch (e) {
-      console.error(e);
-      addMsg({ role: "assistant", text: `Error: ${String(e.message || e)}` });
-    } finally {
-      setBusy(false);
-    }
-  }, [addMsg, k, hops, openAsset, pickCountTypes, q]);
+    },
+    [addMsg, messages, openAsset, q]
+  );
 
   const handleSelectedNeighbors = useCallback(() => {
     if (!selectedIfc) return;
