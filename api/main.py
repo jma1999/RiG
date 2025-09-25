@@ -24,14 +24,25 @@ os.environ.setdefault("TRANSFORMERS_NO_TORCH_FLEX_ATTENTION", "1")
 
 app = FastAPI(title="RiG GraphRAG API", version="0.1")
 app.mount("/app", StaticFiles(directory="web", html=True), name="app")
+allowed_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://gemino.pro",
+    "https://gemino-ffw7smvjc-jma1999s-projects.vercel.app",
+    "https://gemino-ash6crwcm-jma1999s-projects.vercel.app",
+]
+
+extra_origins = os.getenv("FRONTEND_ORIGINS")
+if extra_origins:
+    allowed_origins.extend(
+        origin.strip()
+        for origin in extra_origins.split(",")
+        if origin.strip()
+    )
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://gemino.pro",
-        "https://gemino-ffw7smvjc-jma1999s-projects.vercel.app",
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
