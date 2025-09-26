@@ -16,41 +16,41 @@
   -moz-osx-font-smoothing: grayscale;
   --radius: 0.625rem;
 
-  /* Dark palette derived from provided image */
-  --background: #0F4C5C; /* midnight green as base */
-  --foreground: #F5EBFF; /* light foreground */
-  --card: #5F0F40; /* tyrian purple */
-  --card-foreground: #F5EBFF;
-  --popover: #5F0F40;
-  --popover-foreground: #F5EBFF;
+  /* VS Code-like dark theme */
+  --background: #1e1e1e;
+  --foreground: #d4d4d4;
+  --card: #252526;
+  --card-foreground: #d4d4d4;
+  --popover: #2d2d2d;
+  --popover-foreground: #d4d4d4;
 
-  --primary: #FB8B24; /* UT orange */
-  --primary-foreground: #0F1A1E;
-  --secondary: #9A031E; /* carmine */
-  --secondary-foreground: #F5EBFF;
-  --muted: #3A2A33;
-  --muted-foreground: #CBBFE8;
-  --accent: #E36414; /* spanish orange */
-  --accent-foreground: #0F1A1E;
-  --destructive: #E63946;
-  --border: #4A2A3A;
-  --input: #4A2A3A;
-  --ring: #FB8B24;
+  --primary: #007acc; /* VS Code blue */
+  --primary-foreground: #ffffff;
+  --secondary: #0066b8;
+  --secondary-foreground: #e6f2ff;
+  --muted: #2a2a2a;
+  --muted-foreground: #9a9a9a;
+  --accent: #c586c0;
+  --accent-foreground: #1e1e1e;
+  --destructive: #d16969;
+  --border: #3c3c3c;
+  --input: #333333;
+  --ring: #0a84ff;
 
-  --chart-1: #FB8B24;
-  --chart-2: #E36414;
-  --chart-3: #9A031E;
-  --chart-4: #5F0F40;
-  --chart-5: #0F4C5C;
+  --chart-1: #007acc;
+  --chart-2: #9cdcfe;
+  --chart-3: #c586c0;
+  --chart-4: #6a9955;
+  --chart-5: #dcdcaa;
 
-  --sidebar: #0F4C5C; /* midnight green */
-  --sidebar-foreground: #F5EBFF;
-  --sidebar-primary: #FB8B24;
-  --sidebar-primary-foreground: #0F1A1E;
-  --sidebar-accent: #9A031E;
-  --sidebar-accent-foreground: #F5EBFF;
-  --sidebar-border: #2E3B3F;
-  --sidebar-ring: #FB8B24;
+  --sidebar: #252526;
+  --sidebar-foreground: #d4d4d4;
+  --sidebar-primary: #007acc;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #9cdcfe;
+  --sidebar-accent-foreground: #1e1e1e;
+  --sidebar-border: #2b2b2b;
+  --sidebar-ring: #007acc;
 }
 
 a {

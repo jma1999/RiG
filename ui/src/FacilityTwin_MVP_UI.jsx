@@ -462,7 +462,7 @@ export default function FacilityTwin_MVP_UI() {
   const recentMessages = messages.slice(-6);
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#240046] text-[#F5EBFF]">
+    <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
       <header className="flex items-center gap-3 border-b border-[#3F1A56] bg-[#2E0C4A] px-8 py-5 shadow-sm">
         <Factory className="h-6 w-6 text-[#FF6D00]" />
         <div>
@@ -526,12 +526,13 @@ export default function FacilityTwin_MVP_UI() {
                     : "border-slate-200 shadow-lg opacity-90"
                 )}
               >
-                <div className="relative flex-1 overflow-hidden bg-gradient-to-br from-slate-100 via-slate-50 to-white">
+                <div className="relative flex-1 overflow-hidden bg-gradient-to-br from-[var(--card)] to-[var(--popover)]">
                   <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(148,163,184,0.18),_transparent_60%)]" />
                   <div className="pointer-events-none absolute inset-y-12 inset-x-16 rounded-[38px] border border-white/60 shadow-[0_30px_120px_-40px_rgba(15,23,42,0.35)]" />
-                  <div ref={ifcContainerRef} className="relative z-10 h-full w-full" />
+                  {/* IFC viewer lives behind overlays; lower z-index to avoid overlapping footer/chat */}
+                  <div ref={ifcContainerRef} className="absolute inset-0 z-0 h-full w-full" />
                   {!defaultIfcLoadedRef.current && (
-                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-20">
                       <div className="rounded-3xl border border-slate-200 bg-white/80 px-6 py-5 text-center shadow-lg backdrop-blur">
                         <div className="text-xs uppercase tracking-wide text-slate-400">IFC viewer</div>
                         <div className="mt-2 text-lg font-semibold text-slate-700">Loading facility model…</div>
@@ -540,8 +541,8 @@ export default function FacilityTwin_MVP_UI() {
                     </div>
                   )}
                 </div>
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white" />
-                <div className="absolute left-6 top-6 space-y-2 rounded-2xl bg-white/85 px-4 py-3 text-sm shadow-md">
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[var(--card)] to-transparent z-10" />
+                <div className="absolute left-6 top-6 space-y-2 rounded-2xl bg-[color-mix(in, var(--popover) 85%, transparent)] px-4 py-3 text-sm shadow-md z-30">
                   <div className="text-xs uppercase tracking-wide text-slate-400">Facility</div>
                   <div className="text-base font-semibold">Building Twin</div>
                   <div className="flex gap-3 text-xs text-slate-500">
@@ -549,7 +550,7 @@ export default function FacilityTwin_MVP_UI() {
                     <span>{graphData.links.length} links</span>
                   </div>
                 </div>
-                <div className="absolute right-6 top-6 z-20 flex flex-col items-end gap-3">
+                  <div className="absolute right-6 top-6 z-40 flex flex-col items-end gap-3">
                   <div className="flex flex-wrap justify-end gap-2">
                     {decisionActions.map((action) => (
                       <button
@@ -563,7 +564,7 @@ export default function FacilityTwin_MVP_UI() {
                     ))}
                   </div>
                   {(selectedIfc || asset) && (
-                    <div className="absolute bottom-6 right-6 w-80 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur">
+                    <div className="absolute bottom-6 right-6 w-80 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-xl backdrop-blur z-50">
                       <div className="flex items-center justify-between text-xs text-slate-400">
                         <span>Selected element</span>
                         <button
@@ -617,7 +618,7 @@ export default function FacilityTwin_MVP_UI() {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="flex-1 overflow-hidden rounded-b-[22px] bg-white p-0">
-                        <div ref={graphContainerRef} className="h-full min-h-[520px] w-full">
+                        <div ref={graphContainerRef} className="h-full min-h-[420px] w-full" style={{minHeight: 420}}>
                           {graphSize.width > 0 && graphSize.height > 0 && (
                             <ForceGraph2D
                               graphData={graphData}
@@ -860,14 +861,14 @@ export default function FacilityTwin_MVP_UI() {
         </main>
       </div>
 
-      <footer className="sticky bottom-0 border-t border-slate-200 bg-white/95 px-6 py-5 backdrop-blur">
+  <footer className="sticky bottom-0 border-t border-[var(--border)] bg-[rgba(30,30,30,0.85)] px-6 py-5 backdrop-blur z-50">
         <div className="mx-auto max-w-[1400px] space-y-3">
           <div className="flex gap-2 overflow-x-auto pb-1">
             {recentMessages.map((m, i) => (
               <div
                 key={`${m.role}-${i}`}
                 className={`min-w-[200px] rounded-2xl px-4 py-3 text-xs shadow-sm ${
-                  m.role === "user" ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-800"
+                  m.role === "user" ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "bg-[var(--card)] text-[var(--card-foreground)]"
                 }`}
               >
                 <div className="mb-1 font-medium uppercase tracking-wide text-[10px] opacity-70">
