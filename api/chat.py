@@ -15,7 +15,13 @@ from api.main import (
 
 router = APIRouter()
 
-client = Groq(api_key=os.environ["GROQ_API_KEY"])
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+client = None
+if GROQ_API_KEY:
+    try:
+        client = Groq(api_key=GROQ_API_KEY)
+    except Exception:
+        client = None
 
 LLAMA_MODEL = "llama3-70b-8192"
 SYSTEM_PROMPT = (
@@ -93,15 +99,26 @@ async def chat_endpoint(request: ChatRequest):
         }
     )
 
-    completion = client.chat.completions.create(
-        model=LLAMA_MODEL,
-        messages=history,
-        temperature=0.4,
-        max_tokens=600,
-    )
-    reply = completion.choices[0].message.content
+    # If the Groq client or API key isn't configured, return a graceful
+    # fallback that includes the tool summary so the UI still gets useful
+    # information.
+    if not client:
+        reply = tool_summary + "\n\n[LLM not configured: set GROQ_API_KEY to enable natural language replies.]"
+        return {"reply": reply, "tool": tool_payload}
 
-    return {"reply": reply, "tool": tool_payload}
+    try:
+        completion = client.chat.completions.create(
+            model=LLAMA_MODEL,
+            messages=history,
+            temperature=0.4,
+            max_tokens=600,
+        )
+        reply = completion.choices[0].message.content
+        return {"reply": reply, "tool": tool_payload}
+    except Exception as e:
+        # Return tool summary with an error note if the API call fails.
+        reply = tool_summary + f"\n\n[LLM request failed: {str(e)}]"
+        return {"reply": reply, "tool": tool_payload}
 
 
 app.include_router(router)

@@ -463,13 +463,13 @@ export default function FacilityTwin_MVP_UI() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
-      <header className="flex items-center gap-3 border-b border-[#3F1A56] bg-[#2E0C4A] px-8 py-5 shadow-sm">
-        <Factory className="h-6 w-6 text-[#FF6D00]" />
+      <header className="flex items-center gap-3 border-b border-[var(--sidebar-border)] bg-[var(--sidebar)] px-6 py-4 shadow-sm">
+        <Factory className="h-6 w-6 text-[var(--sidebar-primary)]" />
         <div>
           <h1 className="text-xl font-semibold">RiG <em>it</em></h1>
-          <p className="text-xs text-[#CBBFE8]">Monitor, explore, and act across your facility in one console.</p>
+          <p className="text-xs text-[var(--sidebar-foreground)]">Monitor, explore, and act across your facility in one console.</p>
         </div>
-        <Badge className="ml-2 bg-[#5A189A] text-[#F5EBFF]">GraphRAG + IFC</Badge>
+        <Badge className="ml-2 bg-[var(--sidebar-accent)] text-[var(--sidebar-foreground)]">GraphRAG + IFC</Badge>
         <div className="ml-auto flex items-center gap-2 text-xs text-[#F5EBFF]">
           <Badge className={pill(!!health)}>
             <Database className="mr-1 h-3 w-3" /> API
@@ -484,16 +484,16 @@ export default function FacilityTwin_MVP_UI() {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="hidden w-24 flex-col justify-between border-r border-slate-200 bg-white/70 px-4 py-8 xl:flex">
+        <aside className="hidden w-24 flex-col justify-between border-r border-[var(--sidebar-border)] bg-[var(--sidebar)] px-2 py-6 xl:flex text-[var(--sidebar-foreground)]">
           <div className="space-y-6">
             {railActions.map(({ icon: Icon, label, target }) => (
               <button
                 key={label}
                 className={cn(
-                  "flex w-full flex-col items-center justify-center gap-1.5 rounded-2xl border px-3 py-4 text-[11px] font-semibold leading-tight shadow-sm transition whitespace-normal text-center",
+                  "flex w-full flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-3 text-xs font-medium leading-tight shadow-sm transition text-center",
                   activeSection === target
-                    ? "border-sky-300 bg-sky-500 text-white shadow-lg"
-                    : "border-slate-200 bg-white/85 text-slate-500 hover:bg-sky-100 hover:text-sky-700"
+                    ? "border-[var(--sidebar-primary)] bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] shadow-lg"
+                    : "border-[var(--sidebar-border)] bg-[var(--sidebar)] text-[var(--sidebar-foreground)] hover:bg-[color-mix(in, var(--sidebar-primary) 8%, var(--sidebar))]"
                 )}
                 type="button"
                 onClick={() => {
@@ -504,7 +504,7 @@ export default function FacilityTwin_MVP_UI() {
                 }}
               >
                 <Icon className="h-5 w-5" />
-                {label}
+                <span className="mt-1 text-[11px]">{label}</span>
               </button>
             ))}
           </div>
@@ -520,10 +520,10 @@ export default function FacilityTwin_MVP_UI() {
               <section
                 id="rig-section-hero"
                 className={cn(
-                  "relative flex min-h-[calc(100vh-200px)] flex-col overflow-hidden rounded-3xl border bg-white transition-all duration-300",
+                  "relative flex min-h-[calc(100vh-200px)] flex-col overflow-hidden rounded-3xl border bg-[var(--card)] transition-all duration-300",
                   activeSection === "hero"
-                    ? "border-emerald-200 shadow-xl ring-2 ring-emerald-200"
-                    : "border-slate-200 shadow-lg opacity-90"
+                    ? "border-[var(--primary)] shadow-xl ring-2 ring-[var(--primary)]"
+                    : "border-[var(--border)] shadow-lg opacity-95"
                 )}
               >
                 <div className="relative flex-1 overflow-hidden bg-gradient-to-br from-[var(--card)] to-[var(--popover)]">
@@ -533,30 +533,30 @@ export default function FacilityTwin_MVP_UI() {
                   <div ref={ifcContainerRef} className="absolute inset-0 z-0 h-full w-full" />
                   {!defaultIfcLoadedRef.current && (
                     <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-20">
-                      <div className="rounded-3xl border border-slate-200 bg-white/80 px-6 py-5 text-center shadow-lg backdrop-blur">
-                        <div className="text-xs uppercase tracking-wide text-slate-400">IFC viewer</div>
-                        <div className="mt-2 text-lg font-semibold text-slate-700">Loading facility model…</div>
-                        <div className="mt-2 text-xs text-slate-500">Drop an IFC file or wait for the default sample.</div>
+                        <div className="rounded-3xl border border-[var(--border)] bg-[var(--popover)]/95 px-6 py-5 text-center shadow-lg">
+                          <div className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">IFC viewer</div>
+                          <div className="mt-2 text-lg font-semibold text-[var(--foreground)]">Loading facility model…</div>
+                          <div className="mt-2 text-xs text-[var(--muted-foreground)]">Drop an IFC file or wait for the default sample.</div>
+                        </div>
                       </div>
-                    </div>
                   )}
                 </div>
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[var(--card)] to-transparent z-10" />
-                <div className="absolute left-6 top-6 space-y-2 rounded-2xl bg-[color-mix(in, var(--popover) 85%, transparent)] px-4 py-3 text-sm shadow-md z-30">
-                  <div className="text-xs uppercase tracking-wide text-slate-400">Facility</div>
+                <div className="absolute left-6 top-6 space-y-2 rounded-2xl bg-[var(--popover)] px-4 py-3 text-sm shadow-md z-30">
+                  <div className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">Facility</div>
                   <div className="text-base font-semibold">Building Twin</div>
-                  <div className="flex gap-3 text-xs text-slate-500">
+                  <div className="flex gap-3 text-xs text-[var(--muted-foreground)]">
                     <span>{graphData.nodes.length} nodes</span>
                     <span>{graphData.links.length} links</span>
                   </div>
                 </div>
                   <div className="absolute right-6 top-6 z-40 flex flex-col items-end gap-3">
-                  <div className="flex flex-wrap justify-end gap-2">
+                    <div className="flex flex-wrap justify-end gap-2">
                     {decisionActions.map((action) => (
                       <button
                         key={action.label}
                         type="button"
-                        className="rounded-full border border-sky-200 bg-white/90 px-4 py-2 text-xs font-semibold text-sky-700 shadow-sm backdrop-blur transition hover:border-sky-300 hover:bg-sky-100"
+                        className="rounded-full border border-[var(--border)] bg-[var(--popover)] px-4 py-2 text-xs font-semibold text-[var(--foreground)] shadow-sm transition hover:border-[var(--primary)]"
                         onClick={() => runQuery(action.prompt)}
                       >
                         {action.label}
@@ -564,21 +564,21 @@ export default function FacilityTwin_MVP_UI() {
                     ))}
                   </div>
                   {(selectedIfc || asset) && (
-                    <div className="absolute bottom-6 right-6 w-80 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-xl backdrop-blur z-50">
-                      <div className="flex items-center justify-between text-xs text-slate-400">
+                    <div className="absolute bottom-6 right-6 w-80 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-xl z-50">
+                      <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)]">
                         <span>Selected element</span>
                         <button
                           type="button"
-                          className="text-slate-400 transition hover:text-slate-600"
+                          className="text-[var(--muted-foreground)] transition hover:text-[var(--foreground)]"
                           onClick={clearSelectedIfc}
                         >
                           Clear
                         </button>
                       </div>
-                      <div className="mt-2 text-lg font-semibold text-slate-800">
+                      <div className="mt-2 text-lg font-semibold text-[var(--foreground)]">
                         {selectedIfc?.name || asset?.name || "(unnamed)"}
                       </div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-[var(--muted-foreground)]">
                         {friendlyType(selectedIfc?.typeName || asset?.type)}
                       </div>
                       <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
@@ -610,14 +610,14 @@ export default function FacilityTwin_MVP_UI() {
 
               <aside className="relative" id="rig-section-panel">
                 <div className="sticky top-6 space-y-4">
-                  {activePanel === "graph" && (
-                    <Card className="min-h-[calc(100vh-240px)] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg transition-all">
+                    {activePanel === "graph" && (
+                    <Card className="min-h-[calc(100vh-240px)] overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-lg transition-all">
                       <CardHeader className="flex items-center justify-between py-3">
                         <CardTitle className="flex items-center gap-2 text-base">
                           <Network className="h-4 w-4" /> Model Graph
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="flex-1 overflow-hidden rounded-b-[22px] bg-white p-0">
+                      <CardContent className="flex-1 overflow-hidden rounded-b-[22px] bg-[var(--card)] p-0">
                         <div ref={graphContainerRef} className="h-full min-h-[420px] w-full" style={{minHeight: 420}}>
                           {graphSize.width > 0 && graphSize.height > 0 && (
                             <ForceGraph2D
@@ -637,12 +637,12 @@ export default function FacilityTwin_MVP_UI() {
                   )}
 
                   {activePanel === "assist" && (
-                    <Card className="max-h-[calc(100vh-200px)] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
+                    <Card className="max-h-[calc(100vh-200px)] overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-lg">
                       <CardHeader className="py-3">
                         <CardTitle className="text-base">Asset Details</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3 overflow-auto pr-2">
-                        {!asset && <div className="text-sm text-slate-500">Select a node, hit, or work order to view details.</div>}
+                        {!asset && <div className="text-sm text-[var(--muted-foreground)]">Select a node, hit, or work order to view details.</div>}
                         {asset && (
                           <div className="space-y-3">
                             <div className="text-xs text-slate-400">{asset.id}</div>
@@ -653,20 +653,20 @@ export default function FacilityTwin_MVP_UI() {
                             </div>
                             <div className="grid grid-cols-3 gap-2 text-sm">
                               {asset.x !== undefined && (
-                                <div className="rounded-lg bg-slate-100 px-2 py-1">
-                                  <div className="text-xs uppercase text-slate-500">coord.x</div>
+                                <div className="rounded-lg bg-[var(--popover)] px-2 py-1">
+                                  <div className="text-xs uppercase text-[var(--muted-foreground)]">coord.x</div>
                                   <div className="font-mono text-sm">{Math.round(asset.x)}</div>
                                 </div>
                               )}
                               {asset.y !== undefined && (
-                                <div className="rounded-lg bg-slate-100 px-2 py-1">
-                                  <div className="text-xs uppercase text-slate-500">coord.y</div>
+                                <div className="rounded-lg bg-[var(--popover)] px-2 py-1">
+                                  <div className="text-xs uppercase text-[var(--muted-foreground)]">coord.y</div>
                                   <div className="font-mono text-sm">{Math.round(asset.y)}</div>
                                 </div>
                               )}
                               {asset.z !== undefined && (
-                                <div className="rounded-lg bg-slate-100 px-2 py-1">
-                                  <div className="text-xs uppercase text-slate-500">coord.z</div>
+                                <div className="rounded-lg bg-[var(--popover)] px-2 py-1">
+                                  <div className="text-xs uppercase text-[var(--muted-foreground)]">coord.z</div>
                                   <div className="font-mono text-sm">{Math.round(asset.z)}</div>
                                 </div>
                               )}
@@ -674,7 +674,7 @@ export default function FacilityTwin_MVP_UI() {
                             {asset.psets && (
                               <div>
                                 <div className="text-sm font-medium">Property Sets</div>
-                                <pre className="max-h-48 overflow-auto rounded-xl bg-slate-100 p-3 text-xs">
+                                <pre className="max-h-48 overflow-auto rounded-xl bg-[var(--popover)] p-3 text-xs">
                                   {JSON.stringify(asset.psets, null, 2)}
                                 </pre>
                               </div>
@@ -685,8 +685,8 @@ export default function FacilityTwin_MVP_UI() {
                     </Card>
                   )}
 
-                  {activePanel === "graph" && (
-                    <Card className="max-h-[360px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
+                    {activePanel === "graph" && (
+                    <Card className="max-h-[360px] overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-lg">
                       <CardHeader className="py-3">
                         <CardTitle className="text-base">Related Hits</CardTitle>
                         <p className="text-xs text-slate-500">
@@ -697,33 +697,33 @@ export default function FacilityTwin_MVP_UI() {
                       </CardHeader>
                       <CardContent className="space-y-3 overflow-auto pr-2">
                         {!hits.length && (
-                          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                          <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--popover)] px-4 py-6 text-center text-sm text-[var(--muted-foreground)]">
                             Results will appear here once you ask the model about the facility.
                           </div>
                         )}
                         {hits.map((h, i) => (
                           <div
                             key={h.id || i}
-                            className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm transition hover:border-sky-200 hover:bg-sky-50"
+                            className="rounded-2xl border border-[var(--border)] bg-[var(--popover)] px-3 py-3 shadow-sm transition hover:border-[var(--primary)]"
                           >
                             <div className="flex items-center gap-2">
                               <div className="flex-1">
                                 <div className="font-semibold leading-tight">{h.name || "(unnamed)"}</div>
-                                <div className="text-xs text-slate-500">{h.id}</div>
+                                <div className="text-xs text-[var(--muted-foreground)]">{h.id}</div>
                               </div>
                               {typeof h.score === "number" && (
-                                <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-500">
+                                <span className="rounded-full bg-[var(--popover)] px-2 py-1 text-[11px] font-medium text-[var(--muted-foreground)]">
                                   {(h.score * 100).toFixed(1)}%
                                 </span>
                               )}
                             </div>
-                            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[var(--muted-foreground)]">
                               <Badge variant="outline">{h.friendlyType || friendlyType(h.type)}</Badge>
                               {h.storeys?.length ? (
-                                <span className="rounded-full bg-slate-100 px-2 py-1">{h.storeys.join(", ")}</span>
+                                <span className="rounded-full bg-[var(--popover)] px-2 py-1">{h.storeys.join(", ")}</span>
                               ) : null}
                               {h.rooms?.length ? (
-                                <span className="rounded-full bg-slate-100 px-2 py-1">{h.rooms.join(", ")}</span>
+                                <span className="rounded-full bg-[var(--popover)] px-2 py-1">{h.rooms.join(", ")}</span>
                               ) : null}
                             </div>
                             <div className="mt-3 flex gap-2">
@@ -755,7 +755,7 @@ export default function FacilityTwin_MVP_UI() {
                   )}
 
                   {activePanel === "work" && (
-                    <Card className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
+                    <Card className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-lg">
                       <CardHeader className="py-3">
                         <CardTitle className="flex items-center gap-2 text-base">
                           <Wrench className="h-4 w-4" /> Work Orders
@@ -764,18 +764,18 @@ export default function FacilityTwin_MVP_UI() {
                       <CardContent className="flex h-full flex-col gap-3">
                         <div className="grid grid-cols-6 items-end gap-2 text-xs">
                           <div className="col-span-3 space-y-1">
-                            <Label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Title</Label>
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Title</Label>
                             <Input
-                              className="bg-white"
+                              className="bg-[var(--card)]"
                               placeholder="title"
                               value={woDraft.title}
                               onChange={(e) => setWoDraft({ ...woDraft, title: e.target.value })}
                             />
                           </div>
                           <div className="col-span-1 space-y-1">
-                            <Label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Priority</Label>
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Priority</Label>
                             <Select value={woDraft.priority} onValueChange={(v) => setWoDraft({ ...woDraft, priority: v })}>
-                              <SelectTrigger className="bg-white">
+                              <SelectTrigger className="bg-[var(--card)]">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -787,9 +787,9 @@ export default function FacilityTwin_MVP_UI() {
                             </Select>
                           </div>
                           <div className="col-span-2 space-y-1">
-                            <Label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Asset ID</Label>
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Asset ID</Label>
                             <Input
-                              className="bg-white"
+                              className="bg-[var(--card)]"
                               placeholder="asset id"
                               value={woDraft.assetId}
                               onChange={(e) => setWoDraft({ ...woDraft, assetId: e.target.value })}
@@ -816,9 +816,9 @@ export default function FacilityTwin_MVP_UI() {
                           )}
                         </div>
                         <div className="flex-1 space-y-2 overflow-auto pr-1">
-                          {!orders.length && <div className="text-sm text-slate-500">No work orders.</div>}
+                          {!orders.length && <div className="text-sm text-[var(--muted-foreground)]">No work orders.</div>}
                           {orders.map((o) => (
-                            <div key={o.id} className="rounded-xl border border-slate-200 bg-white p-3 text-sm shadow-sm">
+                            <div key={o.id} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-3 text-sm shadow-sm">
                               <div className="flex items-center gap-2">
                                 <div className="font-medium">{o.title}</div>
                                 <Badge variant={o.priority === "Critical" ? "destructive" : "secondary"}>{o.priority}</Badge>
@@ -833,7 +833,7 @@ export default function FacilityTwin_MVP_UI() {
                                 )}
                               </div>
                               <div className="mt-2 flex items-center gap-2 text-xs">
-                                <span className="text-slate-500">{o.status}</span>
+                                <span className="text-[var(--muted-foreground)]">{o.status}</span>
                                 <Button
                                   size="xs"
                                   variant="outline"
@@ -861,14 +861,14 @@ export default function FacilityTwin_MVP_UI() {
         </main>
       </div>
 
-  <footer className="sticky bottom-0 border-t border-[var(--border)] bg-[rgba(30,30,30,0.85)] px-6 py-5 backdrop-blur z-50">
+  <footer className="sticky bottom-0 border-t border-[var(--border)] bg-[var(--card)] px-6 py-5 z-50">
         <div className="mx-auto max-w-[1400px] space-y-3">
           <div className="flex gap-2 overflow-x-auto pb-1">
             {recentMessages.map((m, i) => (
               <div
                 key={`${m.role}-${i}`}
                 className={`min-w-[200px] rounded-2xl px-4 py-3 text-xs shadow-sm ${
-                  m.role === "user" ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "bg-[var(--card)] text-[var(--card-foreground)]"
+                  m.role === "user" ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "bg-[var(--popover)] text-[var(--popover-foreground)]"
                 }`}
               >
                 <div className="mb-1 font-medium uppercase tracking-wide text-[10px] opacity-70">
@@ -881,12 +881,12 @@ export default function FacilityTwin_MVP_UI() {
 
           <div className="flex flex-col gap-3 md:flex-row md:items-end">
             <div className="flex-1 space-y-1">
-              <Label htmlFor="rig-query" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <Label htmlFor="rig-query" className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
                 Ask the model
               </Label>
               <Input
                 id="rig-query"
-                className="bg-white"
+                className="bg-[var(--card)]"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="How can we help with this facility?"
@@ -894,7 +894,7 @@ export default function FacilityTwin_MVP_UI() {
             </div>
             <div className="flex flex-wrap items-end gap-2">
               <div className="space-y-1">
-                <Label htmlFor="rig-k" className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                <Label htmlFor="rig-k" className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
                   Top-k
                 </Label>
                 <Input
@@ -903,13 +903,13 @@ export default function FacilityTwin_MVP_UI() {
                   inputMode="numeric"
                   min={1}
                   max={50}
-                  className="w-20 bg-white text-center"
+                  className="w-20 bg-[var(--card)] text-center"
                   value={k}
                   onChange={(e) => setK(Math.max(1, Number(e.target.value) || 10))}
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="rig-hops" className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                <Label htmlFor="rig-hops" className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
                   Hops
                 </Label>
                 <Input
@@ -918,7 +918,7 @@ export default function FacilityTwin_MVP_UI() {
                   inputMode="numeric"
                   min={1}
                   max={5}
-                  className="w-20 bg-white text-center"
+                  className="w-20 bg-[var(--card)] text-center"
                   value={hops}
                   onChange={(e) => setHops(Math.max(1, Number(e.target.value) || 2))}
                 />
