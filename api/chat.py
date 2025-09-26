@@ -23,7 +23,11 @@ if GROQ_API_KEY:
     except Exception:
         client = None
 
-LLAMA_MODEL = "llama3-70b-8192"
+# Model selection: allow overriding via env (GROQ_MODEL) and optional fallbacks
+# GROQ_MODEL_FALLBACKS may be a comma-separated list of alternative model names
+DEFAULT_GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama3-70b-8192")
+GROQ_MODEL_FALLBACKS = [m.strip() for m in (os.environ.get("GROQ_MODEL_FALLBACKS", "").split(",") if os.environ.get("GROQ_MODEL_FALLBACKS") else []) if m.strip()]
+PREFERRED_MODELS = [DEFAULT_GROQ_MODEL] + GROQ_MODEL_FALLBACKS
 SYSTEM_PROMPT = (
     "You are RiG’s facility assistant. "
     "You can access graph tools (count/search/asset) and must translate their "
@@ -106,19 +110,30 @@ async def chat_endpoint(request: ChatRequest):
         reply = tool_summary + "\n\n[LLM not configured: set GROQ_API_KEY to enable natural language replies.]"
         return {"reply": reply, "tool": tool_payload}
 
-    try:
-        completion = client.chat.completions.create(
-            model=LLAMA_MODEL,
-            messages=history,
-            temperature=0.4,
-            max_tokens=600,
-        )
-        reply = completion.choices[0].message.content
+    # Try preferred models in order; surface a clear error if all fail.
+    last_err = None
+    if not client:
+        reply = tool_summary + "\n\n[LLM not configured: set GROQ_API_KEY to enable natural language replies.]"
         return {"reply": reply, "tool": tool_payload}
-    except Exception as e:
-        # Return tool summary with an error note if the API call fails.
-        reply = tool_summary + f"\n\n[LLM request failed: {str(e)}]"
-        return {"reply": reply, "tool": tool_payload}
+
+    for model_name in PREFERRED_MODELS:
+        try:
+            completion = client.chat.completions.create(
+                model=model_name,
+                messages=history,
+                temperature=0.4,
+                max_tokens=600,
+            )
+            reply = completion.choices[0].message.content
+            return {"reply": reply, "tool": tool_payload}
+        except Exception as e:
+            # capture and try next fallback
+            last_err = e
+
+    # all attempts failed
+    err_msg = str(last_err) if last_err else "Unknown error"
+    reply = tool_summary + f"\n\n[LLM request failed after trying models {PREFERRED_MODELS}: {err_msg}]"
+    return {"reply": reply, "tool": tool_payload}
 
 
 app.include_router(router)

@@ -483,7 +483,7 @@ export default function FacilityTwin_MVP_UI() {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+  <div className="flex flex-1 overflow-hidden" style={{paddingBottom: 220}}>
         <aside className="hidden w-24 flex-col justify-between border-r border-[var(--sidebar-border)] bg-[var(--sidebar)] px-2 py-6 xl:flex text-[var(--sidebar-foreground)]">
           <div className="space-y-6">
             {railActions.map(({ icon: Icon, label, target }) => (
@@ -861,25 +861,27 @@ export default function FacilityTwin_MVP_UI() {
         </main>
       </div>
 
-  <footer className="sticky bottom-0 border-t border-[var(--border)] bg-[var(--card)] px-6 py-5 z-50">
-        <div className="mx-auto max-w-[1400px] space-y-3">
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {recentMessages.map((m, i) => (
-              <div
-                key={`${m.role}-${i}`}
-                className={`min-w-[200px] rounded-2xl px-4 py-3 text-xs shadow-sm ${
-                  m.role === "user" ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "bg-[var(--popover)] text-[var(--popover-foreground)]"
-                }`}
-              >
-                <div className="mb-1 font-medium uppercase tracking-wide text-[10px] opacity-70">
-                  {m.role === "user" ? "You" : "Assistant"}
+  <footer className="fixed left-0 right-0 bottom-0 border-t border-[var(--border)] bg-[var(--card)] px-6 py-4 z-50" style={{height: 220}}>
+        <div className="mx-auto max-w-[1400px] h-full flex flex-col">
+          <div className="flex-1 overflow-auto pb-2">
+            <div className="flex gap-2 pb-1">
+              {recentMessages.map((m, i) => (
+                <div
+                  key={`${m.role}-${i}`}
+                  className={`min-w-[200px] rounded-2xl px-4 py-3 text-xs shadow-sm ${
+                    m.role === "user" ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "bg-[var(--popover)] text-[var(--popover-foreground)]"
+                  }`}
+                >
+                  <div className="mb-1 font-medium uppercase tracking-wide text-[10px] opacity-70">
+                    {m.role === "user" ? "You" : "Assistant"}
+                  </div>
+                  {m.text}
                 </div>
-                {m.text}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
-          <div className="flex flex-col gap-3 md:flex-row md:items-end">
+          <div className="mt-2 flex-shrink-0 flex flex-col gap-3 md:flex-row md:items-end">
             <div className="flex-1 space-y-1">
               <Label htmlFor="rig-query" className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
                 Ask the model
