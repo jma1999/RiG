@@ -1,0 +1,35 @@
+# Minimal requirements to run the RiG backend and ingestion scripts.
+# Note: some packages (faiss, ifcopenshell) require platform-specific wheels or extra steps.
+# Install in a Python 3.11+ virtualenv. Example:
+# python -m venv .venv
+# source .venv/bin/activate
+# pip install -U pip setuptools wheel
+# pip install -r requirements.txt
+
+fastapi>=0.95.0
+uvicorn[standard]>=0.22.0
+pydantic>=1.10.0
+python-dotenv>=1.0.0
+numpy>=1.24.0
+pandas>=2.0.0
+neo4j>=5.7.0
+sentence-transformers>=2.2.2
+scikit-learn>=1.2.0
+faiss-cpu>=1.7.4  # or faiss-gpu if you have CUDA available; see Faiss install docs
+groq>=0.1.0  # groq python client
+requests>=2.31.0
+pillow>=9.5.0
+pytest>=7.4.0
+
+# IFC tools (optional; required for ingest scripts that parse IFC)
+# If you need ifcopenshell, use a platform wheel or conda package. Example (macOS/conda):
+# conda install -c conda-forge ifcopenshell
+# Or pip if a wheel exists for your platform:
+ifcopenshell>=0.8.0
+
+# Development / utility
+black>=24.3.0
+isort>=6.0.0
+flake8>=6.0.0
+
+# If you plan to run the frontend build commands from Python tasks, node and npm are required (install separately)
