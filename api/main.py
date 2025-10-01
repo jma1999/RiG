@@ -19,34 +19,21 @@ NEO4J_DB   = os.getenv("NEO4J_DATABASE", "neo4j")
 
 INDEX_PATH = os.getenv("RAG_INDEX_PATH", "data/processed/rag/index.faiss")
 META_PATH  = os.getenv("RAG_META_PATH",  "data/processed/rag/meta.json")
-MODEL_NAME = os.getenv("RAG_MODEL", "all-MiniLM-L6-v2")
+# Unify embedding model env var across repo
+MODEL_NAME = os.getenv("EMBEDDING_MODEL", os.getenv("RAG_MODEL", "sentence-transformers/all-MiniLM-L6-v2"))
 os.environ.setdefault("TRANSFORMERS_NO_TORCH_FLEX_ATTENTION", "1")
 
 app = FastAPI(title="RiG GraphRAG API", version="0.1")
 app.mount("/app", StaticFiles(directory="web", html=True), name="app")
-allowed_origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://gemino.pro",
-    "https://gemino-ffw7smvjc-jma1999s-projects.vercel.app",
-    "https://gemino-ash6crwcm-jma1999s-projects.vercel.app",
-    "https://gemino-pav0otpau-jma1999s-projects.vercel.app",
-]
 
+# CORS: prefer env-only; always allow localhost for dev
+cors_origins = []
 extra_origins = os.getenv("FRONTEND_ORIGINS")
 if extra_origins:
-    allowed_origins.extend(
-        origin.strip()
-        for origin in extra_origins.split(",")
-        if origin.strip()
-    )
-
-# In development you can set DEV_ALLOW_ALL_ORIGINS=1 to simplify CORS while
-# testing. In production prefer specifying `FRONTEND_ORIGINS` precisely.
+    cors_origins.extend([o.strip() for o in extra_origins.split(",") if o.strip()])
+cors_origins.extend(["http://localhost:5173", "http://127.0.0.1:5173"])  # dev convenience
 if os.getenv("DEV_ALLOW_ALL_ORIGINS") == "1":
     cors_origins = ["*"]
-else:
-    cors_origins = allowed_origins
 
 app.add_middleware(
     CORSMiddleware,
@@ -220,6 +207,27 @@ class AssetResponse(BaseModel):
     upstream: List[Dict[str, Any]]
     downstream: List[Dict[str, Any]]
     connected_degree: int
+
+# Work order models
+class WorkOrder(BaseModel):
+    id: str
+    title: str
+    priority: str = "Medium"
+    status: str = "Open"
+    assetId: Optional[str] = None
+    createdAt: Optional[str] = None
+    updatedAt: Optional[str] = None
+
+class WorkOrderCreate(BaseModel):
+    title: str
+    priority: str = "Medium"
+    assetId: Optional[str] = None
+
+class WorkOrderUpdate(BaseModel):
+    title: Optional[str] = None
+    priority: Optional[str] = None
+    status: Optional[str] = None
+    assetId: Optional[str] = None
 
 # ---------------- deps ----------------
 def get_driver():
@@ -502,3 +510,121 @@ def nearest(typeA: str, typeB: str, limit: int = 1):
 
 # register additional chat routes
 import api.chat  # noqa: E402  pylint: disable=wrong-import-position
+
+# ---------------- work orders ----------------
+def _ensure_workorder_indexes():
+    try:
+        neo4j_query("CREATE CONSTRAINT IF NOT EXISTS FOR (w:WorkOrder) REQUIRE w.id IS UNIQUE")
+        neo4j_query("CREATE INDEX IF NOT EXISTS FOR (n:IfcEntity) ON (n.globalId)")
+    except Exception:
+        pass
+
+_ensure_workorder_indexes()
+
+@app.post("/workorders", response_model=WorkOrder)
+def create_workorder(body: WorkOrderCreate):
+    import datetime, uuid
+    wid = uuid.uuid4().hex[:12]
+    now = datetime.datetime.utcnow().isoformat() + "Z"
+    params = {
+        "id": wid,
+        "title": body.title,
+        "priority": body.priority,
+        "status": "Open",
+        "createdAt": now,
+        "updatedAt": now,
+        "assetId": body.assetId,
+    }
+    neo4j_query(
+        """
+        MERGE (w:WorkOrder {id:$id})
+        SET w.title=$title, w.priority=$priority, w.status=$status,
+            w.createdAt=$createdAt, w.updatedAt=$updatedAt
+        """,
+        **params,
+    )
+    if body.assetId:
+        neo4j_query(
+            """
+            MATCH (w:WorkOrder {id:$id}), (a:IfcEntity {globalId:$aid})
+            MERGE (w)-[:FOR_ASSET]->(a)
+            """,
+            id=wid, aid=body.assetId,
+        )
+    rows = neo4j_query(
+        """
+        MATCH (w:WorkOrder {id:$id})
+        OPTIONAL MATCH (w)-[:FOR_ASSET]->(a:IfcEntity)
+        RETURN w AS w, a.globalId AS assetId
+        """,
+        id=wid,
+    )
+    w = dict(rows[0]["w"])
+    return WorkOrder(id=w["id"], title=w.get("title",""), priority=w.get("priority","Medium"), status=w.get("status","Open"), assetId=rows[0]["assetId"], createdAt=w.get("createdAt"), updatedAt=w.get("updatedAt"))
+
+@app.get("/workorders", response_model=List[WorkOrder])
+def list_workorders(status: Optional[str] = None, priority: Optional[str] = None, assetId: Optional[str] = None):
+    where = []
+    if status:
+        where.append("w.status=$status")
+    if priority:
+        where.append("w.priority=$priority")
+    if assetId:
+        where.append("a.globalId=$assetId")
+    wclause = ("WHERE " + " AND ".join(where)) if where else ""
+    q = f"""
+    MATCH (w:WorkOrder)
+    OPTIONAL MATCH (w)-[:FOR_ASSET]->(a:IfcEntity)
+    {wclause}
+    RETURN w AS w, a.globalId AS assetId
+    ORDER BY w.updatedAt DESC
+    """
+    rows = neo4j_query(q, status=status, priority=priority, assetId=assetId)
+    out: List[WorkOrder] = []
+    for r in rows:
+        w = dict(r["w"])
+        out.append(WorkOrder(id=w["id"], title=w.get("title",""), priority=w.get("priority","Medium"), status=w.get("status","Open"), assetId=r["assetId"], createdAt=w.get("createdAt"), updatedAt=w.get("updatedAt")))
+    return out
+
+@app.get("/workorders/{id}", response_model=WorkOrder)
+def get_workorder(id: str):
+    rows = neo4j_query(
+        """
+        MATCH (w:WorkOrder {id:$id})
+        OPTIONAL MATCH (w)-[:FOR_ASSET]->(a:IfcEntity)
+        RETURN w AS w, a.globalId AS assetId
+        """,
+        id=id,
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail="Work order not found")
+    w = dict(rows[0]["w"])
+    return WorkOrder(id=w["id"], title=w.get("title",""), priority=w.get("priority","Medium"), status=w.get("status","Open"), assetId=rows[0]["assetId"], createdAt=w.get("createdAt"), updatedAt=w.get("updatedAt"))
+
+@app.patch("/workorders/{id}", response_model=WorkOrder)
+def update_workorder(id: str, body: WorkOrderUpdate):
+    import datetime
+    now = datetime.datetime.utcnow().isoformat() + "Z"
+    sets = ["w.updatedAt=$now"]
+    params: Dict[str, Any] = {"id": id, "now": now}
+    if body.title is not None:
+        sets.append("w.title=$title"); params["title"] = body.title
+    if body.priority is not None:
+        sets.append("w.priority=$priority"); params["priority"] = body.priority
+    if body.status is not None:
+        sets.append("w.status=$status"); params["status"] = body.status
+    q = f"MATCH (w:WorkOrder {{id:$id}}) SET {', '.join(sets)} RETURN w"
+    rows = neo4j_query(q, **params)
+    if not rows:
+        raise HTTPException(status_code=404, detail="Work order not found")
+    if body.assetId is not None:
+        # re-link asset
+        neo4j_query("MATCH (w:WorkOrder {id:$id})-[r:FOR_ASSET]->() DELETE r", id=id)
+        if body.assetId:
+            neo4j_query("MATCH (w:WorkOrder {id:$id}), (a:IfcEntity {globalId:$aid}) MERGE (w)-[:FOR_ASSET]->(a)", id=id, aid=body.assetId)
+    return get_workorder(id)
+
+@app.delete("/workorders/{id}")
+def delete_workorder(id: str):
+    neo4j_query("MATCH (w:WorkOrder {id:$id}) DETACH DELETE w", id=id)
+    return {"ok": True}

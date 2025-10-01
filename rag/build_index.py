@@ -16,7 +16,8 @@ DB   = os.getenv("NEO4J_DATABASE", "neo4j")
 OUT_DIR = pathlib.Path("data/processed/rag")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-MODEL_NAME = os.getenv("EMB_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+# Use unified embedding model env used by the API
+MODEL_NAME = os.getenv("EMBEDDING_MODEL", os.getenv("EMB_MODEL", "sentence-transformers/all-MiniLM-L6-v2"))
 
 TOP_PSET_KEYS = {
     "Pset_Manufacturer.Manufacturer",

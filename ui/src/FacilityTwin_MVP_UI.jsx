@@ -57,22 +57,53 @@ function ChatBubble({ role, text }) {
   );
 }
 
-// Work orders kept in localStorage for the MVP
-function useLocalOrders() {
-  const [orders, setOrders] = useState(() => {
+// Work orders backed by API, with a tiny in-memory cache fallback
+function useWorkOrders() {
+  const [orders, setOrders] = useState([]);
+  const refresh = useCallback(async () => {
     try {
-      return JSON.parse(localStorage.getItem("rig_orders") || "[]");
+      const res = await fetch(api("/workorders"));
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || JSON.stringify(data));
+      setOrders(data || []);
     } catch (err) {
-      console.warn("Failed to parse cached work orders", err);
-      return [];
+      console.warn("Failed to load work orders", err);
     }
-  });
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem("rig_orders", JSON.stringify(orders));
-  }, [orders]);
+  const create = useCallback(async (draft) => {
+    const res = await fetch(api("/workorders"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(draft),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || JSON.stringify(data));
+    setOrders((prev) => [data, ...prev]);
+    return data;
+  }, []);
 
-  return [orders, setOrders];
+  const update = useCallback(async (id, patch) => {
+    const res = await fetch(api(`/workorders/${id}`), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || JSON.stringify(data));
+    setOrders((prev) => prev.map((o) => (o.id === id ? data : o)));
+    return data;
+  }, []);
+
+  const remove = useCallback(async (id) => {
+    const res = await fetch(api(`/workorders/${id}`), { method: "DELETE" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || JSON.stringify(data));
+    setOrders((prev) => prev.filter((o) => o.id !== id));
+    return data;
+  }, []);
+
+  return { orders, refresh, create, update, remove };
 }
 
 export default function FacilityTwin_MVP_UI() {
@@ -112,7 +143,7 @@ export default function FacilityTwin_MVP_UI() {
   const [activePanel, setActivePanel] = useState("graph");
 
   // Work orders
-  const [orders, setOrders] = useLocalOrders();
+  const { orders, refresh, create, update, remove } = useWorkOrders();
   const [woDraft, setWoDraft] = useState({ title: "", priority: "Medium", assetId: "" });
   const railActions = useMemo(
     () => [
@@ -133,8 +164,9 @@ export default function FacilityTwin_MVP_UI() {
       } catch (e) {
         setHealth({ error: String(e) });
       }
+      try { await refresh(); } catch {}
     })();
-  }, []);
+  }, [refresh]);
 
   const fetchAsset = useCallback(async (id) => {
     const res = await fetch(api(`/asset/${encodeURIComponent(id)}`));
@@ -801,10 +833,14 @@ export default function FacilityTwin_MVP_UI() {
                             size="sm"
                             variant="ghost"
                             className={primaryButtonClass}
-                            onClick={() => {
+                            onClick={async () => {
                               if (!woDraft.title) return;
-                              setOrders([{ id: Date.now().toString(36), status: "Open", ...woDraft }, ...orders]);
-                              setWoDraft({ title: "", priority: "Medium", assetId: woDraft.assetId });
+                              try {
+                                await create({ title: woDraft.title, priority: woDraft.priority, assetId: woDraft.assetId || undefined });
+                                setWoDraft({ title: "", priority: woDraft.priority, assetId: woDraft.assetId });
+                              } catch (err) {
+                                console.warn("Create failed", err);
+                              }
                             }}
                           >
                             <Plus className="mr-1 h-4 w-4" /> Add
@@ -837,13 +873,11 @@ export default function FacilityTwin_MVP_UI() {
                                 <Button
                                   size="xs"
                                   variant="outline"
-                                  onClick={() =>
-                                    setOrders(orders.map((x) => (x.id === o.id ? { ...x, status: "Done" } : x)))
-                                  }
+                                  onClick={async () => { try { await update(o.id, { status: "Done" }); } catch (e) {} }}
                                 >
                                   <CheckCircle2 className="mr-1 h-3 w-3" /> Mark done
                                 </Button>
-                                <Button size="xs" variant="ghost" onClick={() => setOrders(orders.filter((x) => x.id !== o.id))}>
+                                <Button size="xs" variant="ghost" onClick={async () => { try { await remove(o.id); } catch (e) {} }}>
                                   Delete
                                 </Button>
                               </div>

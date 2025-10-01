@@ -377,19 +377,19 @@ def main():
                         MERGE (x)-[:CONNECTED_TO]->(y)
                     """, a=a, b=b)
 
-            # Element connected to Element via ports
-            s.run("""
-            MATCH (e1)-[:HAS_PORT]->(p1:IfcDistributionPort)-[:PORT_CONNECTED_TO]->(p2:IfcDistributionPort)<-[:HAS_PORT]-(e2)
-            MERGE (e1)-[:CONNECTED_TO]->(e2)
-            """)
+        # Element connected to Element via ports (run once outside loop)
+        s.run("""
+        MATCH (e1)-[:HAS_PORT]->(p1:IfcDistributionPort)-[:PORT_CONNECTED_TO]->(p2:IfcDistributionPort)<-[:HAS_PORT]-(e2)
+        MERGE (e1)-[:CONNECTED_TO]->(e2)
+        """)
 
-            # Directed FEEDS when port directions are available
-            s.run("""
-            MATCH (src)-[:HAS_PORT]->(p:IfcDistributionPort)-[:PORT_CONNECTED_TO]->(q:IfcDistributionPort)<-[:HAS_PORT]-(dst)
-            WHERE toUpper(coalesce(p.flowDirection,'')) CONTAINS 'SOURCE'
-            AND toUpper(coalesce(q.flowDirection,'')) CONTAINS 'SINK'
-            MERGE (src)-[:FEEDS]->(dst)
-            """)
+        # Directed FEEDS when port directions are available (run once outside loop)
+        s.run("""
+        MATCH (src)-[:HAS_PORT]->(p:IfcDistributionPort)-[:PORT_CONNECTED_TO]->(q:IfcDistributionPort)<-[:HAS_PORT]-(dst)
+        WHERE toUpper(coalesce(p.flowDirection,'')) CONTAINS 'SOURCE'
+        AND toUpper(coalesce(q.flowDirection,'')) CONTAINS 'SINK'
+        MERGE (src)-[:FEEDS]->(dst)
+        """)
 
     # Close Neo4j driver
     driver.close()
