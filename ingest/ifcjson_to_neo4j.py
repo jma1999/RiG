@@ -205,10 +205,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("path", help="Path to ifcJSON file")
     parser.add_argument("--source", default=None, help="Logical source tag, e.g., Arch/Mech")
+    parser.add_argument("--batch-size", type=int, default=1000, help="Batch size for Neo4j writes")
     args = parser.parse_args()
 
     path = pathlib.Path(args.path)
     source = args.source or path.stem
+    batch_size = args.batch_size
 
     data = json.loads(path.read_text())
     inst = load_instances(data)
@@ -218,7 +220,19 @@ def main():
 
     # Start Neo4j session
     with driver.session(database=DB) as s:
-        # Pass 1: create nodes
+        # Create constraints and indexes for performance
+        print("🔧 Setting up constraints and indexes...")
+        try:
+            s.run("CREATE CONSTRAINT IF NOT EXISTS FOR (n:IfcEntity) REQUIRE n.globalId IS UNIQUE")
+            s.run("CREATE INDEX IF NOT EXISTS FOR (n:IfcEntity) ON (n.type)")
+            s.run("CREATE INDEX IF NOT EXISTS FOR (n:IfcEntity) ON (n.source)")
+            s.run("CREATE INDEX IF NOT EXISTS FOR (n:IfcEntity) ON (n.name)")
+        except Exception as e:
+            print(f"⚠️  Constraint/index creation failed (may already exist): {e}")
+
+        # Pass 1: create nodes in batches
+        print(f"📦 Creating nodes in batches of {batch_size}...")
+        node_batches = []
         for guid, obj in inst.items():
             if not isinstance(obj, dict):
                 continue
@@ -236,53 +250,31 @@ def main():
             attrs_json = json.dumps(attrs, ensure_ascii=False)
             flow_dir = attrs.get("FlowDirection") or obj.get("FlowDirection")
 
-            # MERGE by globalId
-            s.run(
-                """
-                MERGE (n:IfcEntity {globalId:$id})
-                ON CREATE SET
-                    n.name = $name,
-                    n.type = $ifc_type,
-                    n.source = $source,
-                    n.psets_json = $psets_json,
-                    n.attrs_json = $attrs_json,
-                    n.flowDirection = coalesce($flow_dir, n.flowDirection)
-                ON MATCH SET
-                    n.name = coalesce(n.name, $name),
-                    n.type = $ifc_type,
-                    n.source = coalesce(n.source, $source),
-                    n.psets_json = coalesce(n.psets_json, $psets_json),
-                    n.attrs_json = coalesce(n.attrs_json, $attrs_json),
-                    n.flowDirection = coalesce(n.flowDirection, $flow_dir)
-                SET n += $props_flat
-                """,
-                id=guid,
-                name=name,
-                ifc_type=ifc_type,
-                source=source,
-                psets_json=psets_json,
-                attrs_json=attrs_json,
-                flow_dir=flow_dir,
-                props_flat=props_flat,
-            )
+            node_batches.append({
+                "id": guid,
+                "name": name,
+                "ifc_type": ifc_type,
+                "source": source,
+                "psets_json": psets_json,
+                "attrs_json": attrs_json,
+                "flow_dir": flow_dir,
+                "props_flat": props_flat,
+                "labels": [ifc_type, label] + (["TERMINAL"] if ifc_type in TERMINAL_TYPES else [])
+            })
 
-            # 2) Add labels AFTER merge (safe even if they already exist)
-            # include :TERMINAL when the raw IFC type maps to a terminal
-            labels_list = [ifc_type, label]
-            if ifc_type in TERMINAL_TYPES:
-                labels_list.append("TERMINAL")
-            s.run(
-                """
-                MATCH (n:IfcEntity {globalId:$id})
-                CALL apoc.create.addLabels(n, $labels) YIELD node
-                RETURN node
-                """,
-                id=guid,
-                labels=labels_list,
-            )
-            created += 1
+            if len(node_batches) >= batch_size:
+                _batch_create_nodes(s, node_batches)
+                created += len(node_batches)
+                node_batches = []
 
-        # Pass 2: relationships (look for IfcRel*)
+        # Process remaining nodes
+        if node_batches:
+            _batch_create_nodes(s, node_batches)
+            created += len(node_batches)
+
+        # Pass 2: relationships in batches
+        print("🔗 Creating relationships in batches...")
+        rel_batches = []
         for guid, obj in inst.items():
             if not isinstance(obj, dict):
                 continue
@@ -305,23 +297,15 @@ def main():
                 for k in kids:
                     child = ref_id(k)
                     if parent and child:
-                        # (Spatial) -[:CONTAINS]-> (Element)
-                        s.run("""
-                            MATCH (a {globalId:$a}), (b {globalId:$b})
-                            MERGE (a)-[:CONTAINS]->(b)
-                        """, a=parent, b=child)
+                        rel_batches.append({"type": "CONTAINS", "parent": parent, "child": child})
             
-            # Handle other relationship types
             elif t == "IfcRelAggregates" and rso and ro:
                 parent = ref_id(rso)
                 kids = ro if isinstance(ro, list) else [ro]
                 for k in kids:
                     child = ref_id(k)
                     if parent and child:
-                        s.run("""
-                            MATCH (a {globalId:$a}), (b {globalId:$b})
-                            MERGE (a)-[:AGGREGATES]->(b)
-                        """, a=parent, b=child)
+                        rel_batches.append({"type": "AGGREGATES", "parent": parent, "child": child})
 
             elif t == "IfcRelServicesBuildings" and rb:
                 sys_ref = ref_id(obj.get("RelatingSystem") or obj.get("relatingSystem"))
@@ -329,10 +313,7 @@ def main():
                 for b in blds:
                     bld = ref_id(b)
                     if sys_ref and bld:
-                        s.run("""
-                            MATCH (sys {globalId:$s}), (bld {globalId:$b})
-                            MERGE (sys)-[:SERVICES]->(bld)
-                        """, s=sys_ref, b=bld)
+                        rel_batches.append({"type": "SERVICES", "parent": sys_ref, "child": bld})
 
             elif t == "IfcRelAssignsToGroup" and rg and ro:
                 sys_ref = ref_id(rg)
@@ -340,50 +321,44 @@ def main():
                 for o in objs:
                     el = ref_id(o)
                     if sys_ref and el:
-                        # (Element)-[:ASSIGNED_TO_SYSTEM]->(System)
-                        s.run("""
-                            MATCH (el {globalId:$e}), (sys {globalId:$s})
-                            MERGE (el)-[:ASSIGNED_TO_SYSTEM]->(sys)
-                        """, e=el, s=sys_ref)
+                        rel_batches.append({"type": "ASSIGNED_TO_SYSTEM", "parent": el, "child": sys_ref})
             
-            # Port attached to Element
             elif t == "IfcRelConnectsPortToElement":
                 rp = obj.get("RelatingPort") or obj.get("relatingPort")
                 re = obj.get("RelatedElement") or obj.get("relatedElement")
                 port = ref_id(rp); elem = ref_id(re)
                 if port and elem:
-                    s.run("""
-                        MATCH (e {globalId:$e}), (p {globalId:$p})
-                        MERGE (e)-[:HAS_PORT]->(p)
-                    """, e=elem, p=port)
+                    rel_batches.append({"type": "HAS_PORT", "parent": elem, "child": port})
 
-            # Port connected to Port (bidirectional)
             elif t == "IfcRelConnectsPorts":
                 pa = ref_id(obj.get("RelatingPort") or obj.get("relatingPort"))
                 pb = ref_id(obj.get("RelatedPort")  or obj.get("relatedPort"))
                 if pa and pb:
-                    s.run("""
-                        MATCH (a {globalId:$a}), (b {globalId:$b})
-                        MERGE (a)-[:PORT_CONNECTED_TO]->(b)
-                    """, a=pa, b=pb)
+                    rel_batches.append({"type": "PORT_CONNECTED_TO", "parent": pa, "child": pb})
 
-            # Element connected to Element (bidirectional)
             elif t == "IfcRelConnectsElements":
                 a = ref_id(obj.get("RelatingElement") or obj.get("relatingElement"))
                 b = ref_id(obj.get("RelatedElement")  or obj.get("relatedElement"))
                 if a and b:
-                    s.run("""
-                        MATCH (x {globalId:$a}), (y {globalId:$b})
-                        MERGE (x)-[:CONNECTED_TO]->(y)
-                    """, a=a, b=b)
+                    rel_batches.append({"type": "CONNECTED_TO", "parent": a, "child": b})
 
-        # Element connected to Element via ports (run once outside loop)
+            # Process batches when they get large
+            if len(rel_batches) >= batch_size:
+                _batch_create_relationships(s, rel_batches)
+                rel_batches = []
+
+        # Process remaining relationships
+        if rel_batches:
+            _batch_create_relationships(s, rel_batches)
+
+        # Post-processing: derive connections from ports (run once)
+        print("🔧 Deriving connections from ports...")
         s.run("""
         MATCH (e1)-[:HAS_PORT]->(p1:IfcDistributionPort)-[:PORT_CONNECTED_TO]->(p2:IfcDistributionPort)<-[:HAS_PORT]-(e2)
         MERGE (e1)-[:CONNECTED_TO]->(e2)
         """)
 
-        # Directed FEEDS when port directions are available (run once outside loop)
+        # Directed FEEDS when port directions are available (run once)
         s.run("""
         MATCH (src)-[:HAS_PORT]->(p:IfcDistributionPort)-[:PORT_CONNECTED_TO]->(q:IfcDistributionPort)<-[:HAS_PORT]-(dst)
         WHERE toUpper(coalesce(p.flowDirection,'')) CONTAINS 'SOURCE'
@@ -395,6 +370,47 @@ def main():
     driver.close()
     print(f"✅ Loaded nodes from %s. Created/merged: %d" % (path.name, created))
     print("✅ Relationships merged: CONTAINS / AGGREGATES / SERVICES / ASSIGNED_TO_SYSTEM (when present)")
+
+
+def _batch_create_nodes(session, node_batches):
+    """Create nodes in batch using UNWIND for better performance"""
+    session.run("""
+    UNWIND $batches AS batch
+    MERGE (n:IfcEntity {globalId: batch.id})
+    ON CREATE SET
+        n.name = batch.name,
+        n.type = batch.ifc_type,
+        n.source = batch.source,
+        n.psets_json = batch.psets_json,
+        n.attrs_json = batch.attrs_json,
+        n.flowDirection = coalesce(batch.flow_dir, n.flowDirection)
+    ON MATCH SET
+        n.name = coalesce(n.name, batch.name),
+        n.type = batch.ifc_type,
+        n.source = coalesce(n.source, batch.source),
+        n.psets_json = coalesce(n.psets_json, batch.psets_json),
+        n.attrs_json = coalesce(n.attrs_json, batch.attrs_json),
+        n.flowDirection = coalesce(n.flowDirection, batch.flow_dir)
+    SET n += batch.props_flat
+    """, batches=node_batches)
+    
+    # Add labels in separate batch
+    session.run("""
+    UNWIND $batches AS batch
+    MATCH (n:IfcEntity {globalId: batch.id})
+    CALL apoc.create.addLabels(n, batch.labels) YIELD node
+    RETURN count(node)
+    """, batches=node_batches)
+
+
+def _batch_create_relationships(session, rel_batches):
+    """Create relationships in batch using UNWIND for better performance"""
+    session.run("""
+    UNWIND $batches AS batch
+    MATCH (a:IfcEntity {globalId: batch.parent}), (b:IfcEntity {globalId: batch.child})
+    MERGE (a)-[r]->(b)
+    SET r.type = batch.type
+    """, batches=rel_batches)
     
 if __name__ == "__main__":
     main()

@@ -1,0 +1,272 @@
+/* Palantir-inspired design system for RiG CMMS */
+
+:root {
+  /* Core palette - Dark industrial theme */
+  --palantir-bg-primary: #0a0a0a;
+  --palantir-bg-secondary: #1a1a1a;
+  --palantir-bg-tertiary: #2a2a2a;
+  --palantir-bg-elevated: #1e1e1e;
+  
+  --palantir-text-primary: #ffffff;
+  --palantir-text-secondary: #a0a0a0;
+  --palantir-text-muted: #666666;
+  --palantir-text-accent: #00d4ff;
+  
+  --palantir-border-primary: #333333;
+  --palantir-border-secondary: #444444;
+  --palantir-border-accent: #00d4ff;
+  
+  /* Status colors */
+  --palantir-success: #00ff88;
+  --palantir-warning: #ffaa00;
+  --palantir-error: #ff4444;
+  --palantir-info: #00d4ff;
+  
+  /* Interactive states */
+  --palantir-hover: rgba(0, 212, 255, 0.1);
+  --palantir-active: rgba(0, 212, 255, 0.2);
+  --palantir-focus: rgba(0, 212, 255, 0.3);
+  
+  /* Shadows and effects */
+  --palantir-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --palantir-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --palantir-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.3);
+  --palantir-glow: 0 0 20px rgba(0, 212, 255, 0.3);
+  
+  /* Typography */
+  --palantir-font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --palantir-font-sans: 'Inter', 'SF Pro Display', -apple-system, sans-serif;
+  
+  /* Spacing scale */
+  --palantir-space-xs: 0.25rem;
+  --palantir-space-sm: 0.5rem;
+  --palantir-space-md: 1rem;
+  --palantir-space-lg: 1.5rem;
+  --palantir-space-xl: 2rem;
+  --palantir-space-2xl: 3rem;
+  
+  /* Border radius */
+  --palantir-radius-sm: 0.25rem;
+  --palantir-radius-md: 0.5rem;
+  --palantir-radius-lg: 0.75rem;
+  --palantir-radius-xl: 1rem;
+}
+
+/* Base styles */
+.palantir-theme {
+  background-color: var(--palantir-bg-primary);
+  color: var(--palantir-text-primary);
+  font-family: var(--palantir-font-sans);
+  line-height: 1.5;
+}
+
+/* Card components */
+.palantir-card {
+  background-color: var(--palantir-bg-secondary);
+  border: 1px solid var(--palantir-border-primary);
+  border-radius: var(--palantir-radius-lg);
+  box-shadow: var(--palantir-shadow-md);
+  padding: var(--palantir-space-lg);
+}
+
+.palantir-card-elevated {
+  background-color: var(--palantir-bg-elevated);
+  border: 1px solid var(--palantir-border-secondary);
+  box-shadow: var(--palantir-shadow-lg);
+}
+
+/* Button styles */
+.palantir-btn {
+  background-color: var(--palantir-bg-tertiary);
+  border: 1px solid var(--palantir-border-primary);
+  border-radius: var(--palantir-radius-md);
+  color: var(--palantir-text-primary);
+  font-family: var(--palantir-font-sans);
+  font-weight: 500;
+  padding: var(--palantir-space-sm) var(--palantir-space-md);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.palantir-btn:hover {
+  background-color: var(--palantir-hover);
+  border-color: var(--palantir-border-accent);
+  box-shadow: var(--palantir-shadow-sm);
+}
+
+.palantir-btn:active {
+  background-color: var(--palantir-active);
+  transform: translateY(1px);
+}
+
+.palantir-btn-primary {
+  background-color: var(--palantir-text-accent);
+  border-color: var(--palantir-text-accent);
+  color: var(--palantir-bg-primary);
+}
+
+.palantir-btn-primary:hover {
+  background-color: var(--palantir-info);
+  box-shadow: var(--palantir-glow);
+}
+
+/* Input styles */
+.palantir-input {
+  background-color: var(--palantir-bg-secondary);
+  border: 1px solid var(--palantir-border-primary);
+  border-radius: var(--palantir-radius-md);
+  color: var(--palantir-text-primary);
+  font-family: var(--palantir-font-sans);
+  padding: var(--palantir-space-sm) var(--palantir-space-md);
+  transition: all 0.2s ease;
+}
+
+.palantir-input:focus {
+  border-color: var(--palantir-border-accent);
+  box-shadow: 0 0 0 2px var(--palantir-focus);
+  outline: none;
+}
+
+.palantir-input::placeholder {
+  color: var(--palantir-text-muted);
+}
+
+/* Badge styles */
+.palantir-badge {
+  background-color: var(--palantir-bg-tertiary);
+  border: 1px solid var(--palantir-border-primary);
+  border-radius: var(--palantir-radius-sm);
+  color: var(--palantir-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: var(--palantir-space-xs) var(--palantir-space-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.palantir-badge-success {
+  background-color: rgba(0, 255, 136, 0.1);
+  border-color: var(--palantir-success);
+  color: var(--palantir-success);
+}
+
+.palantir-badge-warning {
+  background-color: rgba(255, 170, 0, 0.1);
+  border-color: var(--palantir-warning);
+  color: var(--palantir-warning);
+}
+
+.palantir-badge-error {
+  background-color: rgba(255, 68, 68, 0.1);
+  border-color: var(--palantir-error);
+  color: var(--palantir-error);
+}
+
+.palantir-badge-info {
+  background-color: rgba(0, 212, 255, 0.1);
+  border-color: var(--palantir-info);
+  color: var(--palantir-info);
+}
+
+/* Status indicators */
+.palantir-status-online {
+  color: var(--palantir-success);
+}
+
+.palantir-status-warning {
+  color: var(--palantir-warning);
+}
+
+.palantir-status-error {
+  color: var(--palantir-error);
+}
+
+.palantir-status-offline {
+  color: var(--palantir-text-muted);
+}
+
+/* Sidebar styles */
+.palantir-sidebar {
+  background-color: var(--palantir-bg-secondary);
+  border-right: 1px solid var(--palantir-border-primary);
+}
+
+.palantir-sidebar-item {
+  color: var(--palantir-text-secondary);
+  padding: var(--palantir-space-sm) var(--palantir-space-md);
+  border-radius: var(--palantir-radius-md);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.palantir-sidebar-item:hover {
+  background-color: var(--palantir-hover);
+  color: var(--palantir-text-primary);
+}
+
+.palantir-sidebar-item.active {
+  background-color: var(--palantir-active);
+  color: var(--palantir-text-accent);
+  border: 1px solid var(--palantir-border-accent);
+}
+
+/* Data visualization */
+.palantir-metric {
+  background-color: var(--palantir-bg-tertiary);
+  border: 1px solid var(--palantir-border-primary);
+  border-radius: var(--palantir-radius-md);
+  padding: var(--palantir-space-md);
+}
+
+.palantir-metric-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--palantir-text-primary);
+  font-family: var(--palantir-font-mono);
+}
+
+.palantir-metric-label {
+  font-size: 0.75rem;
+  color: var(--palantir-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Loading states */
+.palantir-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.palantir-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 212, 255, 0.1),
+    transparent
+  );
+  animation: palantir-shimmer 1.5s infinite;
+}
+
+@keyframes palantir-shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .palantir-card {
+    padding: var(--palantir-space-md);
+  }
+  
+  .palantir-btn {
+    padding: var(--palantir-space-sm);
+    font-size: 0.875rem;
+  }
+}

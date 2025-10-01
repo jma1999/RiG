@@ -1,65 +1,67 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import './styles/palantir-theme.css';
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  font-family: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--palantir-font-sans);
   line-height: 1.5;
   font-weight: 400;
   color-scheme: dark;
-  color: rgba(245, 235, 255, 0.92);
-  background-color: #240046;
+  color: var(--palantir-text-primary);
+  background-color: var(--palantir-bg-primary);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   --radius: 0.625rem;
 
-  /* VS Code-like dark theme */
-  --background: #1e1e1e;
-  --foreground: #d4d4d4;
-  --card: #252526;
-  --card-foreground: #d4d4d4;
-  --popover: #2d2d2d;
-  --popover-foreground: #d4d4d4;
+  /* Palantir-inspired dark theme */
+  --background: var(--palantir-bg-primary);
+  --foreground: var(--palantir-text-primary);
+  --card: var(--palantir-bg-secondary);
+  --card-foreground: var(--palantir-text-primary);
+  --popover: var(--palantir-bg-elevated);
+  --popover-foreground: var(--palantir-text-primary);
 
-  --primary: #007acc; /* VS Code blue */
-  --primary-foreground: #ffffff;
-  --secondary: #0066b8;
-  --secondary-foreground: #e6f2ff;
-  --muted: #2a2a2a;
-  --muted-foreground: #9a9a9a;
-  --accent: #c586c0;
-  --accent-foreground: #1e1e1e;
-  --destructive: #d16969;
-  --border: #3c3c3c;
-  --input: #333333;
-  --ring: #0a84ff;
+  --primary: var(--palantir-text-accent);
+  --primary-foreground: var(--palantir-bg-primary);
+  --secondary: var(--palantir-bg-tertiary);
+  --secondary-foreground: var(--palantir-text-primary);
+  --muted: var(--palantir-bg-tertiary);
+  --muted-foreground: var(--palantir-text-muted);
+  --accent: var(--palantir-text-accent);
+  --accent-foreground: var(--palantir-bg-primary);
+  --destructive: var(--palantir-error);
+  --destructive-foreground: var(--palantir-text-primary);
+  --border: var(--palantir-border-primary);
+  --input: var(--palantir-border-primary);
+  --ring: var(--palantir-border-accent);
 
-  --chart-1: #007acc;
-  --chart-2: #9cdcfe;
-  --chart-3: #c586c0;
-  --chart-4: #6a9955;
-  --chart-5: #dcdcaa;
+  --chart-1: var(--palantir-info);
+  --chart-2: var(--palantir-success);
+  --chart-3: var(--palantir-warning);
+  --chart-4: var(--palantir-error);
+  --chart-5: #8b5cf6;
 
-  --sidebar: #252526;
-  --sidebar-foreground: #d4d4d4;
-  --sidebar-primary: #007acc;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #9cdcfe;
-  --sidebar-accent-foreground: #1e1e1e;
-  --sidebar-border: #2b2b2b;
-  --sidebar-ring: #007acc;
+  --sidebar: var(--palantir-bg-secondary);
+  --sidebar-foreground: var(--palantir-text-secondary);
+  --sidebar-primary: var(--palantir-text-accent);
+  --sidebar-primary-foreground: var(--palantir-bg-primary);
+  --sidebar-accent: var(--palantir-bg-tertiary);
+  --sidebar-accent-foreground: var(--palantir-text-primary);
+  --sidebar-border: var(--palantir-border-primary);
+  --sidebar-ring: var(--palantir-border-accent);
 }
 
 a {
   font-weight: 500;
-  color: #FF9E00;
+  color: var(--palantir-text-accent);
   text-decoration: inherit;
 }
 a:hover {
-  color: #FFB347;
+  color: var(--palantir-info);
 }
 
 body {
@@ -71,24 +73,25 @@ body {
 }
 
 button {
-  border-radius: 0.65rem;
-  border: 1px solid transparent;
-  padding: 0.55em 1.1em;
+  border-radius: var(--palantir-radius-md);
+  border: 1px solid var(--palantir-border-primary);
+  padding: var(--palantir-space-sm) var(--palantir-space-md);
   font-size: 0.95em;
   font-weight: 600;
   font-family: inherit;
-  background-color: var(--primary);
-  color: var(--primary-foreground);
+  background-color: var(--palantir-bg-tertiary);
+  color: var(--palantir-text-primary);
   cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transition: all 0.2s ease;
 }
 button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 22px -18px rgba(0, 0, 0, 0.7);
+  background-color: var(--palantir-hover);
+  border-color: var(--palantir-border-accent);
+  box-shadow: var(--palantir-shadow-sm);
 }
 button:focus,
 button:focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--palantir-border-accent);
   outline-offset: 2px;
 }
 
@@ -131,37 +134,38 @@ button:focus-visible {
 }
 
 .dark {
-  --background: #1D0036;
-  --foreground: #F6EFFF;
-  --card: #32085A;
-  --card-foreground: #F6EFFF;
-  --popover: #32085A;
-  --popover-foreground: #F6EFFF;
-  --primary: #FF7900;
-  --primary-foreground: #2C0B3D;
-  --secondary: #7B2CBF;
-  --secondary-foreground: #F9EDFF;
-  --muted: #290944;
-  --muted-foreground: #CBBFE8;
-  --accent: #FF9E00;
-  --accent-foreground: #2C0B3D;
-  --destructive: #F25D5D;
-  --border: #380D5C;
-  --input: #380D5C;
-  --ring: #FF8900;
-  --chart-1: #FF7900;
-  --chart-2: #FF9E00;
-  --chart-3: #7B2CBF;
-  --chart-4: #5A189A;
-  --chart-5: #9D4EDD;
-  --sidebar: #1F0035;
-  --sidebar-foreground: #F6EFFF;
-  --sidebar-primary: #FF6D00;
-  --sidebar-primary-foreground: #2C0B3D;
-  --sidebar-accent: #5A189A;
-  --sidebar-accent-foreground: #F6EFFF;
-  --sidebar-border: #350A57;
-  --sidebar-ring: #FF8900;
+  --background: var(--palantir-bg-primary);
+  --foreground: var(--palantir-text-primary);
+  --card: var(--palantir-bg-secondary);
+  --card-foreground: var(--palantir-text-primary);
+  --popover: var(--palantir-bg-elevated);
+  --popover-foreground: var(--palantir-text-primary);
+  --primary: var(--palantir-text-accent);
+  --primary-foreground: var(--palantir-bg-primary);
+  --secondary: var(--palantir-bg-tertiary);
+  --secondary-foreground: var(--palantir-text-primary);
+  --muted: var(--palantir-bg-tertiary);
+  --muted-foreground: var(--palantir-text-muted);
+  --accent: var(--palantir-text-accent);
+  --accent-foreground: var(--palantir-bg-primary);
+  --destructive: var(--palantir-error);
+  --destructive-foreground: var(--palantir-text-primary);
+  --border: var(--palantir-border-primary);
+  --input: var(--palantir-border-primary);
+  --ring: var(--palantir-border-accent);
+  --chart-1: var(--palantir-info);
+  --chart-2: var(--palantir-success);
+  --chart-3: var(--palantir-warning);
+  --chart-4: var(--palantir-error);
+  --chart-5: #8b5cf6;
+  --sidebar: var(--palantir-bg-secondary);
+  --sidebar-foreground: var(--palantir-text-secondary);
+  --sidebar-primary: var(--palantir-text-accent);
+  --sidebar-primary-foreground: var(--palantir-bg-primary);
+  --sidebar-accent: var(--palantir-bg-tertiary);
+  --sidebar-accent-foreground: var(--palantir-text-primary);
+  --sidebar-border: var(--palantir-border-primary);
+  --sidebar-ring: var(--palantir-border-accent);
 }
 
 @layer base {

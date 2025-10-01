@@ -646,3 +646,40 @@ def update_workorder(id: str, body: WorkOrderUpdate):
 def delete_workorder(id: str):
     neo4j_query("MATCH (w:WorkOrder {id:$id}) DETACH DELETE w", id=id)
     return {"ok": True}
+
+
+# ---------------- semantic index management ----------------
+@app.post("/semantic-index/rebuild")
+def rebuild_semantic_index():
+    """Rebuild the FAISS index from current Neo4j data"""
+    import subprocess
+    import sys
+    
+    try:
+        # Run the build_index.py script
+        result = subprocess.run([
+            sys.executable, "rag/build_index.py"
+        ], capture_output=True, text=True, cwd=".")
+        
+        if result.returncode != 0:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Index rebuild failed: {result.stderr}"
+            )
+        
+        # Clear cached index/meta to force reload
+        global _index, _idlist, _meta
+        with _lock:
+            _index = None
+            _idlist = []
+            _meta = {}
+        
+        return {
+            "message": "Semantic index rebuilt successfully",
+            "output": result.stdout
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to rebuild index: {str(e)}"
+        )
