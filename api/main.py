@@ -62,6 +62,19 @@ def root():
 def options_handler(path: str):
     return JSONResponse(status_code=200, content={})
 
+# Explicit OPTIONS handlers for main endpoints to handle preflight requests
+@app.options("/health")
+def options_health():
+    return JSONResponse(status_code=200, content={})
+
+@app.options("/workorders")
+def options_workorders():
+    return JSONResponse(status_code=200, content={})
+
+@app.options("/workorders/{id}")
+def options_workorder_id(id: str):
+    return JSONResponse(status_code=200, content={})
+
 # lazy globals
 _driver = None
 _model  = None
@@ -565,21 +578,26 @@ def create_workorder(body: WorkOrderCreate):
 @app.get("/workorders", response_model=List[WorkOrder])
 def list_workorders(status: Optional[str] = None, priority: Optional[str] = None, assetId: Optional[str] = None):
     where = []
+    params = {}
     if status:
         where.append("w.status=$status")
+        params["status"] = status
     if priority:
         where.append("w.priority=$priority")
+        params["priority"] = priority
     if assetId:
         where.append("a.globalId=$assetId")
+        params["assetId"] = assetId
+    
     wclause = ("WHERE " + " AND ".join(where)) if where else ""
     q = f"""
     MATCH (w:WorkOrder)
     OPTIONAL MATCH (w)-[:FOR_ASSET]->(a:IfcEntity)
     {wclause}
     RETURN w AS w, a.globalId AS assetId
-    ORDER BY w.updatedAt DESC
+    ORDER BY coalesce(w.updatedAt, w.createdAt, '1970-01-01T00:00:00Z') DESC
     """
-    rows = neo4j_query(q, status=status, priority=priority, assetId=assetId)
+    rows = neo4j_query(q, **params)
     out: List[WorkOrder] = []
     for r in rows:
         w = dict(r["w"])
