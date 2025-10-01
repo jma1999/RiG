@@ -18,6 +18,8 @@ DB   = os.getenv("NEO4J_DATABASE", "neo4j")
 SPATIAL_TYPES = {
     "IfcProject","IfcSite","IfcBuilding","IfcBuildingStorey","IfcSpace"
 }
+# Types considered terminals for quick counting / tagging
+TERMINAL_TYPES = {"IfcFlowTerminal", "IfcDistributionTerminal", "IfcDuctTerminal"}
 
 # Super-simple helper to map IFC type → a coarse CMMS-ish class
 def cmms_label(ifc_type: str) -> str:
@@ -142,17 +144,62 @@ def select_flat_props(ps: dict) -> dict:
 
 # Helper function to load instances from ifcJSON
 def load_instances(data: Dict) -> Dict[str, Dict]:
-    # ifcJSON variants:
+    # Accept several ifcJSON variants:
     #  - {"objects": {"GUID": {...}}}
     #  - {"instances": {"GUID": {...}}}
-    #  - {"GUID": {...}}  (flat)
-    for key in ("objects","instances"):
-        if isinstance(data.get(key), dict):
-            return data[key]
+    #  - {"objects": [...]} (list)
+    #  - top-level list: [{...}, {...}]
+    #  - {"GUID": {...}}  (flat mapping)
+    for key in ("objects", "instances"):
+        v = data.get(key)
+        if isinstance(v, dict):
+            return v
+        if isinstance(v, list):
+            out: Dict[str, Dict] = {}
+            for obj in v:
+                if not isinstance(obj, dict):
+                    continue
+                gid = ref_id(obj) or obj.get("globalId") or obj.get("GlobalId")
+                if gid:
+                    out[gid] = obj
+            if out:
+                return out
+
+    # top-level list variant
+    if isinstance(data, list):
+        out: Dict[str, Dict] = {}
+        for obj in data:
+            if not isinstance(obj, dict):
+                continue
+            gid = ref_id(obj) or obj.get("globalId") or obj.get("GlobalId")
+            if gid:
+                out[gid] = obj
+        if out:
+            return out
+
+    # some exporters wrap instances under a top-level 'data' list/dict
+    if isinstance(data, dict) and 'data' in data:
+        inner = data['data']
+        # if inner is a dict mapping GUID->obj
+        if isinstance(inner, dict):
+            return inner
+        # if inner is a list of objects
+        if isinstance(inner, list):
+            out: Dict[str, Dict] = {}
+            for obj in inner:
+                if not isinstance(obj, dict):
+                    continue
+                gid = ref_id(obj) or obj.get('globalId') or obj.get('GlobalId')
+                if gid:
+                    out[gid] = obj
+            if out:
+                return out
+
     # fallback: if file is just a GUID->obj map
     if isinstance(data, dict) and all(isinstance(v, dict) for v in data.values()):
         return data  # flat GUID -> obj map
-    raise ValueError("Unsupported ifcJSON structure; expected 'objects' or 'instances' mapping")
+
+    raise ValueError("Unsupported ifcJSON structure; expected 'objects'/'instances' mapping or a list of instances")
 
 def main():
     parser = argparse.ArgumentParser()
@@ -220,6 +267,10 @@ def main():
             )
 
             # 2) Add labels AFTER merge (safe even if they already exist)
+            # include :TERMINAL when the raw IFC type maps to a terminal
+            labels_list = [ifc_type, label]
+            if ifc_type in TERMINAL_TYPES:
+                labels_list.append("TERMINAL")
             s.run(
                 """
                 MATCH (n:IfcEntity {globalId:$id})
@@ -227,7 +278,7 @@ def main():
                 RETURN node
                 """,
                 id=guid,
-                labels=[ifc_type, label],  # e.g., ["IfcSpace", "IfcSpace"]
+                labels=labels_list,
             )
             created += 1
 

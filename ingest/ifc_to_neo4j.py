@@ -16,6 +16,9 @@ from ifcopenshell.util.element import get_psets
 
 SPATIAL_TYPES = {"IfcProject","IfcSite","IfcBuilding","IfcBuildingStorey","IfcSpace"}
 
+# Terminal types (same set as api/main.py TERMINAL_TYPES)
+TERMINAL_TYPES = {"IfcFlowTerminal", "IfcDistributionTerminal", "IfcDuctTerminal"}
+
 def cmms_label(t: str) -> str:
     if t in SPATIAL_TYPES: return t
     if t.startswith("IfcSystem"): return "IfcSystem"
@@ -108,8 +111,10 @@ def main():
             nm  = name_of(e)
             z   = z_of(e)
             # merge labels by type; do not clobber existing JSON props
+            # include :TERMINAL label when appropriate
+            terminal_label = ":TERMINAL" if t in TERMINAL_TYPES else ""
             s.run(f"""
-                MERGE (n:IfcEntity:{t}:{cmms_label(t)} {{globalId:$id}})
+                MERGE (n:IfcEntity:{t}:{cmms_label(t)}{terminal_label} {{globalId:$id}})
                 ON CREATE SET n.name=$name, n.type=$type, n.source=$src
                 ON MATCH  SET n.type=$type,  n.source=coalesce(n.source,$src)
                 {"SET n.z = $z" if z is not None else ""}

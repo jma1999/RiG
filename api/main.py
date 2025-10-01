@@ -105,6 +105,39 @@ NOUN2IFC = {
     "pipe": ["IfcFlowSegment"], "pipes": ["IfcFlowSegment"],
 }
 
+# Special handling for terminal-type entities: sometimes we label them as `:TERMINAL`
+TERMINAL_TYPES = ["IfcFlowTerminal", "IfcDistributionTerminal", "IfcDuctTerminal"]
+
+
+def _count_query_for(type_name: str, storey: str | None):
+    """Return a Cypher query and params for counting entities of `type_name`.
+
+    If the caller asks for a generic "terminal" count, use the `:TERMINAL` label
+    (we add that label during ingestion). Otherwise count by IfcEntity.type.
+    If `storey` is provided, constrain counts to entities housed in a specific storey
+    (case-insensitive match on the storey name).
+    """
+    if type_name is None:
+        raise ValueError("type_name is required")
+
+    if str(type_name).upper() == "TERMINAL":
+        where = "n:TERMINAL"
+        params = {}
+    else:
+        where = "n:IfcEntity {type:$type}"
+        params = {"type": type_name}
+
+    if storey:
+        q = f"""
+        MATCH ({where})-[:IN_STOREY]->(st:IfcEntity {{type:'IfcBuildingStorey'}})
+        WHERE toLower(st.name)=toLower($storey)
+        RETURN count(*) AS c
+        """
+        params["storey"] = storey
+    else:
+        q = f"MATCH ({where}) RETURN count(*) AS c"
+    return q, params
+
 
 def _available_types() -> set[str]:
     rows = neo4j_query("MATCH (n:IfcEntity) RETURN DISTINCT n.type AS t")
@@ -138,6 +171,10 @@ def pick_count_types(text: str | None) -> Optional[List[str]]:
     if not COUNT_PATTERN.match(text):
         return None
     lo = text.lower()
+    # Special-case: user asked for 'terminal(s)' -> return pseudo-type 'TERMINAL'
+    if "terminal" in lo:
+        return ["TERMINAL"]
+
     for noun, types in NOUN2IFC.items():
         if noun in lo:
             return list(types)
@@ -401,22 +438,31 @@ def asset(id: str):
 
 
 @app.get("/count")
-def count(type: str | None = None, q: str | None = None):
-    tlist = _resolve_types(type, q)
+def count(type: str | None = None, q: str | None = None, storey: str | None = None):
+    # Determine types either from explicit `type` param or from a natural language question `q`
+    tlist = _resolve_types(type, q) if type else pick_count_types(q)
     if not tlist:
         raise HTTPException(
             status_code=400,
             detail="Please pass ?type=IfcSomething or a natural question via ?q=... containing a known noun (e.g., walls, windows, doors)."
         )
 
+    # Try labels first (for :TERMINAL and other possible labelled entities)
     labels = neo4j_query("CALL db.labels() YIELD label RETURN collect(label) AS L")[0]["L"]
     parts: List[Dict[str, Any]] = []
     total = 0
     for t in tlist:
+        try:
+            qcypher, params = _count_query_for(t, storey)
+        except ValueError:
+            continue
+
+        # If the pseudo-type 'TERMINAL' corresponds to a label, prefer label-based counting
         if t in labels:
-            c = neo4j_query(f"MATCH (n:`{t}`) RETURN count(n) AS c")[0]["c"]
+            c = neo4j_query(qcypher, **params)[0]["c"]
         else:
-            c = neo4j_query("MATCH (n:IfcEntity {type:$t}) RETURN count(n) AS c", t=t)[0]["c"]
+            # label not present; still execute the query (the helper uses n:IfcEntity {type:$type})
+            c = neo4j_query(qcypher, **params)[0]["c"]
         ic = int(c)
         parts.append({"type": t, "count": ic})
         total += ic
