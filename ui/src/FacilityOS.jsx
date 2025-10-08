@@ -30,7 +30,8 @@ import {
   ChevronUp,
   X,
   Minimize2,
-  Maximize2
+  Maximize2,
+  Bot
 } from "lucide-react";
 import ForceGraph2D from "react-force-graph-2d";
 import { API_BASE } from "@/lib/env";
@@ -42,17 +43,17 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "👋 Welcome to Gemino! I'm your AI facility manager. I can help you with:\n\n• Viewing and managing assets\n• Creating work orders\n• Analyzing facility health\n• Scheduling maintenance\n• Finding equipment issues\n\nWhat would you like to do?",
+      content: "👋 Welcome to Gemino! I'm your AI facility manager for the sample house. I can help you with:\n\n• Exploring the house structure (walls, doors, windows)\n• Understanding room layouts and relationships\n• Analyzing building components\n• Finding specific elements in the house\n• Creating work orders for maintenance\n\nTry asking me about the house structure, rooms, or specific building elements!",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
 
   const quickCommands = [
-    "Show critical assets",
-    "Create work order", 
-    "Asset health",
-    "Maintenance schedule"
+    "Show house structure",
+    "Find all doors", 
+    "List rooms",
+    "Create work order"
   ];
 
   const handleSendMessage = useCallback(async (msg = message) => {
@@ -129,9 +130,9 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={onToggle}
-          className="h-14 w-14 rounded-full bg-[var(--palantir-text-accent)] hover:bg-[var(--palantir-info)] shadow-lg"
+          className="h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg"
         >
-          <MessageSquare className="h-6 w-6 text-white" />
+          <Bot className="h-6 w-6 text-white" />
         </Button>
       </div>
     );
@@ -141,7 +142,7 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
     <div className="fixed bottom-6 right-6 z-50 w-96 h-[600px] bg-[var(--palantir-bg-elevated)] border border-[var(--palantir-border-primary)] rounded-xl shadow-xl">
       <div className="flex items-center justify-between p-4 border-b border-[var(--palantir-border-primary)]">
         <div className="flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-[var(--palantir-text-accent)]" />
+          <Bot className="h-5 w-5 text-blue-600" />
           <h3 className="font-semibold text-[var(--palantir-text-primary)]">AI Assistant</h3>
           <Badge className="bg-[var(--palantir-success)] text-black text-xs">Always On</Badge>
         </div>
@@ -202,7 +203,7 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
               className="bg-[var(--palantir-bg-secondary)] border-[var(--palantir-border-primary)]"
             />
             <div className="text-xs text-[var(--palantir-text-muted)]">
-              💡 Try: "Show critical assets" or "Create work order for HVAC"
+              💡 Try: "Show house structure" or "Find all doors"
             </div>
             <Button 
               onClick={() => handleSendMessage()} 
@@ -233,7 +234,7 @@ const Navigation = ({ activeTab, onTabChange }) => {
       <div className="p-6 border-b border-[var(--palantir-border-primary)]">
         <div className="flex items-center gap-3">
           <Factory className="h-8 w-8 text-[var(--palantir-text-accent)]" />
-          <h1 className="text-xl font-bold text-[var(--palantir-text-primary)]">RiG: Retrieval over ifcJSON Graphs</h1>
+          <h1 className="text-xl font-bold text-[var(--palantir-text-primary)]">Gemino</h1>
         </div>
       </div>
       
@@ -439,13 +440,67 @@ const DashboardView = ({ onAIAction }) => {
 const ModelViewer3D = () => {
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [modelInfo, setModelInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
   const fileInputRef = useRef(null);
   const viewerRef = useRef(null);
+
+  // Auto-load the sample house IFC file
+  useEffect(() => {
+    const loadSampleHouse = async () => {
+      setLoading(true);
+      try {
+        const { IfcViewerAPI } = await import('web-ifc-viewer');
+        
+        if (viewerRef.current) {
+          const viewer = new IfcViewerAPI({
+            container: viewerRef.current,
+            backgroundColor: '#0a0a0a'
+          });
+          
+          // Set the wasm path
+          viewer.IFC.setWasmPath("/ifc/");
+          
+          // Load the sample house IFC file
+          await viewer.IFC.loader.ifcManager.loadIfc("/ifc/sample-house.ifc");
+          
+          // Get model info
+          const model = viewer.IFC.loader.ifcManager.getModel(0);
+          if (model) {
+            const elements = model.getAllItemsOfType(0, true).length;
+            const spaces = model.getAllItemsOfType(35, true).length; // IfcSpace
+            const floors = model.getAllItemsOfType(44, true).length; // IfcBuildingStorey
+            const walls = model.getAllItemsOfType(20, true).length; // IfcWall
+            const doors = model.getAllItemsOfType(22, true).length; // IfcDoor
+            const windows = model.getAllItemsOfType(23, true).length; // IfcWindow
+            
+            setModelInfo({
+              elements,
+              spaces,
+              floors,
+              walls,
+              doors,
+              windows,
+              fileName: "sample-house.ifc"
+            });
+          }
+          
+          setIsModelLoaded(true);
+        }
+      } catch (error) {
+        console.error("Failed to load sample house IFC:", error);
+        setIsModelLoaded(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSampleHouse();
+  }, []);
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
-      setIsModelLoaded(true);
+      setLoading(true);
       
       // Load the IFC file using web-ifc-viewer
       try {
@@ -473,10 +528,14 @@ const ModelViewer3D = () => {
               fileName: file.name
             });
           }
+          
+          setIsModelLoaded(true);
         }
       } catch (error) {
         console.error("Failed to load IFC file:", error);
         setIsModelLoaded(false);
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -508,13 +567,23 @@ const ModelViewer3D = () => {
           <p className="text-sm text-[var(--palantir-text-muted)]">Industry Foundation Classes (IFC) viewer</p>
         </CardHeader>
         <CardContent className="h-full p-0">
-          {!isModelLoaded ? (
+          {loading ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center space-y-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--palantir-text-accent)] mx-auto"></div>
+                <div>
+                  <h3 className="text-lg font-semibold text-[var(--palantir-text-primary)]">Loading Sample House</h3>
+                  <p className="text-[var(--palantir-text-muted)]">Loading your IFC model...</p>
+                </div>
+              </div>
+            </div>
+          ) : !isModelLoaded ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center space-y-4">
                 <Upload className="h-16 w-16 text-[var(--palantir-text-muted)] mx-auto" />
                 <div>
-                  <h3 className="text-lg font-semibold text-[var(--palantir-text-primary)]">No model loaded</h3>
-                  <p className="text-[var(--palantir-text-muted)]">Upload an IFC file to begin</p>
+                  <h3 className="text-lg font-semibold text-[var(--palantir-text-primary)]">Failed to Load Model</h3>
+                  <p className="text-[var(--palantir-text-muted)]">Try uploading a different IFC file</p>
                 </div>
                 <Button 
                   onClick={() => fileInputRef.current?.click()}
@@ -560,6 +629,18 @@ const ModelViewer3D = () => {
                 <div className="flex justify-between">
                   <span className="text-[var(--palantir-text-muted)]">Spaces:</span>
                   <span className="text-[var(--palantir-text-primary)]">{modelInfo.spaces}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--palantir-text-muted)]">Walls:</span>
+                  <span className="text-[var(--palantir-text-primary)]">{modelInfo.walls || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--palantir-text-muted)]">Doors:</span>
+                  <span className="text-[var(--palantir-text-primary)]">{modelInfo.doors || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--palantir-text-muted)]">Windows:</span>
+                  <span className="text-[var(--palantir-text-primary)]">{modelInfo.windows || 0}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--palantir-text-muted)]">File:</span>
@@ -623,68 +704,98 @@ const GraphView = ({ onAIAction }) => {
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    // Load initial graph data from your Neo4j database
+    // Load initial graph data from your sample house Neo4j database
     const loadGraphData = async () => {
       setLoading(true);
       try {
-        // Try to get a comprehensive view of your facility graph
-        const res = await fetch(`${API_BASE}/search?q=building structure facility&k=50&hops=3`);
-        const data = await res.json();
+        // Try multiple search strategies to get sample house data
+        const searchQueries = [
+          "sample house building structure",
+          "house walls doors windows",
+          "building storey space",
+          "facility structure"
+        ];
         
-        if (res.ok && data.subgraphs) {
-          const nodes = [];
-          const links = [];
-          const seen = new Set();
-
-          data.subgraphs.forEach((sg) => {
-            sg.nodes?.forEach((n) => {
-              if (seen.has(n.id)) return;
-              seen.add(n.id);
-              nodes.push({
-                id: n.id,
-                name: n.name || n.id.slice(0, 8),
-                type: n.type || "Unknown",
-                labels: n.labels || [],
-                source: n.source || "Unknown"
-              });
-            });
+        let bestData = null;
+        let maxNodes = 0;
+        
+        for (const query of searchQueries) {
+          try {
+            const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}&k=30&hops=2`);
+            const data = await res.json();
             
-            sg.edges?.forEach((e) => {
-              links.push({
-                source: e.src,
-                target: e.dst,
-                type: e.type || "RELATED_TO"
+            if (res.ok && data.subgraphs) {
+              const nodes = [];
+              const links = [];
+              const seen = new Set();
+
+              data.subgraphs.forEach((sg) => {
+                sg.nodes?.forEach((n) => {
+                  if (seen.has(n.id)) return;
+                  seen.add(n.id);
+                  nodes.push({
+                    id: n.id,
+                    name: n.name || n.id.slice(0, 8),
+                    type: n.type || "Unknown",
+                    labels: n.labels || [],
+                    source: n.source || "Unknown"
+                  });
+                });
+                
+                sg.edges?.forEach((e) => {
+                  links.push({
+                    source: e.src,
+                    target: e.dst,
+                    type: e.type || "RELATED_TO"
+                  });
+                });
               });
-            });
-          });
 
-          // If no data from search, try a direct count to see what's available
-          if (nodes.length === 0) {
-            const countRes = await fetch(`${API_BASE}/count?q=all`);
-            const countData = await countRes.json();
-            console.log("Available data types:", countData);
+              if (nodes.length > maxNodes) {
+                maxNodes = nodes.length;
+                bestData = { nodes, links };
+              }
+            }
+          } catch (err) {
+            console.warn(`Search query "${query}" failed:`, err);
           }
+        }
 
-          setGraphData({ nodes, links });
+        if (bestData && bestData.nodes.length > 0) {
+          setGraphData(bestData);
+          console.log(`Loaded ${bestData.nodes.length} nodes and ${bestData.links.length} links from sample house`);
+        } else {
+          // Try to get count data to see what's available
+          const countRes = await fetch(`${API_BASE}/count?q=all`);
+          const countData = await countRes.json();
+          console.log("Available data types in Neo4j:", countData);
+          
+          // Fallback: create a sample house demo graph
+          setGraphData({
+            nodes: [
+              { id: "house", name: "Sample House", type: "IfcBuilding", labels: ["Building"] },
+              { id: "ground-floor", name: "Ground Floor", type: "IfcBuildingStorey", labels: ["Floor"] },
+              { id: "living-room", name: "Living Room", type: "IfcSpace", labels: ["Space"] },
+              { id: "kitchen", name: "Kitchen", type: "IfcSpace", labels: ["Space"] },
+              { id: "bedroom", name: "Bedroom", type: "IfcSpace", labels: ["Space"] },
+              { id: "wall-1", name: "Wall 1", type: "IfcWall", labels: ["Wall"] },
+              { id: "door-1", name: "Front Door", type: "IfcDoor", labels: ["Door"] },
+              { id: "window-1", name: "Window 1", type: "IfcWindow", labels: ["Window"] }
+            ],
+            links: [
+              { source: "house", target: "ground-floor", type: "CONTAINS" },
+              { source: "ground-floor", target: "living-room", type: "CONTAINS" },
+              { source: "ground-floor", target: "kitchen", type: "CONTAINS" },
+              { source: "ground-floor", target: "bedroom", type: "CONTAINS" },
+              { source: "living-room", target: "wall-1", type: "BOUNDED_BY" },
+              { source: "living-room", target: "door-1", type: "BOUNDED_BY" },
+              { source: "living-room", target: "window-1", type: "BOUNDED_BY" }
+            ]
+          });
         }
       } catch (error) {
         console.error("Failed to load graph data:", error);
-        // Fallback: create a simple demo graph if no data available
-        setGraphData({
-          nodes: [
-            { id: "building", name: "Building", type: "IfcBuilding", labels: ["Building"] },
-            { id: "floor1", name: "Floor 1", type: "IfcBuildingStorey", labels: ["Floor"] },
-            { id: "floor2", name: "Floor 2", type: "IfcBuildingStorey", labels: ["Floor"] },
-            { id: "space1", name: "Office Space", type: "IfcSpace", labels: ["Space"] },
-            { id: "hvac1", name: "HVAC Unit", type: "IfcFlowTerminal", labels: ["HVAC"] }
-          ],
-          links: [
-            { source: "building", target: "floor1", type: "CONTAINS" },
-            { source: "building", target: "floor2", type: "CONTAINS" },
-            { source: "floor1", target: "space1", type: "CONTAINS" },
-            { source: "space1", target: "hvac1", type: "SERVES" }
-          ]
-        });
+        setGraphData({ nodes: [], links: [] });
       } finally {
         setLoading(false);
       }
@@ -1324,10 +1435,10 @@ export default function FacilityOS() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Factory className="h-6 w-6 text-[var(--palantir-text-accent)]" />
-            <h1 className="text-xl font-semibold">Gemino</h1>
+            <h1 className="text-xl font-semibold">RiG: Retrieval over ifcJSON Graphs</h1>
           </div>
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-medium">Facility Management System</h2>
+            <h2 className="text-lg font-medium">AI-Native CMMS powered by Gemino</h2>
             <Badge className="bg-[var(--palantir-text-accent)] text-black">
               <MessageSquare className="h-3 w-3 mr-1" />
               AI-Powered CMMS
