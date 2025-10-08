@@ -408,7 +408,7 @@ def _batch_create_relationships(session, rel_batches):
     session.run("""
     UNWIND $batches AS batch
     MATCH (a:IfcEntity {globalId: batch.parent}), (b:IfcEntity {globalId: batch.child})
-    MERGE (a)-[r]->(b)
+    MERGE (a)-[r:RELATED_TO]->(b)
     SET r.type = batch.type
     """, batches=rel_batches)
     
