@@ -16,7 +16,7 @@ import {
   MessageSquare, 
   GitBranch,
   Home,
-  Cube,
+  Cuboid,
   Box,
   Clipboard,
   Search,
@@ -222,7 +222,7 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
 const Navigation = ({ activeTab, onTabChange }) => {
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
-    { id: "3d-viewer", label: "3D Model Viewer", icon: Cube },
+    { id: "3d-viewer", label: "3D Model Viewer", icon: Cuboid },
     { id: "graph-view", label: "Graph View", icon: Network },
     { id: "assets", label: "Assets", icon: Box },
     { id: "work-orders", label: "Work Orders", icon: Clipboard }
