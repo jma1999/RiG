@@ -48,14 +48,85 @@ class ChatRequest(BaseModel):
 
 
 def run_graph_tools(message: str) -> Dict[str, Any]:
-    types = pick_count_types(message)
-    if types:
-        try:
-            result = count_endpoint(q=message)
-            return {"action": "count", "data": result}
-        except Exception:
-            pass
+    """Run graph tools based on the user's message and return structured results."""
+    message_lower = message.lower()
+    
+    # Count operations
+    if any(word in message_lower for word in ["how many", "count", "total"]):
+        types = pick_count_types(message)
+        if types:
+            try:
+                result = count_endpoint(q=message)
+                return {"action": "count", "data": result}
+            except Exception:
+                pass
 
+    # Search operations
+    elif any(word in message_lower for word in ["find", "show", "search", "list", "where", "which"]):
+        hits, subgraphs = semantic_search(message)
+        return {
+            "action": "search",
+            "hits": [h.model_dump() for h in hits],
+            "subgraphs": [s.model_dump() for s in subgraphs],
+        }
+    
+    # Work order creation
+    elif any(word in message_lower for word in ["create work order", "new work order", "schedule maintenance", "create task"]):
+        try:
+            # Extract work order details from message
+            priority = "Medium"
+            if any(word in message_lower for word in ["urgent", "critical", "emergency"]):
+                priority = "Critical"
+            elif any(word in message_lower for word in ["high", "important"]):
+                priority = "High"
+            elif any(word in message_lower for word in ["low", "minor"]):
+                priority = "Low"
+            
+            # Extract title from message (simple extraction)
+            title = message
+            if "for" in message_lower:
+                title = message.split("for")[0].strip()
+            elif "about" in message_lower:
+                title = message.split("about")[0].strip()
+            
+            # Create work order data
+            wo_data = {
+                "title": title[:100],  # Limit title length
+                "priority": priority
+            }
+            
+            # Try to find asset ID if mentioned
+            if any(word in message_lower for word in ["hvac", "elevator", "fire", "lighting"]):
+                # Simple asset ID mapping for demo
+                asset_map = {
+                    "hvac": "HVAC-3A-02",
+                    "elevator": "ELEV-01", 
+                    "fire": "FIRE-2B",
+                    "lighting": "LIGHT-5A"
+                }
+                for keyword, asset_id in asset_map.items():
+                    if keyword in message_lower:
+                        wo_data["assetId"] = asset_id
+                        break
+            
+            return {
+                "action": "work-order",
+                "data": wo_data,
+                "summary": f"Created work order: {wo_data['title']} (Priority: {wo_data['priority']})"
+            }
+        except Exception as e:
+            return {"action": "work-order", "error": str(e)}
+    
+    # Asset operations
+    elif any(word in message_lower for word in ["asset", "equipment", "system"]):
+        hits, subgraphs = semantic_search(message)
+        return {
+            "action": "asset",
+            "hits": [h.model_dump() for h in hits],
+            "subgraphs": [s.model_dump() for s in subgraphs],
+        }
+    
+    # Default to search if no specific action identified
     hits, subgraphs = semantic_search(message)
     return {
         "action": "search",
@@ -83,6 +154,23 @@ def render_tool_summary(payload: Dict[str, Any]) -> str:
             label = h.get("name") or h.get("id")
             lines.append(f"- {label} ({h.get('type','unknown')}) score={h.get('score',0):.2f}")
         return "Top graph hits:\n" + "\n".join(lines)
+
+    if action == "work-order":
+        data = payload.get("data", {})
+        if data:
+            return f"Work order created: {data.get('title', 'Untitled')} (Priority: {data.get('priority', 'Medium')})"
+        else:
+            return "Work order creation failed."
+
+    if action == "asset":
+        hits = payload.get("hits", [])[:5]
+        if not hits:
+            return "No matching assets were found."
+        lines = []
+        for h in hits:
+            label = h.get("name") or h.get("id")
+            lines.append(f"- {label} ({h.get('type','unknown')}) score={h.get('score',0):.2f}")
+        return "Asset search results:\n" + "\n".join(lines)
 
     return "No tool context available."
 

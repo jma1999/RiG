@@ -1,5 +1,5 @@
-import FacilityTwin_MVP_UI from "./FacilityTwin_MVP_UI.jsx";
+import FacilityOS from "./FacilityOS";
 
 export default function App() {
-  return <FacilityTwin_MVP_UI />;
+  return <FacilityOS />;
 }
