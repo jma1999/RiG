@@ -42,7 +42,7 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "👋 Welcome to FacilityOS! I'm your AI facility manager. I can help you with:\n\n• Viewing and managing assets\n• Creating work orders\n• Analyzing facility health\n• Scheduling maintenance\n• Finding equipment issues\n\nWhat would you like to do?",
+      content: "👋 Welcome to Gemino! I'm your AI facility manager. I can help you with:\n\n• Viewing and managing assets\n• Creating work orders\n• Analyzing facility health\n• Scheduling maintenance\n• Finding equipment issues\n\nWhat would you like to do?",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -438,13 +438,46 @@ const DashboardView = ({ onAIAction }) => {
 // === 3D Model Viewer ===
 const ModelViewer3D = () => {
   const [isModelLoaded, setIsModelLoaded] = useState(false);
+  const [modelInfo, setModelInfo] = useState(null);
   const fileInputRef = useRef(null);
+  const viewerRef = useRef(null);
 
-  const handleFileUpload = (event) => {
+  const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
       setIsModelLoaded(true);
-      // TODO: Implement actual IFC loading
+      
+      // Load the IFC file using web-ifc-viewer
+      try {
+        const { IfcViewerAPI } = await import('web-ifc-viewer');
+        
+        if (viewerRef.current) {
+          const viewer = new IfcViewerAPI({
+            container: viewerRef.current,
+            backgroundColor: '#0a0a0a'
+          });
+          
+          await viewer.IFC.loader.ifcManager.loadIfc(file);
+          
+          // Get model info
+          const model = viewer.IFC.loader.ifcManager.getModel(0);
+          if (model) {
+            const elements = model.getAllItemsOfType(0, true).length;
+            const spaces = model.getAllItemsOfType(35, true).length; // IfcSpace
+            const floors = model.getAllItemsOfType(44, true).length; // IfcBuildingStorey
+            
+            setModelInfo({
+              elements,
+              spaces,
+              floors,
+              fileName: file.name
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load IFC file:", error);
+        setIsModelLoaded(false);
+      }
     }
   };
 
@@ -474,39 +507,43 @@ const ModelViewer3D = () => {
           <CardTitle>BIM Model</CardTitle>
           <p className="text-sm text-[var(--palantir-text-muted)]">Industry Foundation Classes (IFC) viewer</p>
         </CardHeader>
-        <CardContent className="h-full flex items-center justify-center">
+        <CardContent className="h-full p-0">
           {!isModelLoaded ? (
-            <div className="text-center space-y-4">
-              <Upload className="h-16 w-16 text-[var(--palantir-text-muted)] mx-auto" />
-              <div>
-                <h3 className="text-lg font-semibold text-[var(--palantir-text-primary)]">No model loaded</h3>
-                <p className="text-[var(--palantir-text-muted)]">Upload an IFC file to begin</p>
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center space-y-4">
+                <Upload className="h-16 w-16 text-[var(--palantir-text-muted)] mx-auto" />
+                <div>
+                  <h3 className="text-lg font-semibold text-[var(--palantir-text-primary)]">No model loaded</h3>
+                  <p className="text-[var(--palantir-text-muted)]">Upload an IFC file to begin</p>
+                </div>
+                <Button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-[var(--palantir-text-accent)] hover:bg-[var(--palantir-info)]"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload IFC File
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".ifc"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
               </div>
-              <Button 
-                onClick={() => fileInputRef.current?.click()}
-                className="bg-[var(--palantir-text-accent)] hover:bg-[var(--palantir-info)]"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Upload IFC File
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".ifc"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
             </div>
           ) : (
-            <div className="w-full h-full bg-[var(--palantir-bg-tertiary)] rounded-lg flex items-center justify-center">
-              <p className="text-[var(--palantir-text-muted)]">3D Model Viewer Placeholder</p>
-            </div>
+            <div 
+              ref={viewerRef}
+              className="w-full h-full bg-[var(--palantir-bg-tertiary)] rounded-lg"
+              style={{ minHeight: '500px' }}
+            />
           )}
         </CardContent>
       </Card>
 
       {/* Model Info Panels */}
-      {isModelLoaded && (
+      {isModelLoaded && modelInfo && (
         <div className="grid grid-cols-3 gap-4">
           <Card className="palantir-card">
             <CardContent className="p-4">
@@ -514,15 +551,19 @@ const ModelViewer3D = () => {
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-[var(--palantir-text-muted)]">Elements:</span>
-                  <span className="text-[var(--palantir-text-primary)]">12,847</span>
+                  <span className="text-[var(--palantir-text-primary)]">{modelInfo.elements.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--palantir-text-muted)]">Floors:</span>
-                  <span className="text-[var(--palantir-text-primary)]">8</span>
+                  <span className="text-[var(--palantir-text-primary)]">{modelInfo.floors}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--palantir-text-muted)]">Spaces:</span>
-                  <span className="text-[var(--palantir-text-primary)]">156</span>
+                  <span className="text-[var(--palantir-text-primary)]">{modelInfo.spaces}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--palantir-text-muted)]">File:</span>
+                  <span className="text-[var(--palantir-text-primary)] text-xs truncate max-w-[120px]">{modelInfo.fileName}</span>
                 </div>
               </div>
             </CardContent>
@@ -577,14 +618,17 @@ const ModelViewer3D = () => {
 const GraphView = ({ onAIAction }) => {
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const [selectedNode, setSelectedNode] = useState(null);
+  const [loading, setLoading] = useState(true);
   const containerRef = useRef(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    // Load initial graph data
+    // Load initial graph data from your Neo4j database
     const loadGraphData = async () => {
+      setLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/search?q=facility structure&k=20&hops=2`);
+        // Try to get a comprehensive view of your facility graph
+        const res = await fetch(`${API_BASE}/search?q=building structure facility&k=50&hops=3`);
         const data = await res.json();
         
         if (res.ok && data.subgraphs) {
@@ -598,9 +642,10 @@ const GraphView = ({ onAIAction }) => {
               seen.add(n.id);
               nodes.push({
                 id: n.id,
-                name: n.name || "(unnamed)",
-                type: n.type || "",
-                labels: n.labels || []
+                name: n.name || n.id.slice(0, 8),
+                type: n.type || "Unknown",
+                labels: n.labels || [],
+                source: n.source || "Unknown"
               });
             });
             
@@ -608,15 +653,40 @@ const GraphView = ({ onAIAction }) => {
               links.push({
                 source: e.src,
                 target: e.dst,
-                type: e.type
+                type: e.type || "RELATED_TO"
               });
             });
           });
+
+          // If no data from search, try a direct count to see what's available
+          if (nodes.length === 0) {
+            const countRes = await fetch(`${API_BASE}/count?q=all`);
+            const countData = await countRes.json();
+            console.log("Available data types:", countData);
+          }
 
           setGraphData({ nodes, links });
         }
       } catch (error) {
         console.error("Failed to load graph data:", error);
+        // Fallback: create a simple demo graph if no data available
+        setGraphData({
+          nodes: [
+            { id: "building", name: "Building", type: "IfcBuilding", labels: ["Building"] },
+            { id: "floor1", name: "Floor 1", type: "IfcBuildingStorey", labels: ["Floor"] },
+            { id: "floor2", name: "Floor 2", type: "IfcBuildingStorey", labels: ["Floor"] },
+            { id: "space1", name: "Office Space", type: "IfcSpace", labels: ["Space"] },
+            { id: "hvac1", name: "HVAC Unit", type: "IfcFlowTerminal", labels: ["HVAC"] }
+          ],
+          links: [
+            { source: "building", target: "floor1", type: "CONTAINS" },
+            { source: "building", target: "floor2", type: "CONTAINS" },
+            { source: "floor1", target: "space1", type: "CONTAINS" },
+            { source: "space1", target: "hvac1", type: "SERVES" }
+          ]
+        });
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -638,18 +708,21 @@ const GraphView = ({ onAIAction }) => {
   }, []);
 
   const drawNode = useCallback((node, ctx, scale) => {
-    const radius = 8;
+    const radius = 6 + Math.log((node.degree || 1) + 1) * 2;
     ctx.beginPath();
     ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI, false);
     
-    // Color by type
-    ctx.fillStyle = node.type?.includes("Building") ? "#00d4ff" :
-                   node.type?.includes("Storey") ? "#8b5cf6" :
-                   node.type?.includes("Space") ? "#34d399" :
+    // Color by IFC type
+    ctx.fillStyle = node.type?.includes("IfcBuilding") ? "#00d4ff" :
+                   node.type?.includes("IfcBuildingStorey") ? "#8b5cf6" :
+                   node.type?.includes("IfcSpace") ? "#34d399" :
+                   node.type?.includes("IfcFlow") ? "#f59e0b" :
+                   node.type?.includes("IfcWall") ? "#6b7280" :
+                   node.type?.includes("IfcDoor") ? "#10b981" :
                    "#e2e8f0";
     
     ctx.fill();
-    ctx.font = `${Math.max(12 / scale, 8)}px Inter, system-ui`;
+    ctx.font = `${Math.max(11 / scale, 8)}px Inter, system-ui`;
     ctx.fillStyle = "#ffffff";
     const label = node.name?.slice(0, 20) || node.id.slice(0, 8);
     ctx.fillText(label, node.x + radius + 4, node.y + 4);
@@ -687,7 +760,14 @@ const GraphView = ({ onAIAction }) => {
         </CardHeader>
         <CardContent className="h-full p-0">
           <div ref={containerRef} className="h-full w-full">
-            {size.width > 0 && size.height > 0 && (
+            {loading ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center space-y-2">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--palantir-text-accent)] mx-auto"></div>
+                  <p className="text-sm text-[var(--palantir-text-muted)]">Loading Neo4j graph...</p>
+                </div>
+              </div>
+            ) : size.width > 0 && size.height > 0 ? (
               <ForceGraph2D
                 graphData={graphData}
                 nodeId="id"
@@ -698,7 +778,46 @@ const GraphView = ({ onAIAction }) => {
                 width={size.width}
                 height={size.height}
               />
+            ) : (
+              <div className="h-full flex items-center justify-center">
+                <p className="text-[var(--palantir-text-muted)]">Initializing graph...</p>
+              </div>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Graph Legend */}
+      <Card className="palantir-card">
+        <CardHeader>
+          <CardTitle>Graph Legend</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#00d4ff]"></div>
+              <span className="text-[var(--palantir-text-primary)]">Buildings</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#8b5cf6]"></div>
+              <span className="text-[var(--palantir-text-primary)]">Floors</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#34d399]"></div>
+              <span className="text-[var(--palantir-text-primary)]">Spaces</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#f59e0b]"></div>
+              <span className="text-[var(--palantir-text-primary)]">Flow Systems</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#6b7280]"></div>
+              <span className="text-[var(--palantir-text-primary)]">Walls</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#10b981]"></div>
+              <span className="text-[var(--palantir-text-primary)]">Doors</span>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -721,6 +840,10 @@ const GraphView = ({ onAIAction }) => {
                   <span className="text-[var(--palantir-text-primary)]">{selectedNode.type}</span>
                 </div>
                 <div className="flex justify-between">
+                  <span className="text-[var(--palantir-text-muted)]">ID:</span>
+                  <span className="text-[var(--palantir-text-accent)] font-mono text-xs">{selectedNode.id}</span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-[var(--palantir-text-muted)]">Connections:</span>
                   <span className="text-[var(--palantir-text-primary)]">
                     {graphData.links.filter(l => l.source === selectedNode.id || l.target === selectedNode.id).length} relationships
@@ -738,7 +861,7 @@ const GraphView = ({ onAIAction }) => {
               <div className="space-y-2 text-sm">
                 {graphData.links
                   .filter(l => l.source === selectedNode.id || l.target === selectedNode.id)
-                  .slice(0, 3)
+                  .slice(0, 5)
                   .map((link, index) => (
                     <div key={index} className="flex justify-between">
                       <span className="text-[var(--palantir-text-primary)]">
@@ -748,6 +871,9 @@ const GraphView = ({ onAIAction }) => {
                       </span>
                     </div>
                   ))}
+                {graphData.links.filter(l => l.source === selectedNode.id || l.target === selectedNode.id).length === 0 && (
+                  <p className="text-[var(--palantir-text-muted)]">No relationships found</p>
+                )}
               </div>
             </CardContent>
           </Card>
