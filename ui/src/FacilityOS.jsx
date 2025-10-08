@@ -233,7 +233,7 @@ const Navigation = ({ activeTab, onTabChange }) => {
       <div className="p-6 border-b border-[var(--palantir-border-primary)]">
         <div className="flex items-center gap-3">
           <Factory className="h-8 w-8 text-[var(--palantir-text-accent)]" />
-          <h1 className="text-xl font-bold text-[var(--palantir-text-primary)]">FacilityOS</h1>
+          <h1 className="text-xl font-bold text-[var(--palantir-text-primary)]">RiG: Retrieval over ifcJSON Graphs</h1>
         </div>
       </div>
       
@@ -1324,7 +1324,7 @@ export default function FacilityOS() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Factory className="h-6 w-6 text-[var(--palantir-text-accent)]" />
-            <h1 className="text-xl font-semibold">FacilityOS</h1>
+            <h1 className="text-xl font-semibold">Gemino</h1>
           </div>
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-medium">Facility Management System</h2>
