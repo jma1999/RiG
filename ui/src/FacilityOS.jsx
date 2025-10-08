@@ -126,7 +126,7 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
 
   if (!isExpanded) {
     return (
-      <div className="fixed bottom-6 left-6 z-50">
+      <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={onToggle}
           className="h-14 w-14 rounded-full bg-[var(--palantir-text-accent)] hover:bg-[var(--palantir-info)] shadow-lg"
@@ -138,7 +138,7 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
   }
 
   return (
-    <div className="fixed bottom-6 left-6 z-50 w-96 h-[600px] bg-[var(--palantir-bg-elevated)] border border-[var(--palantir-border-primary)] rounded-xl shadow-xl">
+    <div className="fixed bottom-6 right-6 z-50 w-96 h-[600px] bg-[var(--palantir-bg-elevated)] border border-[var(--palantir-border-primary)] rounded-xl shadow-xl">
       <div className="flex items-center justify-between p-4 border-b border-[var(--palantir-border-primary)]">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5 text-[var(--palantir-text-accent)]" />
