@@ -445,87 +445,96 @@ const ModelViewer3D = () => {
   const fileInputRef = useRef(null);
   const viewerRef = useRef(null);
   const viewerInstanceRef = useRef(null);
+  const [containerReady, setContainerReady] = useState(false);
 
-  // Auto-load the sample house IFC file
+  // Callback ref to detect when container is ready
+  const containerRef = useCallback((node) => {
+    if (node) {
+      viewerRef.current = node;
+      setContainerReady(true);
+      console.log("Container ref set:", node);
+    }
+  }, []);
+
+  // Auto-load the sample house IFC file when container is ready
   useEffect(() => {
+    if (!containerReady) return;
+    
     const loadSampleHouse = async () => {
       setLoading(true);
       setError(null);
-      
-      // Add a small delay to ensure the DOM is ready
-      await new Promise(resolve => setTimeout(resolve, 100));
       
       try {
         console.log("Loading web-ifc-viewer...");
         const { IfcViewerAPI } = await import('web-ifc-viewer');
         console.log("web-ifc-viewer loaded successfully");
         
-        if (viewerRef.current) {
-          console.log("Initializing viewer...");
-          const viewer = new IfcViewerAPI({
-            container: viewerRef.current,
-            backgroundColor: '#0a0a0a'
+        if (!viewerRef.current) {
+          throw new Error("Viewer container not available");
+        }
+        
+        console.log("Container found, initializing viewer...");
+        const viewer = new IfcViewerAPI({
+          container: viewerRef.current,
+          backgroundColor: '#0a0a0a'
+        });
+        
+        viewerInstanceRef.current = viewer;
+        
+        // Set the wasm path - try multiple possible paths
+        const wasmPaths = ["/ifc/", "./ifc/", "/ui/ifc/"];
+        let wasmLoaded = false;
+        
+        for (const path of wasmPaths) {
+          try {
+            console.log(`Trying WASM path: ${path}`);
+            viewer.IFC.setWasmPath(path);
+            wasmLoaded = true;
+            console.log(`WASM path set successfully: ${path}`);
+            break;
+          } catch (err) {
+            console.warn(`Failed to set WASM path ${path}:`, err);
+          }
+        }
+        
+        if (!wasmLoaded) {
+          throw new Error("Failed to load WASM files from any path");
+        }
+        
+        // Wait a bit for WASM to initialize
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Load the sample house IFC file
+        console.log("Loading IFC file...");
+        const modelId = await viewer.IFC.loader.ifcManager.loadIfc("/ifc/sample-house.ifc");
+        console.log("IFC file loaded successfully, model ID:", modelId);
+        
+        // Get model info
+        const model = viewer.IFC.loader.ifcManager.getModel(modelId);
+        if (model) {
+          console.log("Getting model statistics...");
+          const elements = model.getAllItemsOfType(0, true).length;
+          const spaces = model.getAllItemsOfType(35, true).length; // IfcSpace
+          const floors = model.getAllItemsOfType(44, true).length; // IfcBuildingStorey
+          const walls = model.getAllItemsOfType(20, true).length; // IfcWall
+          const doors = model.getAllItemsOfType(22, true).length; // IfcDoor
+          const windows = model.getAllItemsOfType(23, true).length; // IfcWindow
+          
+          setModelInfo({
+            elements,
+            spaces,
+            floors,
+            walls,
+            doors,
+            windows,
+            fileName: "sample-house.ifc"
           });
           
-          viewerInstanceRef.current = viewer;
-          
-          // Set the wasm path - try multiple possible paths
-          const wasmPaths = ["/ifc/", "./ifc/", "/ui/ifc/"];
-          let wasmLoaded = false;
-          
-          for (const path of wasmPaths) {
-            try {
-              console.log(`Trying WASM path: ${path}`);
-              viewer.IFC.setWasmPath(path);
-              wasmLoaded = true;
-              console.log(`WASM path set successfully: ${path}`);
-              break;
-            } catch (err) {
-              console.warn(`Failed to set WASM path ${path}:`, err);
-            }
-          }
-          
-          if (!wasmLoaded) {
-            throw new Error("Failed to load WASM files from any path");
-          }
-          
-          // Wait a bit for WASM to initialize
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          // Load the sample house IFC file
-          console.log("Loading IFC file...");
-          const modelId = await viewer.IFC.loader.ifcManager.loadIfc("/ifc/sample-house.ifc");
-          console.log("IFC file loaded successfully, model ID:", modelId);
-          
-          // Get model info
-          const model = viewer.IFC.loader.ifcManager.getModel(modelId);
-          if (model) {
-            console.log("Getting model statistics...");
-            const elements = model.getAllItemsOfType(0, true).length;
-            const spaces = model.getAllItemsOfType(35, true).length; // IfcSpace
-            const floors = model.getAllItemsOfType(44, true).length; // IfcBuildingStorey
-            const walls = model.getAllItemsOfType(20, true).length; // IfcWall
-            const doors = model.getAllItemsOfType(22, true).length; // IfcDoor
-            const windows = model.getAllItemsOfType(23, true).length; // IfcWindow
-            
-            setModelInfo({
-              elements,
-              spaces,
-              floors,
-              walls,
-              doors,
-              windows,
-              fileName: "sample-house.ifc"
-            });
-            
-            console.log("Model info:", { elements, spaces, floors, walls, doors, windows });
-          }
-          
-          setIsModelLoaded(true);
-          console.log("Model loaded successfully!");
-        } else {
-          throw new Error("Viewer container not ready");
+          console.log("Model info:", { elements, spaces, floors, walls, doors, windows });
         }
+        
+        setIsModelLoaded(true);
+        console.log("Model loaded successfully!");
       } catch (error) {
         console.error("Failed to load sample house IFC:", error);
         setError(error.message);
@@ -536,7 +545,7 @@ const ModelViewer3D = () => {
     };
 
     loadSampleHouse();
-  }, []);
+  }, [containerReady]);
 
   // Cleanup viewer on unmount
   useEffect(() => {
@@ -677,13 +686,27 @@ const ModelViewer3D = () => {
                     </p>
                   )}
                 </div>
-                <Button 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="bg-[var(--palantir-text-accent)] hover:bg-[var(--palantir-info)]"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload IFC File
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => {
+                      setError(null);
+                      setContainerReady(false);
+                      setTimeout(() => setContainerReady(true), 100);
+                    }}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Retry Load
+                  </Button>
+                  <Button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-[var(--palantir-text-accent)] hover:bg-[var(--palantir-info)]"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload IFC File
+                  </Button>
+                </div>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -695,7 +718,7 @@ const ModelViewer3D = () => {
             </div>
           ) : (
             <div 
-              ref={viewerRef}
+              ref={containerRef}
               className="w-full h-full bg-[var(--palantir-bg-tertiary)] rounded-lg"
               style={{ minHeight: '500px' }}
             />
