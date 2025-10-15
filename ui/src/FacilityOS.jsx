@@ -441,31 +441,66 @@ const ModelViewer3D = () => {
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [modelInfo, setModelInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
   const viewerRef = useRef(null);
+  const viewerInstanceRef = useRef(null);
 
   // Auto-load the sample house IFC file
   useEffect(() => {
     const loadSampleHouse = async () => {
       setLoading(true);
+      setError(null);
+      
+      // Add a small delay to ensure the DOM is ready
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       try {
+        console.log("Loading web-ifc-viewer...");
         const { IfcViewerAPI } = await import('web-ifc-viewer');
+        console.log("web-ifc-viewer loaded successfully");
         
         if (viewerRef.current) {
+          console.log("Initializing viewer...");
           const viewer = new IfcViewerAPI({
             container: viewerRef.current,
             backgroundColor: '#0a0a0a'
           });
           
-          // Set the wasm path
-          viewer.IFC.setWasmPath("/ifc/");
+          viewerInstanceRef.current = viewer;
+          
+          // Set the wasm path - try multiple possible paths
+          const wasmPaths = ["/ifc/", "./ifc/", "/ui/ifc/"];
+          let wasmLoaded = false;
+          
+          for (const path of wasmPaths) {
+            try {
+              console.log(`Trying WASM path: ${path}`);
+              viewer.IFC.setWasmPath(path);
+              wasmLoaded = true;
+              console.log(`WASM path set successfully: ${path}`);
+              break;
+            } catch (err) {
+              console.warn(`Failed to set WASM path ${path}:`, err);
+            }
+          }
+          
+          if (!wasmLoaded) {
+            throw new Error("Failed to load WASM files from any path");
+          }
+          
+          // Wait a bit for WASM to initialize
+          await new Promise(resolve => setTimeout(resolve, 500));
           
           // Load the sample house IFC file
-          await viewer.IFC.loader.ifcManager.loadIfc("/ifc/sample-house.ifc");
+          console.log("Loading IFC file...");
+          const modelId = await viewer.IFC.loader.ifcManager.loadIfc("/ifc/sample-house.ifc");
+          console.log("IFC file loaded successfully, model ID:", modelId);
           
           // Get model info
-          const model = viewer.IFC.loader.ifcManager.getModel(0);
+          const model = viewer.IFC.loader.ifcManager.getModel(modelId);
           if (model) {
+            console.log("Getting model statistics...");
             const elements = model.getAllItemsOfType(0, true).length;
             const spaces = model.getAllItemsOfType(35, true).length; // IfcSpace
             const floors = model.getAllItemsOfType(44, true).length; // IfcBuildingStorey
@@ -482,12 +517,18 @@ const ModelViewer3D = () => {
               windows,
               fileName: "sample-house.ifc"
             });
+            
+            console.log("Model info:", { elements, spaces, floors, walls, doors, windows });
           }
           
           setIsModelLoaded(true);
+          console.log("Model loaded successfully!");
+        } else {
+          throw new Error("Viewer container not ready");
         }
       } catch (error) {
         console.error("Failed to load sample house IFC:", error);
+        setError(error.message);
         setIsModelLoaded(false);
       } finally {
         setLoading(false);
@@ -497,34 +538,75 @@ const ModelViewer3D = () => {
     loadSampleHouse();
   }, []);
 
+  // Cleanup viewer on unmount
+  useEffect(() => {
+    return () => {
+      if (viewerInstanceRef.current) {
+        viewerInstanceRef.current.dispose();
+      }
+    };
+  }, []);
+
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
       setLoading(true);
+      setError(null);
       
       // Load the IFC file using web-ifc-viewer
       try {
         const { IfcViewerAPI } = await import('web-ifc-viewer');
         
         if (viewerRef.current) {
+          // Clear existing viewer if any
+          if (viewerInstanceRef.current) {
+            viewerInstanceRef.current.dispose();
+          }
+          
           const viewer = new IfcViewerAPI({
             container: viewerRef.current,
             backgroundColor: '#0a0a0a'
           });
           
-          await viewer.IFC.loader.ifcManager.loadIfc(file);
+          viewerInstanceRef.current = viewer;
+          
+          // Set WASM path
+          const wasmPaths = ["/ifc/", "./ifc/", "/ui/ifc/"];
+          let wasmLoaded = false;
+          
+          for (const path of wasmPaths) {
+            try {
+              viewer.IFC.setWasmPath(path);
+              wasmLoaded = true;
+              break;
+            } catch (err) {
+              console.warn(`Failed to set WASM path ${path}:`, err);
+            }
+          }
+          
+          if (!wasmLoaded) {
+            throw new Error("Failed to load WASM files");
+          }
+          
+          const modelId = await viewer.IFC.loader.ifcManager.loadIfc(file);
           
           // Get model info
-          const model = viewer.IFC.loader.ifcManager.getModel(0);
+          const model = viewer.IFC.loader.ifcManager.getModel(modelId);
           if (model) {
             const elements = model.getAllItemsOfType(0, true).length;
             const spaces = model.getAllItemsOfType(35, true).length; // IfcSpace
             const floors = model.getAllItemsOfType(44, true).length; // IfcBuildingStorey
+            const walls = model.getAllItemsOfType(20, true).length; // IfcWall
+            const doors = model.getAllItemsOfType(22, true).length; // IfcDoor
+            const windows = model.getAllItemsOfType(23, true).length; // IfcWindow
             
             setModelInfo({
               elements,
               spaces,
               floors,
+              walls,
+              doors,
+              windows,
               fileName: file.name
             });
           }
@@ -533,6 +615,7 @@ const ModelViewer3D = () => {
         }
       } catch (error) {
         console.error("Failed to load IFC file:", error);
+        setError(error.message);
         setIsModelLoaded(false);
       } finally {
         setLoading(false);
@@ -582,8 +665,17 @@ const ModelViewer3D = () => {
               <div className="text-center space-y-4">
                 <Upload className="h-16 w-16 text-[var(--palantir-text-muted)] mx-auto" />
                 <div>
-                  <h3 className="text-lg font-semibold text-[var(--palantir-text-primary)]">Failed to Load Model</h3>
-                  <p className="text-[var(--palantir-text-muted)]">Try uploading a different IFC file</p>
+                  <h3 className="text-lg font-semibold text-[var(--palantir-text-primary)]">
+                    {error ? "Failed to Load Model" : "No Model Loaded"}
+                  </h3>
+                  <p className="text-[var(--palantir-text-muted)]">
+                    {error ? `Error: ${error}` : "Try uploading an IFC file"}
+                  </p>
+                  {error && (
+                    <p className="text-xs text-[var(--palantir-text-muted)] mt-2">
+                      Check browser console for more details
+                    </p>
+                  )}
                 </div>
                 <Button 
                   onClick={() => fileInputRef.current?.click()}
