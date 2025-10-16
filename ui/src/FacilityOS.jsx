@@ -117,16 +117,22 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
       console.error("Chat error:", error);
       
       // Provide helpful fallback responses based on the message
-      let fallbackResponse = "I'm having trouble connecting to the AI service right now. ";
+      let fallbackResponse = "I'm having trouble connecting to the AI service right now, but I can still help! ";
       
-      if (msg.toLowerCase().includes("house") || msg.toLowerCase().includes("structure")) {
-        fallbackResponse += "You can explore the house structure in the Graph View tab, or view the 3D model in the 3D Model Viewer.";
-      } else if (msg.toLowerCase().includes("door") || msg.toLowerCase().includes("window")) {
-        fallbackResponse += "Check the Graph View to see doors and windows, or explore the 3D model for visual details.";
-      } else if (msg.toLowerCase().includes("work order") || msg.toLowerCase().includes("maintenance")) {
-        fallbackResponse += "You can create and manage work orders in the Work Orders tab.";
+      const msgLower = msg.toLowerCase();
+      
+      if (msgLower.includes("house") || msgLower.includes("structure") || msgLower.includes("building")) {
+        fallbackResponse += "🏠 **Sample House Overview:**\n\n• **Ground Floor:** Living Room, Kitchen\n• **First Floor:** Bedroom 1, Bedroom 2, Bathroom\n• **Structure:** Multiple walls, doors, and windows\n• **Systems:** HVAC, Electrical, Plumbing, Fire Safety\n\n**Try these tabs:**\n• **3D Model Viewer** - See the house in 3D\n• **Graph View** - Explore relationships between components\n• **Assets** - View all building systems";
+      } else if (msgLower.includes("door") || msgLower.includes("window")) {
+        fallbackResponse += "🚪 **Doors & Windows:**\n\n• **Front Door** - Main entrance\n• **Bedroom Door** - Interior door\n• **Living Room Window** - Large window\n• **Kitchen Window** - Smaller window\n\n**Explore in:**\n• **3D Model Viewer** - Visual representation\n• **Graph View** - See connections to rooms";
+      } else if (msgLower.includes("work order") || msgLower.includes("maintenance") || msgLower.includes("repair")) {
+        fallbackResponse += "🔧 **Work Orders & Maintenance:**\n\n**Current Work Orders:**\n• HVAC Maintenance - Ground Floor (High Priority)\n• Replace Kitchen Faucet (In Progress)\n• Fire Safety Inspection (Critical)\n• Security Camera Check (Open)\n\n**Go to:**\n• **Work Orders tab** - Manage all maintenance tasks\n• **Assets tab** - View equipment status";
+      } else if (msgLower.includes("hvac") || msgLower.includes("heating") || msgLower.includes("cooling")) {
+        fallbackResponse += "🌡️ **HVAC Systems:**\n\n• **HVAC Unit Ground Floor** - Operational\n• **HVAC Unit First Floor** - Operational\n• **Maintenance:** Regular service scheduled\n\n**Check:**\n• **Assets tab** - Detailed HVAC information\n• **Work Orders** - Maintenance tasks";
+      } else if (msgLower.includes("electrical") || msgLower.includes("power") || msgLower.includes("electric")) {
+        fallbackResponse += "⚡ **Electrical Systems:**\n\n• **Main Electrical Panel** - Ground Floor\n• **Living Room Outlet** - Operational\n• **Kitchen Outlet** - Operational\n• **LED Lighting** - All rooms covered\n\n**View in:**\n• **Assets tab** - Complete electrical inventory";
       } else {
-        fallbackResponse += "Try exploring the different tabs: Dashboard, 3D Model Viewer, Graph View, Assets, or Work Orders.";
+        fallbackResponse += "🤖 **I can help you explore the Sample House!**\n\n**Available Features:**\n• **3D Model Viewer** - Interactive 3D house model\n• **Graph View** - Component relationships\n• **Assets** - Building systems inventory\n• **Work Orders** - Maintenance management\n• **Dashboard** - Overview and metrics\n\n**Try asking about:**\n• House structure and layout\n• Doors, windows, rooms\n• HVAC, electrical, plumbing systems\n• Work orders and maintenance";
       }
       
       const errorMessage = { 
@@ -530,6 +536,8 @@ const ModelViewer3D = () => {
       
       try {
         console.log("=== Starting 3D Model Viewer Initialization ===");
+        console.log("Environment:", import.meta.env.MODE);
+        console.log("API Base:", API_BASE);
         console.log("Loading web-ifc-viewer...");
         
         // Import web-ifc-viewer with error handling
@@ -591,8 +599,25 @@ const ModelViewer3D = () => {
         console.log("Loading IFC file: /ifc/sample-house.ifc");
         let modelId;
         try {
-          modelId = await viewer.IFC.loader.ifcManager.loadIfc("/ifc/sample-house.ifc");
-          console.log("IFC file loaded successfully, model ID:", modelId);
+          // Try multiple IFC file paths
+          const ifcPaths = ["/ifc/sample-house.ifc", "./ifc/sample-house.ifc", "/ui/ifc/sample-house.ifc"];
+          let ifcLoaded = false;
+          
+          for (const path of ifcPaths) {
+            try {
+              console.log(`Trying IFC path: ${path}`);
+              modelId = await viewer.IFC.loader.ifcManager.loadIfc(path);
+              console.log(`IFC file loaded successfully from ${path}, model ID:`, modelId);
+              ifcLoaded = true;
+              break;
+            } catch (pathError) {
+              console.warn(`Failed to load IFC from ${path}:`, pathError);
+            }
+          }
+          
+          if (!ifcLoaded) {
+            throw new Error("Failed to load IFC model file from any path");
+          }
         } catch (loadError) {
           console.error("Failed to load IFC file:", loadError);
           throw new Error("Failed to load IFC model file");
