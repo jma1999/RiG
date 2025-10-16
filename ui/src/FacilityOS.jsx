@@ -65,6 +65,7 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
     setIsLoading(true);
 
     try {
+      console.log("Sending message to AI:", msg);
       const res = await fetch(`${API_BASE}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,12 +75,16 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
         })
       });
       
+      if (!res.ok) {
+        throw new Error(`API request failed: ${res.status} ${res.statusText}`);
+      }
+      
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Chat failed");
+      console.log("AI response received:", data);
       
       const assistantMessage = { 
         role: "assistant", 
-        content: data.reply, 
+        content: data.reply || "I received your message but couldn't generate a proper response.", 
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         tool: data.tool
       };
@@ -110,9 +115,23 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
       }
     } catch (error) {
       console.error("Chat error:", error);
+      
+      // Provide helpful fallback responses based on the message
+      let fallbackResponse = "I'm having trouble connecting to the AI service right now. ";
+      
+      if (msg.toLowerCase().includes("house") || msg.toLowerCase().includes("structure")) {
+        fallbackResponse += "You can explore the house structure in the Graph View tab, or view the 3D model in the 3D Model Viewer.";
+      } else if (msg.toLowerCase().includes("door") || msg.toLowerCase().includes("window")) {
+        fallbackResponse += "Check the Graph View to see doors and windows, or explore the 3D model for visual details.";
+      } else if (msg.toLowerCase().includes("work order") || msg.toLowerCase().includes("maintenance")) {
+        fallbackResponse += "You can create and manage work orders in the Work Orders tab.";
+      } else {
+        fallbackResponse += "Try exploring the different tabs: Dashboard, 3D Model Viewer, Graph View, Assets, or Work Orders.";
+      }
+      
       const errorMessage = { 
         role: "assistant", 
-        content: `Sorry, I encountered an error: ${error.message}`, 
+        content: fallbackResponse, 
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -896,92 +915,113 @@ const GraphView = ({ onAIAction }) => {
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    // Load initial graph data from your sample house Neo4j database
+    // Load initial graph data with fallback
     const loadGraphData = async () => {
       setLoading(true);
       try {
-        // Try multiple search strategies to get sample house data
-        const searchQueries = [
-          "sample house building structure",
-          "house walls doors windows",
-          "building storey space",
-          "facility structure"
-        ];
+        console.log("Loading graph data...");
         
-        let bestData = null;
-        let maxNodes = 0;
-        
-        for (const query of searchQueries) {
-          try {
-            const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}&k=30&hops=2`);
-            const data = await res.json();
-            
-            if (res.ok && data.subgraphs) {
-              const nodes = [];
-              const links = [];
-              const seen = new Set();
-
-              data.subgraphs.forEach((sg) => {
-                sg.nodes?.forEach((n) => {
-                  if (seen.has(n.id)) return;
-                  seen.add(n.id);
-                  nodes.push({
-                    id: n.id,
-                    name: n.name || n.id.slice(0, 8),
-                    type: n.type || "Unknown",
-                    labels: n.labels || [],
-                    source: n.source || "Unknown"
-                  });
-                });
-                
-                sg.edges?.forEach((e) => {
-                  links.push({
-                    source: e.src,
-                    target: e.dst,
-                    type: e.type || "RELATED_TO"
-                  });
-                });
-              });
-
-              if (nodes.length > maxNodes) {
-                maxNodes = nodes.length;
-                bestData = { nodes, links };
-              }
-            }
-          } catch (err) {
-            console.warn(`Search query "${query}" failed:`, err);
-          }
-        }
-
-        if (bestData && bestData.nodes.length > 0) {
-          setGraphData(bestData);
-          console.log(`Loaded ${bestData.nodes.length} nodes and ${bestData.links.length} links from sample house`);
-        } else {
-          // Try to get count data to see what's available
-          const countRes = await fetch(`${API_BASE}/count?q=all`);
-          const countData = await countRes.json();
-          console.log("Available data types in Neo4j:", countData);
+        // Try to load from API first
+        let apiData = null;
+        try {
+          const searchQueries = [
+            "sample house building structure",
+            "house walls doors windows",
+            "building storey space"
+          ];
           
-          // Fallback: create a sample house demo graph
+          for (const query of searchQueries) {
+            try {
+              console.log(`Trying search query: ${query}`);
+              const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}&k=20&hops=2`);
+              if (res.ok) {
+                const data = await res.json();
+                if (data.subgraphs && data.subgraphs.length > 0) {
+                  const nodes = [];
+                  const links = [];
+                  const seen = new Set();
+
+                  data.subgraphs.forEach((sg) => {
+                    sg.nodes?.forEach((n) => {
+                      if (seen.has(n.id)) return;
+                      seen.add(n.id);
+                      nodes.push({
+                        id: n.id,
+                        name: n.name || n.id.slice(0, 8),
+                        type: n.type || "Unknown",
+                        labels: n.labels || [],
+                        source: n.source || "Unknown"
+                      });
+                    });
+                    
+                    sg.edges?.forEach((e) => {
+                      links.push({
+                        source: e.src,
+                        target: e.dst,
+                        type: e.type || "RELATED_TO"
+                      });
+                    });
+                  });
+
+                  if (nodes.length > 0) {
+                    apiData = { nodes, links };
+                    console.log(`Loaded ${nodes.length} nodes and ${links.length} links from API`);
+                    break;
+                  }
+                }
+              }
+            } catch (err) {
+              console.warn(`Search query "${query}" failed:`, err);
+            }
+          }
+        } catch (apiError) {
+          console.warn("API search failed, using fallback data:", apiError);
+        }
+        
+        // Use API data if available, otherwise use fallback
+        if (apiData && apiData.nodes.length > 0) {
+          setGraphData(apiData);
+        } else {
+          console.log("Using fallback sample house graph data");
+          // Create a comprehensive sample house demo graph
           setGraphData({
             nodes: [
               { id: "house", name: "Sample House", type: "IfcBuilding", labels: ["Building"] },
               { id: "ground-floor", name: "Ground Floor", type: "IfcBuildingStorey", labels: ["Floor"] },
+              { id: "first-floor", name: "First Floor", type: "IfcBuildingStorey", labels: ["Floor"] },
               { id: "living-room", name: "Living Room", type: "IfcSpace", labels: ["Space"] },
               { id: "kitchen", name: "Kitchen", type: "IfcSpace", labels: ["Space"] },
-              { id: "bedroom", name: "Bedroom", type: "IfcSpace", labels: ["Space"] },
+              { id: "bedroom-1", name: "Bedroom 1", type: "IfcSpace", labels: ["Space"] },
+              { id: "bedroom-2", name: "Bedroom 2", type: "IfcSpace", labels: ["Space"] },
+              { id: "bathroom", name: "Bathroom", type: "IfcSpace", labels: ["Space"] },
               { id: "wall-1", name: "Wall 1", type: "IfcWall", labels: ["Wall"] },
+              { id: "wall-2", name: "Wall 2", type: "IfcWall", labels: ["Wall"] },
+              { id: "wall-3", name: "Wall 3", type: "IfcWall", labels: ["Wall"] },
               { id: "door-1", name: "Front Door", type: "IfcDoor", labels: ["Door"] },
-              { id: "window-1", name: "Window 1", type: "IfcWindow", labels: ["Window"] }
+              { id: "door-2", name: "Bedroom Door", type: "IfcDoor", labels: ["Door"] },
+              { id: "window-1", name: "Living Room Window", type: "IfcWindow", labels: ["Window"] },
+              { id: "window-2", name: "Kitchen Window", type: "IfcWindow", labels: ["Window"] },
+              { id: "hvac-1", name: "HVAC Unit", type: "IfcFlowTerminal", labels: ["HVAC"] },
+              { id: "electrical-1", name: "Electrical Panel", type: "IfcElectricalElement", labels: ["Electrical"] }
             ],
             links: [
               { source: "house", target: "ground-floor", type: "CONTAINS" },
+              { source: "house", target: "first-floor", type: "CONTAINS" },
               { source: "ground-floor", target: "living-room", type: "CONTAINS" },
               { source: "ground-floor", target: "kitchen", type: "CONTAINS" },
-              { source: "ground-floor", target: "bedroom", type: "CONTAINS" },
+              { source: "first-floor", target: "bedroom-1", type: "CONTAINS" },
+              { source: "first-floor", target: "bedroom-2", type: "CONTAINS" },
+              { source: "first-floor", target: "bathroom", type: "CONTAINS" },
               { source: "living-room", target: "wall-1", type: "BOUNDED_BY" },
+              { source: "living-room", target: "wall-2", type: "BOUNDED_BY" },
+              { source: "kitchen", target: "wall-2", type: "BOUNDED_BY" },
+              { source: "kitchen", target: "wall-3", type: "BOUNDED_BY" },
               { source: "living-room", target: "door-1", type: "BOUNDED_BY" },
-              { source: "living-room", target: "window-1", type: "BOUNDED_BY" }
+              { source: "bedroom-1", target: "door-2", type: "BOUNDED_BY" },
+              { source: "living-room", target: "window-1", type: "BOUNDED_BY" },
+              { source: "kitchen", target: "window-2", type: "BOUNDED_BY" },
+              { source: "house", target: "hvac-1", type: "SERVES" },
+              { source: "house", target: "electrical-1", type: "SERVES" }
             ]
           });
         }
@@ -1195,23 +1235,51 @@ const AssetsView = ({ onAIAction }) => {
   useEffect(() => {
     const loadAssets = async () => {
       try {
-        // Load asset count and types
-        const res = await fetch(`${API_BASE}/count?q=assets`);
-        const data = await res.json();
+        console.log("Loading assets...");
         
-        // For now, create mock data based on the count
+        // Try to load from API first
+        let apiCount = 0;
+        try {
+          const res = await fetch(`${API_BASE}/count?q=assets`);
+          if (res.ok) {
+            const data = await res.json();
+            apiCount = data.total || 0;
+            console.log("Asset count from API:", apiCount);
+          }
+        } catch (apiError) {
+          console.warn("API asset count failed, using mock data:", apiError);
+        }
+        
+        // Create comprehensive mock data for sample house
         const mockAssets = [
-          { id: "HVAC-3A-02", name: "HVAC Unit 3A", type: "HVAC", location: "Floor 3", status: "operational", lastMaintenance: "2025-09-15" },
-          { id: "ELEV-01", name: "Passenger Elevator 1", type: "Elevator", location: "Core", status: "operational", lastMaintenance: "2025-09-20" },
-          { id: "FIRE-2B", name: "Fire Panel 2B", type: "Fire Safety", location: "Floor 2", status: "warning", lastMaintenance: "2025-08-10" },
-          { id: "LIGHT-5A", name: "LED Lighting Zone 5A", type: "Lighting", location: "Floor 5", status: "operational", lastMaintenance: "2025-09-25" },
-          { id: "HVAC-1B-01", name: "HVAC Unit 1B", type: "HVAC", location: "Floor 1", status: "critical", lastMaintenance: "2025-07-15" }
+          { id: "HVAC-01", name: "HVAC Unit Ground Floor", type: "HVAC", location: "Ground Floor", status: "operational", lastMaintenance: "2025-09-15" },
+          { id: "HVAC-02", name: "HVAC Unit First Floor", type: "HVAC", location: "First Floor", status: "operational", lastMaintenance: "2025-09-20" },
+          { id: "FIRE-01", name: "Fire Panel Main", type: "Fire Safety", location: "Ground Floor", status: "operational", lastMaintenance: "2025-08-10" },
+          { id: "FIRE-02", name: "Smoke Detector Living Room", type: "Fire Safety", location: "Living Room", status: "operational", lastMaintenance: "2025-08-15" },
+          { id: "FIRE-03", name: "Smoke Detector Kitchen", type: "Fire Safety", location: "Kitchen", status: "warning", lastMaintenance: "2025-07-20" },
+          { id: "LIGHT-01", name: "LED Lighting Living Room", type: "Lighting", location: "Living Room", status: "operational", lastMaintenance: "2025-09-25" },
+          { id: "LIGHT-02", name: "LED Lighting Kitchen", type: "Lighting", location: "Kitchen", status: "operational", lastMaintenance: "2025-09-22" },
+          { id: "LIGHT-03", name: "LED Lighting Bedroom 1", type: "Lighting", location: "Bedroom 1", status: "operational", lastMaintenance: "2025-09-20" },
+          { id: "LIGHT-04", name: "LED Lighting Bedroom 2", type: "Lighting", location: "Bedroom 2", status: "operational", lastMaintenance: "2025-09-18" },
+          { id: "LIGHT-05", name: "LED Lighting Bathroom", type: "Lighting", location: "Bathroom", status: "operational", lastMaintenance: "2025-09-15" },
+          { id: "ELEC-01", name: "Electrical Panel Main", type: "Electrical", location: "Ground Floor", status: "operational", lastMaintenance: "2025-08-30" },
+          { id: "ELEC-02", name: "Outlet Living Room", type: "Electrical", location: "Living Room", status: "operational", lastMaintenance: "2025-08-25" },
+          { id: "ELEC-03", name: "Outlet Kitchen", type: "Electrical", location: "Kitchen", status: "operational", lastMaintenance: "2025-08-20" },
+          { id: "PLUMB-01", name: "Water Heater", type: "Plumbing", location: "Ground Floor", status: "operational", lastMaintenance: "2025-09-10" },
+          { id: "PLUMB-02", name: "Kitchen Faucet", type: "Plumbing", location: "Kitchen", status: "operational", lastMaintenance: "2025-09-05" },
+          { id: "PLUMB-03", name: "Bathroom Faucet", type: "Plumbing", location: "Bathroom", status: "warning", lastMaintenance: "2025-07-15" },
+          { id: "SEC-01", name: "Security Camera Front", type: "Security", location: "Front Door", status: "operational", lastMaintenance: "2025-09-12" },
+          { id: "SEC-02", name: "Security Camera Back", type: "Security", location: "Back Door", status: "operational", lastMaintenance: "2025-09-08" }
         ];
         
+        console.log(`Loaded ${mockAssets.length} mock assets`);
         setAssets(mockAssets);
         setFilteredAssets(mockAssets);
       } catch (error) {
         console.error("Failed to load assets:", error);
+        // Set empty state on complete failure
+        setAssets([]);
+        setFilteredAssets([]);
       }
     };
 
@@ -1391,11 +1459,40 @@ const WorkOrdersView = ({ onAIAction }) => {
   useEffect(() => {
     const loadWorkOrders = async () => {
       try {
-        const res = await fetch(`${API_BASE}/workorders`);
-        const data = await res.json();
-        setWorkOrders(data || []);
+        console.log("Loading work orders...");
+        
+        // Try to load from API first
+        let apiWorkOrders = [];
+        try {
+          const res = await fetch(`${API_BASE}/workorders`);
+          if (res.ok) {
+            apiWorkOrders = await res.json();
+            console.log("Work orders from API:", apiWorkOrders.length);
+          }
+        } catch (apiError) {
+          console.warn("API work orders failed, using mock data:", apiError);
+        }
+        
+        // Use API data if available, otherwise use mock data
+        if (apiWorkOrders.length > 0) {
+          setWorkOrders(apiWorkOrders);
+        } else {
+          console.log("Using mock work orders data");
+          const mockWorkOrders = [
+            { id: "WO-001", title: "HVAC Maintenance - Ground Floor", priority: "High", status: "Open", createdAt: "2025-10-15" },
+            { id: "WO-002", title: "Replace Kitchen Faucet", priority: "Medium", status: "In Progress", createdAt: "2025-10-14" },
+            { id: "WO-003", title: "Fire Safety Inspection", priority: "Critical", status: "Open", createdAt: "2025-10-13" },
+            { id: "WO-004", title: "LED Light Replacement - Living Room", priority: "Low", status: "Done", createdAt: "2025-10-12" },
+            { id: "WO-005", title: "Security Camera Check", priority: "Medium", status: "Open", createdAt: "2025-10-11" },
+            { id: "WO-006", title: "Electrical Panel Inspection", priority: "High", status: "In Progress", createdAt: "2025-10-10" },
+            { id: "WO-007", title: "Bathroom Plumbing Repair", priority: "Medium", status: "Done", createdAt: "2025-10-09" },
+            { id: "WO-008", title: "Window Cleaning", priority: "Low", status: "Open", createdAt: "2025-10-08" }
+          ];
+          setWorkOrders(mockWorkOrders);
+        }
       } catch (error) {
         console.error("Failed to load work orders:", error);
+        setWorkOrders([]);
       }
     };
 
