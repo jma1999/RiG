@@ -36,6 +36,7 @@ import {
 import ForceGraph2D from "react-force-graph-2d";
 import { API_BASE } from "@/lib/env";
 import { cn } from "@/lib/utils";
+import DirectUploadComponent from "@/components/DirectUploadComponent";
 
 // === AI Assistant Component ===
 const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
@@ -515,6 +516,7 @@ const ModelViewer3D = () => {
   const viewerInstanceRef = useRef(null);
   const [containerReady, setContainerReady] = useState(false);
   const [initializationAttempted, setInitializationAttempted] = useState(false);
+  const [showUploadComponent, setShowUploadComponent] = useState(false);
 
   // Callback ref to detect when container is ready
   const containerRef = useCallback((node) => {
@@ -533,6 +535,13 @@ const ModelViewer3D = () => {
       setInitializationAttempted(true);
       setLoading(true);
       setError(null);
+      
+      // Add a timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        console.error("3D viewer initialization timeout");
+        setError("3D viewer initialization timed out. This might be due to missing IFC files or WASM loading issues.");
+        setLoading(false);
+      }, 30000); // 30 second timeout
       
       try {
         console.log("=== Starting 3D Model Viewer Initialization ===");
@@ -593,34 +602,48 @@ const ModelViewer3D = () => {
         
         // Wait for WASM to initialize
         console.log("Waiting for WASM initialization...");
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Test if WASM files are accessible
+        console.log("Testing WASM file accessibility...");
+        try {
+          const wasmTest = await fetch("/ifc/web-ifc.wasm", { method: "HEAD" });
+          console.log("WASM file accessible:", wasmTest.ok);
+        } catch (wasmError) {
+          console.warn("WASM file not accessible:", wasmError);
+        }
+        
+        // Test IFC file accessibility first
+        console.log("Testing IFC file accessibility...");
+        const ifcPaths = ["/ifc/sample-house.ifc", "./ifc/sample-house.ifc", "/ui/ifc/sample-house.ifc"];
+        let accessiblePath = null;
+        
+        for (const path of ifcPaths) {
+          try {
+            const ifcTest = await fetch(path, { method: "HEAD" });
+            if (ifcTest.ok) {
+              console.log(`IFC file accessible at: ${path}`);
+              accessiblePath = path;
+              break;
+            }
+          } catch (testError) {
+            console.warn(`IFC file not accessible at ${path}:`, testError);
+          }
+        }
+        
+        if (!accessiblePath) {
+          throw new Error("IFC file not accessible from any path");
+        }
         
         // Load the sample house IFC file
-        console.log("Loading IFC file: /ifc/sample-house.ifc");
+        console.log(`Loading IFC file: ${accessiblePath}`);
         let modelId;
         try {
-          // Try multiple IFC file paths
-          const ifcPaths = ["/ifc/sample-house.ifc", "./ifc/sample-house.ifc", "/ui/ifc/sample-house.ifc"];
-          let ifcLoaded = false;
-          
-          for (const path of ifcPaths) {
-            try {
-              console.log(`Trying IFC path: ${path}`);
-              modelId = await viewer.IFC.loader.ifcManager.loadIfc(path);
-              console.log(`IFC file loaded successfully from ${path}, model ID:`, modelId);
-              ifcLoaded = true;
-              break;
-            } catch (pathError) {
-              console.warn(`Failed to load IFC from ${path}:`, pathError);
-            }
-          }
-          
-          if (!ifcLoaded) {
-            throw new Error("Failed to load IFC model file from any path");
-          }
+          modelId = await viewer.IFC.loader.ifcManager.loadIfc(accessiblePath);
+          console.log(`IFC file loaded successfully, model ID:`, modelId);
         } catch (loadError) {
           console.error("Failed to load IFC file:", loadError);
-          throw new Error("Failed to load IFC model file");
+          throw new Error(`Failed to load IFC model file: ${loadError.message}`);
         }
         
         // Get model info
@@ -654,11 +677,13 @@ const ModelViewer3D = () => {
         
         setIsModelLoaded(true);
         console.log("=== 3D Model Viewer Initialization Complete ===");
+        clearTimeout(timeoutId);
       } catch (error) {
         console.error("=== 3D Model Viewer Initialization Failed ===");
         console.error("Error details:", error);
         setError(error.message);
         setIsModelLoaded(false);
+        clearTimeout(timeoutId);
       } finally {
         setLoading(false);
       }
@@ -675,6 +700,19 @@ const ModelViewer3D = () => {
       }
     };
   }, []);
+
+  // Upload handlers for the new direct upload component
+  const handleUploadComplete = (jobStatus) => {
+    console.log('Upload completed:', jobStatus);
+    setShowUploadComponent(false);
+    // Optionally reload the model or refresh the viewer
+    // You could trigger a model reload here if needed
+  };
+
+  const handleUploadError = (error) => {
+    console.error('Upload error:', error);
+    setError(`Upload failed: ${error}`);
+  };
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
@@ -766,7 +804,10 @@ const ModelViewer3D = () => {
             <Download className="h-4 w-4" />
             Export
           </Button>
-          <Button className="bg-[var(--palantir-text-accent)] hover:bg-[var(--palantir-info)] flex items-center gap-2">
+          <Button 
+            onClick={() => setShowUploadComponent(true)}
+            className="bg-[var(--palantir-text-accent)] hover:bg-[var(--palantir-info)] flex items-center gap-2"
+          >
             <Upload className="h-4 w-4" />
             Upload IFC
           </Button>
@@ -779,7 +820,14 @@ const ModelViewer3D = () => {
           <p className="text-sm text-[var(--palantir-text-muted)]">Industry Foundation Classes (IFC) viewer</p>
         </CardHeader>
         <CardContent className="h-full p-0">
-          {loading ? (
+          {showUploadComponent ? (
+            <div className="h-full flex items-center justify-center p-6">
+              <DirectUploadComponent 
+                onUploadComplete={handleUploadComplete}
+                onUploadError={handleUploadError}
+              />
+            </div>
+          ) : loading ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center space-y-4">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--palantir-text-accent)] mx-auto"></div>
@@ -821,7 +869,7 @@ const ModelViewer3D = () => {
                     Retry Load
                   </Button>
                   <Button 
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => setShowUploadComponent(true)}
                     className="bg-[var(--palantir-text-accent)] hover:bg-[var(--palantir-info)]"
                   >
                     <Upload className="h-4 w-4 mr-2" />

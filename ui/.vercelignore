@@ -1,0 +1,5 @@
+# Don't ignore the IFC files - we need them for the 3D viewer
+# node_modules
+# .git
+# .env.local
+

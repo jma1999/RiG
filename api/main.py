@@ -1,15 +1,16 @@
 from __future__ import annotations
-import os, json, threading
+import os, json, threading, uuid
 from typing import List, Dict, Any, Optional
 from math import sqrt
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import numpy as np
 import re
+from datetime import datetime
 
 load_dotenv()
 NEO4J_URI  = os.getenv("NEO4J_URI", "bolt://localhost:7687")
@@ -241,6 +242,35 @@ class WorkOrderUpdate(BaseModel):
     priority: Optional[str] = None
     status: Optional[str] = None
     assetId: Optional[str] = None
+
+# File upload and job management models
+class UploadSession(BaseModel):
+    upload_id: str
+    file_key: str
+    bucket: str
+    endpoint_url: str
+    region: str
+    max_file_size: int
+    min_part_size: int
+
+class UploadPart(BaseModel):
+    part_number: int
+    presigned_url: str
+
+class JobStatus(BaseModel):
+    id: str
+    status: str
+    progress: int
+    message: str
+    created_at: str
+    updated_at: str
+    metadata: Dict[str, Any] = {}
+
+class FileUploadRequest(BaseModel):
+    file_name: str
+    file_size: int
+    content_type: str
+    tenant_id: str = "default"
 
 # ---------------- deps ----------------
 def get_driver():
@@ -590,6 +620,10 @@ def nearest(typeA: str, typeB: str, limit: int = 1):
 # register additional chat routes
 import api.chat  # noqa: E402  pylint: disable=wrong-import-position
 
+# Import new services
+from api.cloud_storage import cloud_storage
+from api.tasks import parse_ifc_file, get_job_status
+
 # ---------------- work orders ----------------
 def _ensure_workorder_indexes():
     try:
@@ -749,3 +783,155 @@ def rebuild_semantic_index():
             status_code=500,
             detail=f"Failed to rebuild index: {str(e)}"
         )
+
+
+# ---------------- file upload and job management ----------------
+@app.post("/upload/session", response_model=UploadSession)
+def create_upload_session(request: FileUploadRequest):
+    """Create a multipart upload session for large IFC files."""
+    try:
+        # Validate file type
+        if not cloud_storage.validate_file_type(request.file_name, request.content_type):
+            raise HTTPException(
+                status_code=400, 
+                detail="Invalid file type. Only IFC files are supported."
+            )
+        
+        # Check file size
+        max_size = cloud_storage.MAX_FILE_SIZE
+        if request.file_size > max_size:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File too large. Maximum size is {max_size} bytes."
+            )
+        
+        # Create multipart upload session
+        session_data = cloud_storage.create_multipart_upload_session(
+            request.file_name, 
+            request.content_type
+        )
+        
+        return UploadSession(**session_data)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/upload/part/{upload_id}/{part_number}", response_model=UploadPart)
+def get_upload_part_url(upload_id: str, part_number: int, file_key: str = Query(...)):
+    """Get presigned URL for uploading a specific part."""
+    try:
+        presigned_url = cloud_storage.generate_presigned_url_for_part(
+            file_key, upload_id, part_number
+        )
+        
+        return UploadPart(
+            part_number=part_number,
+            presigned_url=presigned_url
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/upload/complete/{upload_id}")
+def complete_upload(
+    upload_id: str, 
+    file_key: str = Query(...),
+    parts: List[Dict[str, Any]] = Query(...)
+):
+    """Complete a multipart upload and start processing."""
+    try:
+        # Complete the multipart upload
+        result = cloud_storage.complete_multipart_upload(file_key, upload_id, parts)
+        
+        # Start background processing
+        job_id = str(uuid.uuid4())
+        file_url = result["file_url"]
+        
+        # Queue the processing task
+        task = parse_ifc_file.delay(file_url, "default", job_id)
+        
+        return {
+            "success": True,
+            "job_id": job_id,
+            "file_url": file_url,
+            "message": "Upload completed. Processing started."
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/upload/abort/{upload_id}")
+def abort_upload(upload_id: str, file_key: str = Query(...)):
+    """Abort a multipart upload."""
+    try:
+        success = cloud_storage.abort_multipart_upload(file_key, upload_id)
+        
+        if success:
+            return {"success": True, "message": "Upload aborted successfully"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to abort upload")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/jobs/{job_id}", response_model=JobStatus)
+def get_job_status_endpoint(job_id: str):
+    """Get the status of a processing job."""
+    try:
+        status = get_job_status(job_id)
+        
+        if not status:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        return JobStatus(**status)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/jobs")
+def list_jobs(tenant_id: str = Query("default"), limit: int = Query(50)):
+    """List recent jobs for a tenant."""
+    try:
+        import redis
+        redis_client = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0"))
+        
+        # Get all job keys
+        job_keys = redis_client.keys("job:*")
+        jobs = []
+        
+        for key in job_keys[:limit]:
+            job_data = redis_client.hgetall(key)
+            if job_data:
+                # Convert bytes to strings
+                job_dict = {k.decode(): v.decode() if isinstance(v, bytes) else v for k, v in job_data.items()}
+                jobs.append(job_dict)
+        
+        # Sort by updated_at
+        jobs.sort(key=lambda x: x.get("updated_at", ""), reverse=True)
+        
+        return {"jobs": jobs}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/jobs/{job_id}")
+def cancel_job(job_id: str):
+    """Cancel a processing job."""
+    try:
+        # Update job status to cancelled
+        from api.tasks import update_job_status, JobStatus
+        update_job_status(job_id, JobStatus.CANCELLED, 0, "Job cancelled by user")
+        
+        # Note: Celery doesn't have a built-in way to cancel running tasks
+        # In production, you'd want to implement a more sophisticated cancellation mechanism
+        
+        return {"success": True, "message": "Job cancelled"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

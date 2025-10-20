@@ -21,6 +21,28 @@ requests>=2.31.0
 pillow>=9.5.0
 pytest>=7.4.0
 
+# Background processing and job queues
+celery>=5.3.0
+redis>=4.5.0
+flower>=2.0.0  # Celery monitoring
+
+# Cloud storage and direct uploads
+boto3>=1.26.0  # AWS S3/R2 compatible
+botocore>=1.29.0
+
+# Database for job tracking
+sqlalchemy>=2.0.0
+alembic>=1.8.0
+psycopg2-binary>=2.9.0  # PostgreSQL adapter
+
+# File processing and validation
+python-magic>=0.4.27
+tus-js-client>=0.0.1  # For resumable uploads
+
+# WebSocket support for real-time updates
+websockets>=11.0.0
+fastapi-websocket>=0.0.1
+
 # IFC tools (optional; required for ingest scripts that parse IFC)
 # If you need ifcopenshell, use a platform wheel or conda package. Example (macOS/conda):
 # conda install -c conda-forge ifcopenshell

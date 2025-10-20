@@ -1,27 +1,46 @@
-# RiG
+# RiG CMMS
 Retrieval over ifcJSON Graphs _for AI-Native CMMS_
 
+**🚀 Now supports large IFC files (up to 5TB) with direct uploads and background processing!**
 
 ### IFC-GraphRAG-CMMS
 
-Goal: Load IFC (ifcJSON) into a property graph, power GraphRAG + LLM, and enable safe CRUD for CMMS.
+Goal: Load large IFC files into a property graph, power GraphRAG + LLM, and enable safe CRUD for CMMS with enterprise-grade scalability.
 
 ### Repo layout
 
 ## Architecture Overview
 
+### New Scalable Architecture (2024)
+
 ```
-+-------------------+      +-------------------+      +-------------------+
-|   data/raw        | ---> |   ingest/         | ---> |   neo4j/          |
-| (IFC, ifcJSON)    |      | (ETL scripts)     |      | (Graph DB Docker) |
-+-------------------+      +-------------------+      +-------------------+
-				|                        |                           |
-				v                        v                           v
-+-------------------+      +-------------------+      +-------------------+
-|   rag/            | <--- |   graph/          | <--- |   scripts/        |
-| (RAG, LLM, FAISS) |      | (Cypher schema)   |      | (Utils, checks)   |
-+-------------------+      +-------------------+      +-------------------+
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   API Server     │    │   Background    │
+│   (Vercel)      │◄──►│   (Fly.io)       │◄──►│   Workers       │
+│   React + 3D    │    │   FastAPI        │    │   (Celery)      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │              ┌─────────────────┐            │
+         │              │   Cloud Storage  │            │
+         │              │   (R2/S3)        │            │
+         │              │   Direct Uploads │            │
+         │              └─────────────────┘            │
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌─────────────────┐
+                    │   Databases     │
+                    │   Neo4j + PG    │
+                    │   Redis Queue   │
+                    └─────────────────┘
 ```
+
+### Key Improvements
+- **Direct Uploads**: Files upload directly to R2, bypassing 4.5MB serverless limits
+- **Background Processing**: Heavy IFC parsing moved to dedicated Celery workers
+- **Scalable Storage**: Support for files up to 5TB using multipart uploads
+- **Real-time Status**: Job tracking and progress updates
+- **Enterprise Ready**: Production-grade deployment with monitoring
 
 - **data/raw**: Source IFC and ifcJSON files (e.g., architectural, mechanical models).
 - **ingest/**: Scripts to load and transform ifcJSON into Neo4j property graphs.
@@ -106,6 +125,51 @@ Goal: Load IFC (ifcJSON) into a property graph, power GraphRAG + LLM, and enable
 
 ## Explanations
 
+
+---
+
+## Quick Start (New Architecture)
+
+### 🚀 Deploy to Production
+
+1. **Set up Cloudflare R2**:
+   ```bash
+   # Create R2 bucket and get credentials
+   # Add to .env file
+   ```
+
+2. **Deploy API to Fly.io**:
+   ```bash
+   fly launch
+   fly deploy
+   ```
+
+3. **Deploy Frontend to Vercel**:
+   ```bash
+   # Connect GitHub repo to Vercel
+   # Set VITE_API_BASE environment variable
+   ```
+
+4. **Test with large files**:
+   ```bash
+   python test_architecture.py
+   ```
+
+### 🏠 Local Development
+
+```bash
+# Start infrastructure
+docker-compose up -d
+
+# Start API
+uvicorn api.main:app --reload
+
+# Start workers
+celery -A api.celery_app worker --loglevel=info
+
+# Start frontend
+cd ui && npm run dev
+```
 
 ---
 
