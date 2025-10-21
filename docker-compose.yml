@@ -79,3 +79,6 @@ services:
 volumes:
   redis_data:
   postgres_data:
+
+env_file:
+  - ./.env.docker
