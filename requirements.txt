@@ -37,7 +37,7 @@ psycopg2-binary>=2.9.0  # PostgreSQL adapter
 
 # File processing and validation
 python-magic>=0.4.27
-tus-js-client>=0.0.1  # For resumable uploads
+# tus-js-client>=0.0.1  # For resumable uploads
 
 # WebSocket support for real-time updates
 websockets>=11.0.0
@@ -48,6 +48,15 @@ fastapi-websocket>=0.0.1
 # conda install -c conda-forge ifcopenshell
 # Or pip if a wheel exists for your platform:
 ifcopenshell>=0.8.0
+
+# RDF and GraphDB support
+rdflib>=6.0.0
+pyshacl>=0.23.0  # SHACL validation
+SPARQLWrapper>=1.8.6  # SPARQL queries
+requests>=2.31.0  # For GraphDB REST API
+
+# JSON-LD support
+pyld>=2.0.3  # JSON-LD processing
 
 # Development / utility
 black>=24.3.0

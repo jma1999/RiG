@@ -183,6 +183,9 @@ def convert_ifc_to_json(self, ifc_path: str, json_path: str, job_id: str = None)
 @celery_app.task(bind=True, name="api.tasks.ingest_to_neo4j")
 def ingest_to_neo4j(self, json_path: str, tenant_id: str, job_id: str = None) -> Dict[str, Any]:
     """
+    DEPRECATED: This task is obsolete after migration to RDF/GraphDB.
+    TODO: Replace with ingest_to_graphdb task that uses the new RDF pipeline.
+    
     Ingest IFC JSON data into Neo4j database.
     
     Args:
@@ -193,37 +196,18 @@ def ingest_to_neo4j(self, json_path: str, tenant_id: str, job_id: str = None) ->
     Returns:
         Dict containing ingestion results
     """
-    try:
-        if job_id:
-            update_job_status(job_id, JobStatus.PROCESSING, 70, "Ingesting data to Neo4j...")
-        
-        # Use existing ingestion script
-        result = subprocess.run([
-            sys.executable, "ingest/ifcjson_to_neo4j.py",
-            json_path, "--tenant", tenant_id
-        ], capture_output=True, text=True, cwd=".")
-        
-        if result.returncode != 0:
-            raise Exception(f"Neo4j ingestion failed: {result.stderr}")
-        
-        if job_id:
-            update_job_status(job_id, JobStatus.PROCESSING, 85, "Neo4j ingestion completed")
-        
-        return {
-            "success": True,
-            "message": "Data ingested to Neo4j successfully",
-            "tenant_id": tenant_id
-        }
-        
-    except Exception as e:
-        if job_id:
-            update_job_status(job_id, JobStatus.FAILED, 0, f"Ingestion failed: {str(e)}")
-        raise self.retry(exc=e, countdown=30, max_retries=2)
+    raise NotImplementedError(
+        "This task is deprecated. Use the new RDF pipeline instead: "
+        "python ingest/ifc_to_rdf_pipeline.py <input.ifc>"
+    )
 
 
 @celery_app.task(bind=True, name="api.tasks.build_semantic_index")
 def build_semantic_index(self, job_id: str = None) -> Dict[str, Any]:
     """
+    DEPRECATED: This task is obsolete after migration to RDF/GraphDB.
+    TODO: Replace with SPARQL-based GraphRAG or adapt for RDF/GraphDB.
+    
     Rebuild the semantic search index from current Neo4j data.
     
     Args:
@@ -232,30 +216,10 @@ def build_semantic_index(self, job_id: str = None) -> Dict[str, Any]:
     Returns:
         Dict containing indexing results
     """
-    try:
-        if job_id:
-            update_job_status(job_id, JobStatus.PROCESSING, 95, "Building semantic index...")
-        
-        # Use existing index building script
-        result = subprocess.run([
-            sys.executable, "rag/build_index.py"
-        ], capture_output=True, text=True, cwd=".")
-        
-        if result.returncode != 0:
-            raise Exception(f"Index building failed: {result.stderr}")
-        
-        if job_id:
-            update_job_status(job_id, JobStatus.PROCESSING, 100, "Semantic index built successfully")
-        
-        return {
-            "success": True,
-            "message": "Semantic index built successfully"
-        }
-        
-    except Exception as e:
-        if job_id:
-            update_job_status(job_id, JobStatus.FAILED, 0, f"Index building failed: {str(e)}")
-        raise self.retry(exc=e, countdown=30, max_retries=2)
+    raise NotImplementedError(
+        "This task is deprecated. Use SPARQL-based GraphRAG instead: "
+        "python rag/sparql_rag.py <question>"
+    )
 
 
 def get_job_status(job_id: str) -> Optional[Dict[str, Any]]:
