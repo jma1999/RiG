@@ -1,84 +1,17 @@
+# version: "3.8"   # optional; Compose ignores this now
+
 services:
-  neo4j:
-    image: neo4j:5.22-community
-    container_name: neo4j
-    restart: unless-stopped
-    ports:
-      - "7474:7474"   # Browser
-      - "7687:7687"   # Bolt
+  timescaledb:
+    image: timescale/timescaledb:2.16.1-pg16
     environment:
-      - NEO4J_AUTH=neo4j/changeme123
-      - NEO4J_PLUGINS=["apoc"]
-      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
-      - NEO4J_dbms_security_procedures_allowlist=apoc.*
-      - NEO4J_server_memory_pagecache_size=1G
-    volumes:
-      - ./neo4j/data:/data
-      - ./neo4j/plugins:/plugins
-      - ./neo4j/import:/import
-
-  redis:
-    image: redis:7-alpine
-    container_name: redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
-
-  postgres:
-    image: postgres:15-alpine
-    container_name: postgres
-    restart: unless-stopped
+      POSTGRES_USER: rig_user
+      POSTGRES_PASSWORD: rig_password
+      POSTGRES_DB: rig_timeseries
     ports:
       - "5432:5432"
-    environment:
-      - POSTGRES_DB=rig
-      - POSTGRES_USER=rig_user
-      - POSTGRES_PASSWORD=rig_password
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-
-  celery-worker:
-    build: .
-    container_name: celery-worker
+      - timescale_data:/var/lib/postgresql/data
     restart: unless-stopped
-    command: celery -A api.celery_app worker --loglevel=info --concurrency=2
-    environment:
-      - REDIS_URL=redis://redis:6379/0
-      - DATABASE_URL=postgresql://rig_user:rig_password@postgres:5432/rig
-      - NEO4J_URI=bolt://neo4j:7687
-      - NEO4J_USER=neo4j
-      - NEO4J_PASSWORD=changeme123
-      - NEO4J_DATABASE=neo4j
-    depends_on:
-      - redis
-      - postgres
-      - neo4j
-    volumes:
-      - .:/app
-    working_dir: /app
-
-  celery-flower:
-    build: .
-    container_name: celery-flower
-    restart: unless-stopped
-    command: celery -A api.celery_app flower --port=5555
-    ports:
-      - "5555:5555"
-    environment:
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - redis
-    volumes:
-      - .:/app
-    working_dir: /app
 
 volumes:
-  redis_data:
-  postgres_data:
-
-env_file:
-  - ./.env.docker
+  timescale_data:

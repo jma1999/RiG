@@ -55,7 +55,7 @@ class GraphDBClient:
         # REST API endpoints
         self.repos_url = f"{self.base_url}/rest/repositories"
         self.repo_url = f"{self.repos_url}/{self.repository}"
-        self.statements_url = f"{self.repo_url}/statements"
+        self.statements_url = f"{self.base_url}/repositories/{self.repository}/statements"
         self.transactions_url = f"{self.repo_url}/transactions"
         
         # SPARQL endpoints

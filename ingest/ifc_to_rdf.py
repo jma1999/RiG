@@ -20,7 +20,10 @@ from urllib.error import URLError
 # IFCtoRDF JAR information
 IFCTORDF_VERSION = "0.4"
 IFCTORDF_JAR_NAME = f"IFCtoRDF-{IFCTORDF_VERSION}-SNAPSHOT-shaded.jar"
-IFCTORDF_DOWNLOAD_URL = f"https://github.com/pipauwel/IFCtoRDF/releases/download/v{IFCTORDF_VERSION}/{IFCTORDF_JAR_NAME}"
+IFCTORDF_DOWNLOAD_URL = (
+    f"https://github.com/pipauwel/IFCtoRDF/releases/download/"
+    f"IFCtoRDF-{IFCTORDF_VERSION}/{IFCTORDF_JAR_NAME}"
+)
 IFCTORDF_MAVEN_URL = f"https://search.maven.org/remote_content?g=com.github.pipauwel&a=IFCtoRDF&v={IFCTORDF_VERSION}&c=shaded&e=jar"
 
 # Default JAR location (will be downloaded if not present)

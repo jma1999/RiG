@@ -1,0 +1,245 @@
+@prefix ex:           <https://example.com/rig#> .
+@prefix inst:         <https://example.com/ifc/> .
+@prefix ifc:          <http://ifc-ld.org/schemas/ifc2x3#> .
+
+@prefix brick:        <https://brickschema.org/schema/Brick#> .
+@prefix tag:          <https://brickschema.org/schema/BrickTag#> .
+@prefix ref:          <https://brickschema.org/schema/Brick/ref#> .
+
+@prefix s223:         <http://data.ashrae.org/standard223#> .
+@prefix g36:          <http://data.ashrae.org/standard223/1.0/extensions/g36#> .
+
+@prefix sosa:         <http://www.w3.org/ns/sosa/> .
+
+@prefix qudt:         <http://qudt.org/schema/qudt/> .
+@prefix quantitykind: <http://qudt.org/vocab/quantitykind/> .
+@prefix unit:         <http://qudt.org/vocab/unit/> .
+
+@prefix bacnet:       <http://data.ashrae.org/bacnet/2020#> .
+
+@prefix rdf:          <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:         <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:          <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:          <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Link IFC element → operations/controls-level terminal
+#################################################################
+
+ex:representsIfcElement
+    a owl:ObjectProperty ;
+    rdfs:label "represents IFC element"@en .
+
+# Operations-facing terminal corresponding to inst:IfcFlowTerminal_136276
+ex:FT_136276
+    a brick:Terminal_Unit ,
+      s223:TerminalUnit ,
+      s223:Equipment ;
+    rdfs:label "IfcFlowTerminal_136276 (supply terminal)"@en ;
+    ex:representsIfcElement inst:IfcFlowTerminal_136276 ;
+
+    # Brick-level point graph
+    brick:hasPoint
+        ex:FT_136276_air-temp ,
+        ex:FT_136276_air-flow ,
+        ex:FT_136276_damper-position ,
+        ex:FT_136276_damper-command ,
+        ex:FT_136276_run-status ;
+
+    # 223-level property graph
+    s223:hasProperty
+        ex:FT_136276_air-temp ,
+        ex:FT_136276_air-flow ,
+        ex:FT_136276_damper-position ,
+        ex:FT_136276_damper-command ,
+        ex:FT_136276_run-status ;
+
+    # Zone connectivity (Brick + 223)
+    s223:connected  ex:Zone_Main ;
+    brick:serves    ex:Zone_Main .
+
+###########################################################
+# 1) Supply Air Temperature (SAT)
+###########################################################
+
+ex:FT_136276_air-temp
+    a s223:Property ,
+      s223:QuantifiableProperty ,
+      s223:QuantifiableObservableProperty ,
+      sosa:ObservableProperty ,
+      brick:Supply_Air_Temperature_Sensor ;
+    rdfs:label "FT_136276 supply air temperature"@en ;
+
+    # QUDT semantics
+    qudt:hasQuantityKind quantitykind:Temperature ;
+    qudt:hasUnit        unit:DEG_C ;
+
+    # 223 aspect: this is a supply-side role
+    s223:hasAspect      s223:Role-Supply ;
+
+    # External references (BACnet + timeseries)
+    s223:hasExternalReference
+        ex:FT_136276_air-temp_bacnetRef ,
+        ex:FT_136276_air-temp_ts .
+
+###########################################################
+# 2) Supply Air Flow (SAF)
+###########################################################
+
+ex:FT_136276_air-flow
+    a s223:Property ,
+      s223:QuantifiableProperty ,
+      s223:QuantifiableObservableProperty ,
+      sosa:ObservableProperty ,
+      brick:Supply_Air_Flow_Sensor ;
+    rdfs:label "FT_136276 supply air flow"@en ;
+
+    qudt:hasQuantityKind quantitykind:VolumeFlowRate ;
+    # Use CFM as an example unit
+    qudt:hasUnit        unit:FT3-PER-MIN ;
+
+    s223:hasAspect      s223:Role-Supply .
+
+###########################################################
+# 3) Damper Position (measured)
+###########################################################
+
+ex:FT_136276_damper-position
+    a s223:Property ,
+      s223:QuantifiableProperty ,
+      s223:QuantifiableObservableProperty ,
+      sosa:ObservableProperty ,
+      brick:Position_Sensor ;
+    rdfs:label "FT_136276 damper position"@en ;
+
+    qudt:hasQuantityKind quantitykind:DimensionlessRatio ;
+    qudt:hasUnit        unit:PERCENT ;
+
+    s223:hasAspect      s223:Binary-Position .
+
+###########################################################
+# 4) Damper Command (actuatable)
+###########################################################
+
+ex:FT_136276_damper-command
+    a s223:Property ,
+      s223:QuantifiableProperty ,
+      s223:QuantifiableActuatableProperty ,
+      brick:Damper_Command ;
+    rdfs:label "FT_136276 damper command"@en ;
+
+    qudt:hasQuantityKind quantitykind:DimensionlessRatio ;
+    qudt:hasUnit        unit:PERCENT ;
+
+    s223:hasAspect      s223:Binary-Position .
+
+###########################################################
+# 5) Run Status
+###########################################################
+
+ex:FT_136276_run-status
+    a s223:Property ,
+      s223:QuantifiableProperty ,
+      s223:QuantifiableObservableProperty ,
+      sosa:ObservableProperty ,
+      brick:Run_Status ;
+    rdfs:label "FT_136276 run status"@en ;
+
+    # Modeled as a dimensionless ratio / flag – can be refined later
+    qudt:hasQuantityKind quantitykind:DimensionlessRatio .
+
+#################################################################
+# BACnet External Reference for FT_136276 supply air temperature
+#################################################################
+
+# Generic bridge predicates for BACnet metadata
+ex:bacnetDeviceInstance
+    a rdf:Property ;
+    rdfs:label "BACnet device instance"@en .
+
+ex:bacnetObjectType
+    a rdf:Property ;
+    rdfs:label "BACnet object type"@en .
+
+ex:bacnetObjectInstance
+    a rdf:Property ;
+    rdfs:label "BACnet object instance"@en .
+
+ex:bacnetPropertyId
+    a rdf:Property ;
+    rdfs:label "BACnet property id"@en .
+
+# External reference node for BACnet binding of SAT
+ex:FT_136276_air-temp_bacnetRef
+    a s223:ExternalReference ,
+      s223:BACnetExternalReference ,
+      ref:ExternalReference ,
+      ref:BACnetReference ;
+    rdfs:label "BACnet binding for FT_136276 SAT"@en ;
+
+    # 👉 Placeholder BACnet address values
+    ex:bacnetDeviceInstance  "1001"^^xsd:unsignedInt ;
+    ex:bacnetObjectType      "analogInput"^^xsd:string ;
+    ex:bacnetObjectInstance  "1"^^xsd:unsignedInt ;
+    ex:bacnetPropertyId      "presentValue"^^xsd:string .
+
+#################################################################
+# Timeseries / historical data reference
+#################################################################
+
+ex:hasTimeseriesReference
+    a rdf:Property ;
+    rdfs:label "has timeseries reference"@en .
+
+ex:tsDatabase
+    a rdf:Property ;
+    rdfs:label "timeseries database name"@en .
+
+ex:tsTable
+    a rdf:Property ;
+    rdfs:label "timeseries table or measurement"@en .
+
+ex:tsColumn
+    a rdf:Property ;
+    rdfs:label "timeseries value column"@en .
+
+ex:tsTimeColumn
+    a rdf:Property ;
+    rdfs:label "timeseries timestamp column"@en .
+
+ex:tsId
+    a rdf:Property ;
+    rdfs:label "timeseries point id"@en .
+
+ex:FT_136276_air-temp_ts
+    a s223:ExternalReference ,
+      ref:ExternalReference ,
+      ref:TimeseriesReference ;
+    rdfs:label "Timeseries for FT_136276 SAT"@en ;
+
+    # 👉 These can be aligned with your actual TimescaleDB schema later
+    ex:tsId         "ft_136276_sat"^^xsd:string ;
+    ex:tsDatabase   "rig_timeseries"^^xsd:string ;
+    ex:tsTable      "ft_136276_sat"^^xsd:string ;
+    ex:tsColumn     "value"^^xsd:string ;
+    ex:tsTimeColumn "ts"^^xsd:string .
+
+#################################################################
+# Spatial / Zone modeling for FT_136276
+#################################################################
+
+# High-level control zone served by FT_136276
+ex:Zone_Main
+    a s223:Zone ,
+      brick:Location ;
+    rdfs:label "Main House Zone"@en .
+
+# Property to link 223/Brick zones back to IFC spatial structure
+ex:hasIfcSpatialContext
+    a rdf:Property ;
+    rdfs:label "has IFC spatial context"@en ;
+    rdfs:comment "Links an s223/Brick zone to the corresponding IFC spatial element (building, storey, space, etc.)"@en .
+
+# Bind the Zone to your existing IFC storey
+ex:Zone_Main
+    ex:hasIfcSpatialContext inst:IfcBuildingStorey_134958 .
