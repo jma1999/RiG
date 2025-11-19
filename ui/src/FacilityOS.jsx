@@ -32,7 +32,8 @@ import {
   Minimize2,
   Maximize2,
   Bot,
-  Activity
+  Activity,
+  Link as LinkIcon
 } from "lucide-react";
 import ForceGraph2D from "react-force-graph-2d";
 import { API_BASE } from "@/lib/env";
@@ -40,6 +41,7 @@ import { cn } from "@/lib/utils";
 import DirectUploadComponent from "@/components/DirectUploadComponent";
 import TelemetryDashboard from "@/components/TelemetryDashboard";
 import AgentDashboard from "@/components/AgentDashboard";
+import EnterpriseView from "@/components/EnterpriseView";
 
 // === AI Assistant Component ===
 const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
@@ -47,7 +49,7 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "👋 Welcome to RiG Digital Twin! I'm your AI assistant for the semantically normalized IWMS platform.\n\n**Agent-Based Architecture:**\n• Detection Agent monitors telemetry for issues\n• Diagnosis Agent analyzes events and generates hypotheses\n• Recommendation Agent proposes validated actions\n\n**Capabilities:**\n• Explore semantic graph (IFC-LD + 223P + Brick + SSN/SOSA + QUDT)\n• Query live telemetry from TimescaleDB\n• Execute BACnet control operations (with approval)\n• Generate work orders from agent recommendations\n\n**Try:** \"Run detection on Zone_Main\" or \"Show me all BACnet bindings\"",
+      content: "👋 Welcome to RiG Digital Twin! I'm your AI assistant for the semantically normalized IWMS platform.\n\n**Agent-Based Architecture:**\n• Detection Agent monitors telemetry for issues\n• Diagnosis Agent analyzes events and generates hypotheses\n• Recommendation Agent proposes validated actions\n\n**Capabilities:**\n• Explore semantic graph (IFC-LD + 223P + Brick + SSN/SOSA + QUDT)\n• Query live telemetry from TimescaleDB\n• Execute BACnet control operations (with approval)\n• Generate work orders from agent recommendations\n• **Enterprise Graph**: Cross-domain queries (Controls, HR, Finance, Assets, Scheduling, Network)\n\n**Try:** \"Run detection on Zone_Main\", \"Show me all BACnet bindings\", or \"Find AHU-3 across all domains\"",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -256,6 +258,7 @@ const Navigation = ({ activeTab, onTabChange }) => {
     { id: "3d-viewer", label: "3D Model Viewer", icon: Cuboid },
     { id: "graph-view", label: "Semantic Graph", icon: Network },
     { id: "telemetry", label: "Live Telemetry", icon: Activity },
+    { id: "enterprise", label: "Enterprise Graph", icon: LinkIcon },
     { id: "assets", label: "Assets", icon: Box },
     { id: "work-orders", label: "Work Orders", icon: Clipboard }
   ];
@@ -1769,6 +1772,8 @@ export default function FacilityOS() {
         return <GraphView onAIAction={handleAIAction} />;
       case "telemetry":
         return <TelemetryDashboard />;
+      case "enterprise":
+        return <EnterpriseView />;
       case "assets":
         return <AssetsView onAIAction={handleAIAction} />;
       case "work-orders":
@@ -1788,7 +1793,7 @@ export default function FacilityOS() {
             <div>
               <h1 className="text-xl font-semibold">RiG: AI-Driven Semantically Normalized IWMS</h1>
               <p className="text-xs text-[var(--palantir-text-muted)]">
-                Digital Twin Platform | IFC-LD + 223P + Brick + SSN/SOSA + QUDT
+                Digital Twin Platform | IFC-LD + 223P + Brick + SSN/SOSA + QUDT | Enterprise Graph (Workday, Maximo, Office365, Network, Finance)
               </p>
             </div>
           </div>

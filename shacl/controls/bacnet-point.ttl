@@ -1,0 +1,87 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <https://example.com/rig#> .
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix s223: <http://data.ashrae.org/standard223#> .
+@prefix qudt: <http://qudt.org/schema/qudt/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# SHACL Shape for BACnet Point Completeness
+# Validates that BACnet points have required metadata for operational use
+
+ex:BACnetPointShape
+    a sh:NodeShape ;
+    rdfs:label "BACnet Point Shape"@en ;
+    rdfs:comment "Validates that a BACnet point has all required properties for discovery, mapping, and control"@en ;
+    sh:targetClass brick:Point ;
+    sh:property [
+        sh:path ex:bacnetDeviceInstance ;
+        sh:datatype xsd:unsignedInt ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "BACnet point must have a device instance"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:bacnetObjectType ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ("analogInput" "analogOutput" "analogValue" "binaryInput" "binaryOutput" "binaryValue") ;
+        sh:message "BACnet point must have a valid object type"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:bacnetObjectInstance ;
+        sh:datatype xsd:unsignedInt ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "BACnet point must have an object instance"@en ;
+    ] ;
+    sh:property [
+        sh:path qudt:hasUnit ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "BACnet point must have a QUDT unit"@en ;
+    ] ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "BACnet point must have a human-readable label"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:hasTimeseriesReference ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:message "BACnet point should link to a timeseries reference"@en ;
+    ] .
+
+# Shape for BACnet Equipment Mapping
+ex:BACnetEquipmentShape
+    a sh:NodeShape ;
+    rdfs:label "BACnet Equipment Shape"@en ;
+    rdfs:comment "Validates that BACnet equipment has proper semantic mapping to Brick/223"@en ;
+    sh:targetClass brick:Equipment ;
+    sh:property [
+        sh:path brick:hasPoint ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 1 ;
+        sh:message "BACnet equipment must have at least one point"@en ;
+    ] ;
+    sh:property [
+        sh:path s223:hasProperty ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 1 ;
+        sh:message "BACnet equipment must have at least one 223 property"@en ;
+    ] ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "BACnet equipment must have a human-readable label"@en ;
+    ] .
+

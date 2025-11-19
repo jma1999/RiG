@@ -1,0 +1,115 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <https://example.com/rig#> .
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# SHACL Shape for Maximo Asset Lifecycle
+# Validates that assets have proper linkage to Maximo and lifecycle tracking
+
+ex:AssetLifecycleShape
+    a sh:NodeShape ;
+    rdfs:label "Asset Lifecycle Shape"@en ;
+    rdfs:comment "Validates that an asset has all required properties for Maximo integration and lifecycle tracking"@en ;
+    sh:targetClass brick:Equipment ;
+    sh:property [
+        sh:path ex:hasMaximoAssetId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Asset must have a Maximo asset ID"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:hasMaximoLocationId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Asset must have a Maximo location ID"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:assetStatus ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ("INSTALLED" "MAINTENANCE" "RETIRED" "REPLACED") ;
+        sh:message "Asset must have a valid status"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:installDate ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:message "Asset should have an installation date"@en ;
+    ] ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Asset must have a human-readable label"@en ;
+    ] .
+
+# Shape for Work Order
+ex:WorkOrderShape
+    a sh:NodeShape ;
+    rdfs:label "Work Order Shape"@en ;
+    rdfs:comment "Validates that a work order has required properties for Maximo integration"@en ;
+    sh:targetClass ex:WorkOrder ;
+    sh:property [
+        sh:path ex:hasMaximoWOId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Work order must have a Maximo work order ID"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:relatedToAsset ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 1 ;
+        sh:message "Work order must be related to at least one asset"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:woStatus ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ("OPEN" "INPROG" "COMP" "CLOSE" "CANCEL") ;
+        sh:message "Work order must have a valid status"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:createdDate ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Work order must have a creation date"@en ;
+    ] .
+
+# Shape for Preventive Maintenance Schedule
+ex:PMScheduleShape
+    a sh:NodeShape ;
+    rdfs:label "PM Schedule Shape"@en ;
+    rdfs:comment "Validates that a PM schedule has required properties"@en ;
+    sh:targetClass ex:PMSchedule ;
+    sh:property [
+        sh:path ex:appliesToAsset ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "PM schedule must apply to an asset"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:frequency ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "PM schedule must have a frequency"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:nextDueDate ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "PM schedule must have a next due date"@en ;
+    ] .
+

@@ -1,0 +1,72 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <https://example.com/rig#> .
+@prefix s223: <http://data.ashrae.org/standard223#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# SHACL Shape for Office365 Calendar to Space Mapping
+# Validates that spaces have proper linkage to Office365 calendars for occupancy tracking
+
+ex:CalendarSpaceShape
+    a sh:NodeShape ;
+    rdfs:label "Calendar Space Shape"@en ;
+    rdfs:comment "Validates that a space has proper linkage to Office365 calendar for occupancy and scheduling"@en ;
+    sh:targetClass s223:Zone ;
+    sh:property [
+        sh:path ex:hasOffice365CalendarId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Space must have an Office365 calendar ID"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:hasOccupancyProxy ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:message "Space may have an occupancy proxy point"@en ;
+    ] ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Space must have a human-readable label"@en ;
+    ] .
+
+# Shape for Calendar Event
+ex:CalendarEventShape
+    a sh:NodeShape ;
+    rdfs:label "Calendar Event Shape"@en ;
+    rdfs:comment "Validates that a calendar event has required properties for occupancy tracking"@en ;
+    sh:targetClass ex:CalendarEvent ;
+    sh:property [
+        sh:path ex:hasOffice365EventId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Calendar event must have an Office365 event ID"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:forSpace ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Calendar event must be for a space"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:startTime ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Calendar event must have a start time"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:endTime ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Calendar event must have an end time"@en ;
+    ] .
+

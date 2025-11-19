@@ -1,0 +1,73 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <https://example.com/rig#> .
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix s223: <http://data.ashrae.org/standard223#> .
+@prefix qudt: <http://qudt.org/schema/qudt/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# SHACL Shape for Meter Billing Completeness
+# Validates that meters have proper linkage to spaces and cost centers for billing
+
+ex:MeterBillingShape
+    a sh:NodeShape ;
+    rdfs:label "Meter Billing Shape"@en ;
+    rdfs:comment "Validates that a meter has all required properties for billing and cost allocation"@en ;
+    sh:targetClass brick:Meter ;
+    sh:property [
+        sh:path ex:hasCostCenter ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Meter must be linked to a cost center for billing"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:servesSpace ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 1 ;
+        sh:message "Meter must serve at least one space"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:hasBillingId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Meter must have a billing system ID (EBS/Kuali)"@en ;
+    ] ;
+    sh:property [
+        sh:path qudt:hasUnit ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Meter must have a QUDT unit"@en ;
+    ] ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Meter must have a human-readable label"@en ;
+    ] .
+
+# Shape for Cost Center
+ex:CostCenterShape
+    a sh:NodeShape ;
+    rdfs:label "Cost Center Shape"@en ;
+    rdfs:comment "Validates that a cost center has required properties for finance integration"@en ;
+    sh:targetClass ex:CostCenter ;
+    sh:property [
+        sh:path ex:hasBillingSystemId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Cost center must have a billing system ID"@en ;
+    ] ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Cost center must have a human-readable label"@en ;
+    ] .
+

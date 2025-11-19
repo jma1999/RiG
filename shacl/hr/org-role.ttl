@@ -1,0 +1,91 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <https://example.com/rig#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix org: <http://www.w3.org/ns/org#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# SHACL Shape for Workday Org Structure and Roles
+# Validates that organizational entities have proper responsibility chains
+
+ex:PersonRoleShape
+    a sh:NodeShape ;
+    rdfs:label "Person Role Shape"@en ;
+    rdfs:comment "Validates that a person has required properties for HR integration and responsibility routing"@en ;
+    sh:targetClass foaf:Person ;
+    sh:property [
+        sh:path ex:hasWorkdayId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Person must have a Workday employee ID"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:hasRole ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 1 ;
+        sh:message "Person must have at least one role"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:belongsToOrganization ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Person must belong to an organization"@en ;
+    ] ;
+    sh:property [
+        sh:path foaf:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Person must have a name"@en ;
+    ] .
+
+# Shape for Responsibility Chain
+ex:ResponsibilityShape
+    a sh:NodeShape ;
+    rdfs:label "Responsibility Shape"@en ;
+    rdfs:comment "Validates that responsibility relationships are properly defined"@en ;
+    sh:targetClass ex:Responsibility ;
+    sh:property [
+        sh:path ex:responsiblePerson ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Responsibility must have a responsible person"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:responsibleFor ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 1 ;
+        sh:message "Responsibility must specify what the person is responsible for"@en ;
+    ] ;
+    sh:property [
+        sh:path ex:onCallFor ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 0 ;
+        sh:message "Responsibility may specify on-call coverage"@en ;
+    ] .
+
+# Shape for Organization
+ex:OrganizationShape
+    a sh:NodeShape ;
+    rdfs:label "Organization Shape"@en ;
+    rdfs:comment "Validates that an organization has required properties for Workday integration"@en ;
+    sh:targetClass org:Organization ;
+    sh:property [
+        sh:path ex:hasWorkdayOrgId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Organization must have a Workday organization ID"@en ;
+    ] ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Organization must have a human-readable label"@en ;
+    ] .
+

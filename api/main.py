@@ -639,6 +639,10 @@ app.include_router(telemetry.router, prefix="/telemetry", tags=["telemetry"])
 app.include_router(agents.router, prefix="/agents", tags=["agents"])
 app.include_router(bacnet.router, prefix="/bacnet", tags=["bacnet"])
 
+# Enterprise Graph API (cross-domain integrations)
+from api import enterprise_graph
+app.include_router(enterprise_graph.router, tags=["enterprise-graph"])
+
 # ---------------- work orders ----------------
 def _ensure_workorder_indexes():
     try:
