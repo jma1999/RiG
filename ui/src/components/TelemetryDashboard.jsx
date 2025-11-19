@@ -115,35 +115,50 @@ export default function TelemetryDashboard() {
     
     // First, seed data if needed, then load readings
     try {
+      console.log(`Seeding data for ${pointId}...`);
       // Seed data for this point (ensures we have 60 datapoints)
       const seedRes = await fetch(`${API_BASE}/telemetry/seed/${pointId}?count=60`, {
         method: "POST"
       });
-      if (seedRes.ok) {
-        const seedData = await seedRes.json();
-        console.log(`Seeded ${seedData.rows_inserted} datapoints for ${pointId}`);
+      
+      const seedData = await seedRes.json();
+      if (seedRes.ok && seedData.success) {
+        console.log(`✅ Seeded ${seedData.rows_inserted} datapoints for ${pointId}`, seedData);
       } else {
-        console.warn("Seed request failed, but continuing to load existing data");
+        console.warn("⚠️ Seed request failed:", seedRes.status, seedData);
+        // Continue anyway - the get endpoint will return mock data if DB fails
       }
       
       // Wait a moment for the data to be committed, then load readings
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 500));
       
+      console.log(`Loading telemetry data for ${pointId}...`);
       // Load readings for the clicked point
       const res = await fetch(`${API_BASE}/telemetry/points/${pointId}?hours=1&limit=60`);
+      
       if (res.ok) {
         const data = await res.json();
-        console.log("Telemetry data response:", data);
-        const readings = data.data || [];
-        console.log(`Loaded ${readings.length} readings for ${pointId}`);
+        console.log("📊 Telemetry data response:", data);
+        console.log("📊 Response keys:", Object.keys(data));
+        console.log("📊 Data array:", data.data);
+        
+        const readings = Array.isArray(data.data) ? data.data : [];
+        console.log(`✅ Loaded ${readings.length} readings for ${pointId}`);
+        
+        if (readings.length > 0) {
+          console.log("📊 First reading:", readings[0]);
+          console.log("📊 Last reading:", readings[readings.length - 1]);
+        }
+        
         setModalReadings(readings);
       } else {
         const errorText = await res.text();
-        console.error("Failed to load telemetry data:", res.status, errorText);
+        console.error("❌ Failed to load telemetry data:", res.status, errorText);
         setModalReadings([]);
       }
     } catch (error) {
-      console.error("Failed to load modal readings:", error);
+      console.error("❌ Failed to load modal readings:", error);
+      console.error("❌ Error details:", error.stack);
       setModalReadings([]);
     } finally {
       setModalLoading(false);
@@ -378,34 +393,52 @@ export default function TelemetryDashboard() {
                               </tr>
                             </thead>
                             <tbody>
-                              {modalReadings.map((reading, index) => (
-                                <tr
-                                  key={index}
-                                  className="border-b border-[var(--palantir-border-primary)] hover:bg-[var(--palantir-bg-secondary)] transition-colors"
-                                >
-                                  <td className="px-4 py-3 text-[var(--palantir-text-muted)] font-mono">
-                                    {index + 1}
-                                  </td>
-                                  <td className="px-4 py-3 text-[var(--palantir-text-primary)]">
-                                    {new Date(reading.timestamp).toLocaleString()}
-                                  </td>
-                                  <td className="px-4 py-3 text-[var(--palantir-text-primary)] font-semibold">
-                                    {typeof reading.value === 'number' ? reading.value.toFixed(2) : reading.value}
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <Badge
-                                      variant={reading.quality === "GOOD" || reading.quality === "good" ? "default" : "outline"}
-                                      className={
-                                        (reading.quality === "GOOD" || reading.quality === "good")
-                                          ? "bg-green-600 text-white"
-                                          : ""
-                                      }
+                              {modalReadings.length > 0 ? (
+                                modalReadings.map((reading, index) => {
+                                  // Safely extract values with fallbacks
+                                  const value = reading?.value ?? reading?.value ?? 0;
+                                  const timestamp = reading?.timestamp ?? reading?.time ?? new Date().toISOString();
+                                  const quality = reading?.quality ?? "GOOD";
+                                  
+                                  return (
+                                    <tr
+                                      key={`${modalPointId}-${index}`}
+                                      className="border-b border-[var(--palantir-border-primary)] hover:bg-[var(--palantir-bg-secondary)] transition-colors"
                                     >
-                                      {reading.quality}
-                                    </Badge>
+                                      <td className="px-4 py-3 text-[var(--palantir-text-muted)] font-mono">
+                                        {index + 1}
+                                      </td>
+                                      <td className="px-4 py-3 text-[var(--palantir-text-primary)]">
+                                        {new Date(timestamp).toLocaleString()}
+                                      </td>
+                                      <td className="px-4 py-3 text-[var(--palantir-text-primary)] font-semibold">
+                                        {typeof value === 'number' ? value.toFixed(2) : String(value)}
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <Badge
+                                          variant={quality === "GOOD" || quality === "good" ? "default" : "outline"}
+                                          className={
+                                            (quality === "GOOD" || quality === "good")
+                                              ? "bg-green-600 text-white"
+                                              : ""
+                                          }
+                                        >
+                                          {quality}
+                                        </Badge>
+                                      </td>
+                                    </tr>
+                                  );
+                                })
+                              ) : (
+                                <tr>
+                                  <td colSpan={4} className="px-4 py-8 text-center text-[var(--palantir-text-muted)]">
+                                    <div className="space-y-2">
+                                      <p>No readings available for this sensor.</p>
+                                      <p className="text-xs">Check the browser console for details.</p>
+                                    </div>
                                   </td>
                                 </tr>
-                              ))}
+                              )}
                             </tbody>
                           </table>
                         </div>

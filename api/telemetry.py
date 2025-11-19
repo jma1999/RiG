@@ -156,21 +156,36 @@ async def get_telemetry_data(
             for row in rows
         ]
         
+        print(f"📊 Retrieved {len(data)} rows from database for {point_id}")
+        if len(data) > 0:
+            print(f"📊 First row: {data[0].dict()}")
+            print(f"📊 Last row: {data[-1].dict()}")
+        
         # Get unit and quantity kind from GraphDB (mock for now)
         unit = "DEG_C" if "temp" in point_id.lower() or "sat" in point_id.lower() else "FT3-PER-MIN" if "flow" in point_id.lower() or "saf" in point_id.lower() else None
         quantity_kind = "Temperature" if "temp" in point_id.lower() or "sat" in point_id.lower() else "VolumeFlowRate" if "flow" in point_id.lower() or "saf" in point_id.lower() else None
         
-        return TelemetryResponse(
+        response = TelemetryResponse(
             point_id=point_id,
             data=data,
             unit=unit,
             quantity_kind=quantity_kind
         )
         
+        print(f"📊 Returning response with {len(response.data)} data points")
+        return response
+        
     except Exception as e:
+        # Log the error for debugging
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"❌ Error fetching telemetry data for {point_id}: {e}")
+        print(f"❌ Traceback: {error_details}")
+        
         # Return mock data if database is not available or empty
         import random
-        now = datetime.now()
+        from datetime import timezone
+        now = datetime.now(timezone.utc)
         mock_data = []
         
         # Different base values for different point types
@@ -187,6 +202,7 @@ async def get_telemetry_data(
             unit = None
             quantity_kind = None
         
+        print(f"📊 Generating {60} mock datapoints for {point_id}")
         for i in range(60):
             ts = now - timedelta(minutes=(60 - i))
             base_value += random.uniform(-0.1, 0.1)
@@ -195,16 +211,19 @@ async def get_telemetry_data(
                     point_id=point_id,
                     value=round(base_value, 2),
                     timestamp=ts.isoformat(),
-                    quality="good"
+                    quality="GOOD"
                 )
             )
         
-        return TelemetryResponse(
+        print(f"📊 Returning {len(mock_data)} mock datapoints")
+        response = TelemetryResponse(
             point_id=point_id,
             data=mock_data,
             unit=unit,
             quantity_kind=quantity_kind
         )
+        print(f"📊 Response structure: point_id={response.point_id}, data_length={len(response.data)}")
+        return response
 
 
 @router.get("/points/{point_id}/latest")
@@ -249,10 +268,53 @@ async def get_latest_value(point_id: str):
         }
 
 
+@router.get("/debug/{point_id}")
+async def debug_telemetry_data(point_id: str):
+    """Debug endpoint to check telemetry data status."""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Check if table exists
+        cur.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'telemetry_sample'
+            );
+        """)
+        table_exists = cur.fetchone()[0]
+        
+        # Count rows for this point
+        if table_exists:
+            cur.execute("SELECT COUNT(*) as count FROM telemetry_sample WHERE point_id = %s", (point_id,))
+            count = cur.fetchone()["count"]
+        else:
+            count = 0
+        
+        cur.close()
+        conn.close()
+        
+        return {
+            "point_id": point_id,
+            "table_exists": table_exists,
+            "row_count": count,
+            "status": "ok"
+        }
+    except Exception as e:
+        return {
+            "point_id": point_id,
+            "table_exists": False,
+            "row_count": 0,
+            "status": "error",
+            "error": str(e)
+        }
+
+
 @router.post("/seed/{point_id}")
 async def seed_telemetry_data(point_id: str, count: int = Query(60, ge=1, le=1000)):
     """Seed mock telemetry data for a specific point."""
     try:
+        print(f"🌱 Starting seed for {point_id} with {count} datapoints")
         import random
         from datetime import datetime, timedelta, timezone
         
@@ -353,6 +415,7 @@ async def seed_telemetry_data(point_id: str, count: int = Query(60, ge=1, le=100
         cur.close()
         conn.close()
         
+        print(f"✅ Successfully seeded {inserted_count} rows for {point_id}")
         return {
             "success": True,
             "point_id": point_id,
@@ -364,8 +427,16 @@ async def seed_telemetry_data(point_id: str, count: int = Query(60, ge=1, le=100
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        print(f"Error seeding telemetry data: {error_details}")
-        raise HTTPException(status_code=500, detail=f"Failed to seed telemetry data: {str(e)}")
+        print(f"❌ Error seeding telemetry data: {error_details}")
+        # Return a response instead of raising an exception so the frontend can handle it
+        return {
+            "success": False,
+            "point_id": point_id,
+            "rows_inserted": 0,
+            "rows_requested": count,
+            "error": str(e),
+            "message": f"Failed to seed telemetry data: {str(e)}"
+        }
 
 
 @router.get("/dashboard")
