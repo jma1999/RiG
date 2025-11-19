@@ -24,9 +24,7 @@ def init_timescaledb():
         conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         cur = conn.cursor()
         
-        # Create table if it doesn't exist
-        # Note: For TimescaleDB hypertables, primary key should be on (time, point_id)
-        # but we'll add it after creating the hypertable if needed
+        # 1) Create base table if it doesn't exist
         cur.execute("""
             CREATE TABLE IF NOT EXISTS telemetry_sample (
                 time TIMESTAMPTZ NOT NULL,
@@ -36,22 +34,25 @@ def init_timescaledb():
             );
         """)
         
-        # Convert to hypertable if not already
+        # 2) Check if it's already a hypertable
         cur.execute("""
             SELECT EXISTS (
-                SELECT 1 FROM _timescaledb_catalog.hypertable 
-                WHERE hypertable_name = 'telemetry_sample'
+                SELECT 1
+                FROM timescaledb_information.hypertables
+                WHERE hypertable_schema = 'public'
+                  AND hypertable_name   = 'telemetry_sample'
             );
         """)
         is_hypertable = cur.fetchone()[0]
         
         if not is_hypertable:
-            # Create hypertable with partitioning on time
-            # Note: TimescaleDB hypertables can have unique constraints on (time, point_id)
-            cur.execute("SELECT create_hypertable('telemetry_sample', 'time', chunk_time_interval => INTERVAL '1 day');")
+            # 3) Convert to hypertable
+            cur.execute(
+                "SELECT create_hypertable('telemetry_sample', 'time', chunk_time_interval => INTERVAL '1 day');"
+            )
             print("✅ Created hypertable 'telemetry_sample'")
             
-            # Add unique constraint after hypertable creation
+            # 4) Add primary key on (time, point_id)
             try:
                 cur.execute("""
                     ALTER TABLE telemetry_sample 
@@ -63,7 +64,7 @@ def init_timescaledb():
         else:
             print("ℹ️  Hypertable 'telemetry_sample' already exists")
         
-        # Create index if it doesn't exist
+        # 5) Create index if it doesn't exist
         cur.execute("""
             CREATE INDEX IF NOT EXISTS idx_telemetry_sample_point_id 
             ON telemetry_sample (point_id);
@@ -80,4 +81,3 @@ def init_timescaledb():
 
 if __name__ == "__main__":
     init_timescaledb()
-

@@ -321,8 +321,7 @@ async def seed_telemetry_data(point_id: str, count: int = Query(60, ge=1, le=100
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Ensure table exists (create if not exists)
-        # Note: Don't add PRIMARY KEY here as it may conflict with hypertable creation
+        # Ensure table exists (safe even if already hypertable)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS telemetry_sample (
                 time TIMESTAMPTZ NOT NULL,
@@ -331,27 +330,7 @@ async def seed_telemetry_data(point_id: str, count: int = Query(60, ge=1, le=100
                 quality TEXT
             );
         """)
-        
-        # Check if hypertable exists, create if not
-        try:
-            cur.execute("""
-                SELECT EXISTS (
-                    SELECT 1 FROM _timescaledb_catalog.hypertable 
-                    WHERE hypertable_name = 'telemetry_sample'
-                );
-            """)
-            is_hypertable = cur.fetchone()[0]
-            
-            if not is_hypertable:
-                try:
-                    cur.execute("SELECT create_hypertable('telemetry_sample', 'time', chunk_time_interval => INTERVAL '1 day');")
-                    conn.commit()
-                except Exception as e:
-                    # Hypertable might already exist or TimescaleDB extension not enabled
-                    print(f"Note: Could not create hypertable: {e}")
-        except Exception as e:
-            # TimescaleDB catalog might not be accessible
-            print(f"Note: Could not check hypertable status: {e}")
+        conn.commit()
         
         # Clear existing data for this point in the last hour (to avoid duplicates)
         try:
@@ -364,10 +343,9 @@ async def seed_telemetry_data(point_id: str, count: int = Query(60, ge=1, le=100
             print(f"Note: Could not delete existing data: {e}")
             conn.rollback()
         
-        # Generate data - 60 minutes of data at 1-min resolution
+        # Generate data - `count` minutes of data at 1-min resolution
         now = datetime.now(timezone.utc)
         
-        # Different base values for different point types
         if "sat" in point_id.lower() or "temp" in point_id.lower():
             base_value = 20.0
         elif "flow" in point_id.lower() or "saf" in point_id.lower():
@@ -378,15 +356,13 @@ async def seed_telemetry_data(point_id: str, count: int = Query(60, ge=1, le=100
         rows = []
         for i in range(count):
             ts = now - timedelta(minutes=(count - i))
-            # Small random walk around base value
             base_value += random.uniform(-0.1, 0.1)
             rows.append((ts, point_id, round(base_value, 2), "GOOD"))
         
-        # Use INSERT - if primary key exists, use ON CONFLICT, otherwise just INSERT
         inserted_count = 0
         for row in rows:
             try:
-                # Try with ON CONFLICT first (if primary key exists)
+                # If PK exists on (time, point_id), this will upsert
                 try:
                     cur.execute(
                         """
@@ -398,7 +374,7 @@ async def seed_telemetry_data(point_id: str, count: int = Query(60, ge=1, le=100
                         row,
                     )
                 except Exception:
-                    # If ON CONFLICT fails (no primary key), use simple INSERT
+                    # If no PK, just plain insert
                     cur.execute(
                         """
                         INSERT INTO telemetry_sample (time, point_id, value, quality)
@@ -408,7 +384,6 @@ async def seed_telemetry_data(point_id: str, count: int = Query(60, ge=1, le=100
                     )
                 inserted_count += 1
             except Exception as e:
-                # Skip duplicates or other errors
                 print(f"Warning: Could not insert row {row[0]}: {e}")
         
         conn.commit()
@@ -428,7 +403,6 @@ async def seed_telemetry_data(point_id: str, count: int = Query(60, ge=1, le=100
         import traceback
         error_details = traceback.format_exc()
         print(f"❌ Error seeding telemetry data: {error_details}")
-        # Return a response instead of raising an exception so the frontend can handle it
         return {
             "success": False,
             "point_id": point_id,
@@ -437,7 +411,6 @@ async def seed_telemetry_data(point_id: str, count: int = Query(60, ge=1, le=100
             "error": str(e),
             "message": f"Failed to seed telemetry data: {str(e)}"
         }
-
 
 @router.get("/dashboard")
 async def get_telemetry_dashboard():
