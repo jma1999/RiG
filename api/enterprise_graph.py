@@ -254,6 +254,11 @@ async def get_meter_billing(meter_id: str, start_date: Optional[str] = None, end
     - finance/* (billing records)
     - space/* (space allocation)
     """
+    # Build filter string outside f-string to avoid backslash issues
+    date_filter = ""
+    if start_date and end_date:
+        date_filter = f'FILTER(?billing_period >= "{start_date}"^^xsd:date && ?billing_period <= "{end_date}"^^xsd:date)'
+    
     query = f"""
     PREFIX ex: <https://example.com/rig#>
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -272,7 +277,7 @@ async def get_meter_billing(meter_id: str, start_date: Optional[str] = None, end
                         ex:allocatedToCostCenter ?cost_center ;
                         ex:allocatedToSpace ?space .
         
-        {"FILTER(?billing_period >= \"" + start_date + "\"^^xsd:date && ?billing_period <= \"" + end_date + "\"^^xsd:date)" if start_date and end_date else ""}
+        {date_filter}
     }}
     ORDER BY DESC(?billing_period)
     LIMIT 100

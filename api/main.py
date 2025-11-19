@@ -643,128 +643,368 @@ app.include_router(bacnet.router, prefix="/bacnet", tags=["bacnet"])
 from api import enterprise_graph
 app.include_router(enterprise_graph.router, tags=["enterprise-graph"])
 
-# ---------------- work orders ----------------
-def _ensure_workorder_indexes():
-    try:
-        neo4j_query("CREATE CONSTRAINT IF NOT EXISTS FOR (w:WorkOrder) REQUIRE w.id IS UNIQUE")
-        neo4j_query("CREATE INDEX IF NOT EXISTS FOR (n:IfcEntity) ON (n.globalId)")
-    except Exception:
-        pass
+# Import GraphDB client for work orders
+from api.graphdb import get_graphdb_client
 
-_ensure_workorder_indexes()
+# ---------------- work orders ----------------
+# Work orders are now stored in GraphDB as RDF, no need for Neo4j indexes
 
 @app.post("/workorders", response_model=WorkOrder)
 def create_workorder(body: WorkOrderCreate):
     import datetime, uuid
+    
     wid = uuid.uuid4().hex[:12]
     now = datetime.datetime.utcnow().isoformat() + "Z"
-    params = {
-        "id": wid,
-        "title": body.title,
-        "priority": body.priority,
-        "status": "Open",
-        "createdAt": now,
-        "updatedAt": now,
-        "assetId": body.assetId,
-    }
-    neo4j_query(
+    
+    # RDF namespaces
+    EX = Namespace("https://example.com/rig#")
+    wo_uri = EX[f"WorkOrder_{wid}"]
+    
+    try:
+        client = get_graphdb_client()
+        
+        # Build INSERT query to create work order
+        insert_query = f"""
+        PREFIX ex: <https://example.com/rig#>
+        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        
+        INSERT {{
+            <{wo_uri}> a ex:WorkOrder ;
+                ex:woId "{wid}"^^xsd:string ;
+                ex:title "{body.title}"^^xsd:string ;
+                ex:priority "{body.priority}"^^xsd:string ;
+                ex:status "Open"^^xsd:string ;
+                ex:createdAt "{now}"^^xsd:dateTime ;
+                ex:updatedAt "{now}"^^xsd:dateTime .
+        }}
+        WHERE {{
+            FILTER NOT EXISTS {{ <{wo_uri}> ?p ?o }}
+        }}
         """
-        MERGE (w:WorkOrder {id:$id})
-        SET w.title=$title, w.priority=$priority, w.status=$status,
-            w.createdAt=$createdAt, w.updatedAt=$updatedAt
-        """,
-        **params,
-    )
-    if body.assetId:
-        neo4j_query(
+        
+        client.execute_sparql_query(insert_query, output_format="json")
+        
+        # Link to asset if provided
+        if body.assetId:
+            # Find asset by globalId (IFC entity)
+            link_query = f"""
+            PREFIX ex: <https://example.com/rig#>
+            PREFIX ifc: <http://ifc-ld.org/schemas/ifc2x3#>
+            PREFIX inst: <https://example.com/ifc/>
+            
+            INSERT {{
+                <{wo_uri}> ex:forAsset ?asset .
+            }}
+            WHERE {{
+                ?asset ifc:globalId "{body.assetId}"^^xsd:string .
+            }}
             """
-            MATCH (w:WorkOrder {id:$id}), (a:IfcEntity {globalId:$aid})
-            MERGE (w)-[:FOR_ASSET]->(a)
-            """,
-            id=wid, aid=body.assetId,
+            client.execute_sparql_query(link_query, output_format="json")
+        
+        # Return created work order
+        return WorkOrder(
+            id=wid,
+            title=body.title,
+            priority=body.priority,
+            status="Open",
+            assetId=body.assetId,
+            createdAt=now,
+            updatedAt=now
         )
-    rows = neo4j_query(
-        """
-        MATCH (w:WorkOrder {id:$id})
-        OPTIONAL MATCH (w)-[:FOR_ASSET]->(a:IfcEntity)
-        RETURN w AS w, a.globalId AS assetId
-        """,
-        id=wid,
-    )
-    w = dict(rows[0]["w"])
-    return WorkOrder(id=w["id"], title=w.get("title",""), priority=w.get("priority","Medium"), status=w.get("status","Open"), assetId=rows[0]["assetId"], createdAt=w.get("createdAt"), updatedAt=w.get("updatedAt"))
+    except Exception as e:
+        print(f"Error creating work order: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create work order: {str(e)}")
 
 @app.get("/workorders", response_model=List[WorkOrder])
 def list_workorders(status: Optional[str] = None, priority: Optional[str] = None, assetId: Optional[str] = None):
-    where = []
-    params = {}
-    if status:
-        where.append("w.status=$status")
-        params["status"] = status
-    if priority:
-        where.append("w.priority=$priority")
-        params["priority"] = priority
-    if assetId:
-        where.append("a.globalId=$assetId")
-        params["assetId"] = assetId
-    
-    wclause = ("WHERE " + " AND ".join(where)) if where else ""
-    q = f"""
-    MATCH (w:WorkOrder)
-    OPTIONAL MATCH (w)-[:FOR_ASSET]->(a:IfcEntity)
-    {wclause}
-    RETURN w AS w, a.globalId AS assetId
-    ORDER BY coalesce(w.updatedAt, w.createdAt, '1970-01-01T00:00:00Z') DESC
-    """
-    rows = neo4j_query(q, **params)
-    out: List[WorkOrder] = []
-    for r in rows:
-        w = dict(r["w"])
-        out.append(WorkOrder(id=w["id"], title=w.get("title",""), priority=w.get("priority","Medium"), status=w.get("status","Open"), assetId=r["assetId"], createdAt=w.get("createdAt"), updatedAt=w.get("updatedAt")))
-    return out
+    try:
+        client = get_graphdb_client()
+        
+        # Build WHERE clause for filters
+        filters = []
+        if status:
+            filters.append(f'?status = "{status}"')
+        if priority:
+            filters.append(f'?priority = "{priority}"')
+        if assetId:
+            filters.append(f'?assetGlobalId = "{assetId}"')
+        
+        filter_clause = "FILTER(" + " && ".join(filters) + ")" if filters else ""
+        
+        query = f"""
+        PREFIX ex: <https://example.com/rig#>
+        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX ifc: <http://ifc-ld.org/schemas/ifc2x3#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        
+        SELECT ?wo ?woId ?title ?priority ?status ?createdAt ?updatedAt ?assetGlobalId
+        WHERE {{
+            ?wo a ex:WorkOrder ;
+                ex:woId ?woId ;
+                ex:title ?title ;
+                ex:priority ?priority ;
+                ex:status ?status ;
+                ex:createdAt ?createdAt ;
+                ex:updatedAt ?updatedAt .
+            OPTIONAL {{
+                ?wo ex:forAsset ?asset .
+                ?asset ifc:globalId ?assetGlobalId .
+            }}
+            {filter_clause}
+        }}
+        ORDER BY DESC(COALESCE(?updatedAt, ?createdAt, "1970-01-01T00:00:00Z"^^xsd:dateTime))
+        """
+        
+        result = client.execute_sparql_query(query, output_format="json")
+        
+        # Parse SPARQL JSON results
+        out: List[WorkOrder] = []
+        if isinstance(result, dict) and "results" in result:
+            bindings = result["results"].get("bindings", [])
+            for binding in bindings:
+                wo_id = binding.get("woId", {}).get("value", "")
+                title = binding.get("title", {}).get("value", "")
+                priority = binding.get("priority", {}).get("value", "Medium")
+                status_val = binding.get("status", {}).get("value", "Open")
+                created_at = binding.get("createdAt", {}).get("value", "")
+                updated_at = binding.get("updatedAt", {}).get("value", "")
+                asset_global_id = binding.get("assetGlobalId", {}).get("value") if "assetGlobalId" in binding else None
+                
+                out.append(WorkOrder(
+                    id=wo_id,
+                    title=title,
+                    priority=priority,
+                    status=status_val,
+                    assetId=asset_global_id,
+                    createdAt=created_at,
+                    updatedAt=updated_at
+                ))
+        
+        return out
+    except Exception as e:
+        print(f"Error listing work orders: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list work orders: {str(e)}")
 
 @app.get("/workorders/{id}", response_model=WorkOrder)
 def get_workorder(id: str):
-    rows = neo4j_query(
+    try:
+        client = get_graphdb_client()
+        
+        query = f"""
+        PREFIX ex: <https://example.com/rig#>
+        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX ifc: <http://ifc-ld.org/schemas/ifc2x3#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        
+        SELECT ?wo ?woId ?title ?priority ?status ?createdAt ?updatedAt ?assetGlobalId
+        WHERE {{
+            ?wo a ex:WorkOrder ;
+                ex:woId "{id}"^^xsd:string ;
+                ex:title ?title ;
+                ex:priority ?priority ;
+                ex:status ?status ;
+                ex:createdAt ?createdAt ;
+                ex:updatedAt ?updatedAt .
+            OPTIONAL {{
+                ?wo ex:forAsset ?asset .
+                ?asset ifc:globalId ?assetGlobalId .
+            }}
+        }}
+        LIMIT 1
         """
-        MATCH (w:WorkOrder {id:$id})
-        OPTIONAL MATCH (w)-[:FOR_ASSET]->(a:IfcEntity)
-        RETURN w AS w, a.globalId AS assetId
-        """,
-        id=id,
-    )
-    if not rows:
-        raise HTTPException(status_code=404, detail="Work order not found")
-    w = dict(rows[0]["w"])
-    return WorkOrder(id=w["id"], title=w.get("title",""), priority=w.get("priority","Medium"), status=w.get("status","Open"), assetId=rows[0]["assetId"], createdAt=w.get("createdAt"), updatedAt=w.get("updatedAt"))
+        
+        result = client.execute_sparql_query(query, output_format="json")
+        
+        # Parse SPARQL JSON results
+        if isinstance(result, dict) and "results" in result:
+            bindings = result["results"].get("bindings", [])
+            if not bindings:
+                raise HTTPException(status_code=404, detail="Work order not found")
+            
+            binding = bindings[0]
+            wo_id = binding.get("woId", {}).get("value", id)
+            title = binding.get("title", {}).get("value", "")
+            priority = binding.get("priority", {}).get("value", "Medium")
+            status_val = binding.get("status", {}).get("value", "Open")
+            created_at = binding.get("createdAt", {}).get("value", "")
+            updated_at = binding.get("updatedAt", {}).get("value", "")
+            asset_global_id = binding.get("assetGlobalId", {}).get("value") if "assetGlobalId" in binding else None
+            
+            return WorkOrder(
+                id=wo_id,
+                title=title,
+                priority=priority,
+                status=status_val,
+                assetId=asset_global_id,
+                createdAt=created_at,
+                updatedAt=updated_at
+            )
+        else:
+            raise HTTPException(status_code=404, detail="Work order not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting work order {id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get work order: {str(e)}")
 
 @app.patch("/workorders/{id}", response_model=WorkOrder)
 def update_workorder(id: str, body: WorkOrderUpdate):
-    import datetime
-    now = datetime.datetime.utcnow().isoformat() + "Z"
-    sets = ["w.updatedAt=$now"]
-    params: Dict[str, Any] = {"id": id, "now": now}
-    if body.title is not None:
-        sets.append("w.title=$title"); params["title"] = body.title
-    if body.priority is not None:
-        sets.append("w.priority=$priority"); params["priority"] = body.priority
-    if body.status is not None:
-        sets.append("w.status=$status"); params["status"] = body.status
-    q = f"MATCH (w:WorkOrder {{id:$id}}) SET {', '.join(sets)} RETURN w"
-    rows = neo4j_query(q, **params)
-    if not rows:
-        raise HTTPException(status_code=404, detail="Work order not found")
-    if body.assetId is not None:
-        # re-link asset
-        neo4j_query("MATCH (w:WorkOrder {id:$id})-[r:FOR_ASSET]->() DELETE r", id=id)
-        if body.assetId:
-            neo4j_query("MATCH (w:WorkOrder {id:$id}), (a:IfcEntity {globalId:$aid}) MERGE (w)-[:FOR_ASSET]->(a)", id=id, aid=body.assetId)
-    return get_workorder(id)
+    try:
+        import datetime
+        client = get_graphdb_client()
+        
+        # First, find the work order URI
+        find_query = f"""
+        PREFIX ex: <https://example.com/rig#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        
+        SELECT ?wo
+        WHERE {{
+            ?wo a ex:WorkOrder ;
+                ex:woId "{id}"^^xsd:string .
+        }}
+        LIMIT 1
+        """
+        
+        find_result = client.execute_sparql_query(find_query, output_format="json")
+        if isinstance(find_result, dict) and "results" in find_result:
+            bindings = find_result["results"].get("bindings", [])
+            if not bindings:
+                raise HTTPException(status_code=404, detail="Work order not found")
+            wo_uri = bindings[0].get("wo", {}).get("value")
+        else:
+            raise HTTPException(status_code=404, detail="Work order not found")
+        
+        now = datetime.datetime.utcnow().isoformat() + "Z"
+        
+        # Build DELETE/INSERT for updates
+        delete_patterns = []
+        insert_patterns = []
+        
+        # Always update updatedAt
+        delete_patterns.append(f"<{wo_uri}> ex:updatedAt ?oldUpdatedAt .")
+        insert_patterns.append(f'<{wo_uri}> ex:updatedAt "{now}"^^xsd:dateTime .')
+        
+        if body.title is not None:
+            delete_patterns.append(f"<{wo_uri}> ex:title ?oldTitle .")
+            insert_patterns.append(f'<{wo_uri}> ex:title "{body.title}"^^xsd:string .')
+        
+        if body.priority is not None:
+            delete_patterns.append(f"<{wo_uri}> ex:priority ?oldPriority .")
+            insert_patterns.append(f'<{wo_uri}> ex:priority "{body.priority}"^^xsd:string .')
+        
+        if body.status is not None:
+            delete_patterns.append(f"<{wo_uri}> ex:status ?oldStatus .")
+            insert_patterns.append(f'<{wo_uri}> ex:status "{body.status}"^^xsd:string .')
+        
+        # Update work order properties
+        if delete_patterns and insert_patterns:
+            update_query = f"""
+            PREFIX ex: <https://example.com/rig#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            
+            DELETE {{
+                {' '.join(delete_patterns)}
+            }}
+            INSERT {{
+                {' '.join(insert_patterns)}
+            }}
+            WHERE {{
+                <{wo_uri}> a ex:WorkOrder .
+                OPTIONAL {{ <{wo_uri}> ex:updatedAt ?oldUpdatedAt . }}
+                OPTIONAL {{ <{wo_uri}> ex:title ?oldTitle . }}
+                OPTIONAL {{ <{wo_uri}> ex:priority ?oldPriority . }}
+                OPTIONAL {{ <{wo_uri}> ex:status ?oldStatus . }}
+            }}
+            """
+            client.execute_sparql_query(update_query, output_format="json")
+        
+        # Handle asset link update
+        if body.assetId is not None:
+            # Delete existing asset link
+            delete_asset_query = f"""
+            PREFIX ex: <https://example.com/rig#>
+            
+            DELETE {{
+                <{wo_uri}> ex:forAsset ?oldAsset .
+            }}
+            WHERE {{
+                <{wo_uri}> ex:forAsset ?oldAsset .
+            }}
+            """
+            client.execute_sparql_query(delete_asset_query, output_format="json")
+            
+            # Add new asset link if provided
+            if body.assetId:
+                insert_asset_query = f"""
+                PREFIX ex: <https://example.com/rig#>
+                PREFIX ifc: <http://ifc-ld.org/schemas/ifc2x3#>
+                PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+                
+                INSERT {{
+                    <{wo_uri}> ex:forAsset ?asset .
+                }}
+                WHERE {{
+                    ?asset ifc:globalId "{body.assetId}"^^xsd:string .
+                }}
+                """
+                client.execute_sparql_query(insert_asset_query, output_format="json")
+        
+        return get_workorder(id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error updating work order {id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update work order: {str(e)}")
 
 @app.delete("/workorders/{id}")
 def delete_workorder(id: str):
-    neo4j_query("MATCH (w:WorkOrder {id:$id}) DETACH DELETE w", id=id)
-    return {"ok": True}
+    try:
+        client = get_graphdb_client()
+        
+        # First find the work order URI
+        find_query = f"""
+        PREFIX ex: <https://example.com/rig#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        
+        SELECT ?wo
+        WHERE {{
+            ?wo a ex:WorkOrder ;
+                ex:woId "{id}"^^xsd:string .
+        }}
+        LIMIT 1
+        """
+        
+        find_result = client.execute_sparql_query(find_query, output_format="json")
+        if isinstance(find_result, dict) and "results" in find_result:
+            bindings = find_result["results"].get("bindings", [])
+            if not bindings:
+                raise HTTPException(status_code=404, detail="Work order not found")
+            wo_uri = bindings[0].get("wo", {}).get("value")
+        else:
+            raise HTTPException(status_code=404, detail="Work order not found")
+        
+        # Delete the work order and all its properties
+        delete_query = f"""
+        PREFIX ex: <https://example.com/rig#>
+        
+        DELETE {{
+            <{wo_uri}> ?p ?o .
+        }}
+        WHERE {{
+            <{wo_uri}> ?p ?o .
+        }}
+        """
+        
+        client.execute_sparql_query(delete_query, output_format="json")
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error deleting work order {id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete work order: {str(e)}")
 
 
 # ---------------- semantic index management ----------------
