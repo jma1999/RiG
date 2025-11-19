@@ -28,10 +28,27 @@ export default function TelemetryDashboard() {
   const [showReadingsModal, setShowReadingsModal] = useState(false);
   const [modalPointId, setModalPointId] = useState(null);
   const [modalReadings, setModalReadings] = useState([]);
+  const [modalLoading, setModalLoading] = useState(false);
 
   useEffect(() => {
     loadTelemetryPoints();
+    // Auto-seed data for ft_136276_sat on component mount
+    seedTelemetryData("ft_136276_sat");
   }, []);
+
+  const seedTelemetryData = async (pointId) => {
+    try {
+      const res = await fetch(`${API_BASE}/telemetry/seed/${pointId}?count=60`, {
+        method: "POST"
+      });
+      if (res.ok) {
+        const data = await res.json();
+        console.log(`Seeded ${data.rows_inserted} datapoints for ${pointId}`);
+      }
+    } catch (error) {
+      console.error("Failed to seed telemetry data:", error);
+    }
+  };
 
   useEffect(() => {
     if (selectedPoint) {
@@ -93,16 +110,43 @@ export default function TelemetryDashboard() {
   const handlePointClick = async (pointId) => {
     setModalPointId(pointId);
     setShowReadingsModal(true);
-    // Load readings for the clicked point
+    setModalReadings([]); // Clear previous data
+    setModalLoading(true);
+    
+    // First, seed data if needed, then load readings
     try {
+      // Seed data for this point (ensures we have 60 datapoints)
+      const seedRes = await fetch(`${API_BASE}/telemetry/seed/${pointId}?count=60`, {
+        method: "POST"
+      });
+      if (seedRes.ok) {
+        const seedData = await seedRes.json();
+        console.log(`Seeded ${seedData.rows_inserted} datapoints for ${pointId}`);
+      } else {
+        console.warn("Seed request failed, but continuing to load existing data");
+      }
+      
+      // Wait a moment for the data to be committed, then load readings
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Load readings for the clicked point
       const res = await fetch(`${API_BASE}/telemetry/points/${pointId}?hours=1&limit=60`);
       if (res.ok) {
         const data = await res.json();
-        setModalReadings(data.data || []);
+        console.log("Telemetry data response:", data);
+        const readings = data.data || [];
+        console.log(`Loaded ${readings.length} readings for ${pointId}`);
+        setModalReadings(readings);
+      } else {
+        const errorText = await res.text();
+        console.error("Failed to load telemetry data:", res.status, errorText);
+        setModalReadings([]);
       }
     } catch (error) {
       console.error("Failed to load modal readings:", error);
       setModalReadings([]);
+    } finally {
+      setModalLoading(false);
     }
   };
 
@@ -299,68 +343,86 @@ export default function TelemetryDashboard() {
           <div className="mt-4">
             {modalPointId && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between text-sm text-[var(--palantir-text-muted)] mb-4">
-                  <span>Showing all {modalReadings.length} readings from the last hour</span>
-                  <Badge variant="outline">{modalReadings.length} total</Badge>
-                </div>
-                
-                <div className="border border-[var(--palantir-border-primary)] rounded-lg overflow-hidden">
-                  <div className="max-h-[60vh] overflow-y-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-[var(--palantir-bg-secondary)] sticky top-0">
-                        <tr>
-                          <th className="px-4 py-3 text-left font-semibold text-[var(--palantir-text-primary)] border-b border-[var(--palantir-border-primary)]">
-                            #
-                          </th>
-                          <th className="px-4 py-3 text-left font-semibold text-[var(--palantir-text-primary)] border-b border-[var(--palantir-border-primary)]">
-                            Timestamp
-                          </th>
-                          <th className="px-4 py-3 text-left font-semibold text-[var(--palantir-text-primary)] border-b border-[var(--palantir-border-primary)]">
-                            Value
-                          </th>
-                          <th className="px-4 py-3 text-left font-semibold text-[var(--palantir-text-primary)] border-b border-[var(--palantir-border-primary)]">
-                            Quality
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {modalReadings.map((reading, index) => (
-                          <tr
-                            key={index}
-                            className="border-b border-[var(--palantir-border-primary)] hover:bg-[var(--palantir-bg-secondary)] transition-colors"
-                          >
-                            <td className="px-4 py-3 text-[var(--palantir-text-muted)] font-mono">
-                              {index + 1}
-                            </td>
-                            <td className="px-4 py-3 text-[var(--palantir-text-primary)]">
-                              {new Date(reading.timestamp).toLocaleString()}
-                            </td>
-                            <td className="px-4 py-3 text-[var(--palantir-text-primary)] font-semibold">
-                              {reading.value.toFixed(2)}
-                            </td>
-                            <td className="px-4 py-3">
-                              <Badge
-                                variant={reading.quality === "GOOD" ? "default" : "outline"}
-                                className={
-                                  reading.quality === "GOOD"
-                                    ? "bg-green-600 text-white"
-                                    : ""
-                                }
-                              >
-                                {reading.quality}
-                              </Badge>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                {modalLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center space-y-2">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--palantir-text-accent)] mx-auto"></div>
+                      <p className="text-sm text-[var(--palantir-text-muted)]">Loading telemetry data...</p>
+                    </div>
                   </div>
-                </div>
-                
-                {modalReadings.length === 0 && (
-                  <div className="text-center py-8 text-[var(--palantir-text-muted)]">
-                    No readings available for this sensor.
-                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between text-sm text-[var(--palantir-text-muted)] mb-4">
+                      <span>Showing all {modalReadings.length} readings from the last hour</span>
+                      <Badge variant="outline">{modalReadings.length} total</Badge>
+                    </div>
+                    
+                    {modalReadings.length > 0 ? (
+                      <div className="border border-[var(--palantir-border-primary)] rounded-lg overflow-hidden">
+                        <div className="max-h-[60vh] overflow-y-auto">
+                          <table className="w-full text-sm">
+                            <thead className="bg-[var(--palantir-bg-secondary)] sticky top-0">
+                              <tr>
+                                <th className="px-4 py-3 text-left font-semibold text-[var(--palantir-text-primary)] border-b border-[var(--palantir-border-primary)]">
+                                  #
+                                </th>
+                                <th className="px-4 py-3 text-left font-semibold text-[var(--palantir-text-primary)] border-b border-[var(--palantir-border-primary)]">
+                                  Timestamp
+                                </th>
+                                <th className="px-4 py-3 text-left font-semibold text-[var(--palantir-text-primary)] border-b border-[var(--palantir-border-primary)]">
+                                  Value
+                                </th>
+                                <th className="px-4 py-3 text-left font-semibold text-[var(--palantir-text-primary)] border-b border-[var(--palantir-border-primary)]">
+                                  Quality
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {modalReadings.map((reading, index) => (
+                                <tr
+                                  key={index}
+                                  className="border-b border-[var(--palantir-border-primary)] hover:bg-[var(--palantir-bg-secondary)] transition-colors"
+                                >
+                                  <td className="px-4 py-3 text-[var(--palantir-text-muted)] font-mono">
+                                    {index + 1}
+                                  </td>
+                                  <td className="px-4 py-3 text-[var(--palantir-text-primary)]">
+                                    {new Date(reading.timestamp).toLocaleString()}
+                                  </td>
+                                  <td className="px-4 py-3 text-[var(--palantir-text-primary)] font-semibold">
+                                    {typeof reading.value === 'number' ? reading.value.toFixed(2) : reading.value}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <Badge
+                                      variant={reading.quality === "GOOD" || reading.quality === "good" ? "default" : "outline"}
+                                      className={
+                                        (reading.quality === "GOOD" || reading.quality === "good")
+                                          ? "bg-green-600 text-white"
+                                          : ""
+                                      }
+                                    >
+                                      {reading.quality}
+                                    </Badge>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-[var(--palantir-text-muted)]">
+                        <p>No readings available for this sensor.</p>
+                        <Button
+                          onClick={() => handlePointClick(modalPointId)}
+                          className="mt-4"
+                          variant="outline"
+                        >
+                          Seed & Reload Data
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}

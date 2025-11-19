@@ -131,13 +131,13 @@ async def get_telemetry_data(
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Get data from last N hours
+        # Get data from last N hours, ordered by time ASC to get chronological order
         query = """
         SELECT time, point_id, value, quality
         FROM telemetry_sample
         WHERE point_id = %s
           AND time >= NOW() - INTERVAL '%s hours'
-        ORDER BY time DESC
+        ORDER BY time ASC
         LIMIT %s
         """
         
@@ -151,17 +151,14 @@ async def get_telemetry_data(
                 point_id=row["point_id"],
                 value=float(row["value"]) if row["value"] is not None else 0.0,
                 timestamp=row["time"].isoformat(),
-                quality=row.get("quality", "good")
+                quality=row.get("quality", "GOOD").upper()  # Normalize to uppercase
             )
             for row in rows
         ]
         
-        # Reverse to get chronological order
-        data.reverse()
-        
         # Get unit and quantity kind from GraphDB (mock for now)
-        unit = "DEG_C" if "temp" in point_id.lower() else "FT3-PER-MIN" if "flow" in point_id.lower() else None
-        quantity_kind = "Temperature" if "temp" in point_id.lower() else "VolumeFlowRate" if "flow" in point_id.lower() else None
+        unit = "DEG_C" if "temp" in point_id.lower() or "sat" in point_id.lower() else "FT3-PER-MIN" if "flow" in point_id.lower() or "saf" in point_id.lower() else None
+        quantity_kind = "Temperature" if "temp" in point_id.lower() or "sat" in point_id.lower() else "VolumeFlowRate" if "flow" in point_id.lower() or "saf" in point_id.lower() else None
         
         return TelemetryResponse(
             point_id=point_id,
@@ -250,6 +247,125 @@ async def get_latest_value(point_id: str):
             "timestamp": datetime.now().isoformat(),
             "quality": "good"
         }
+
+
+@router.post("/seed/{point_id}")
+async def seed_telemetry_data(point_id: str, count: int = Query(60, ge=1, le=1000)):
+    """Seed mock telemetry data for a specific point."""
+    try:
+        import random
+        from datetime import datetime, timedelta, timezone
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Ensure table exists (create if not exists)
+        # Note: Don't add PRIMARY KEY here as it may conflict with hypertable creation
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS telemetry_sample (
+                time TIMESTAMPTZ NOT NULL,
+                point_id TEXT NOT NULL,
+                value DOUBLE PRECISION,
+                quality TEXT
+            );
+        """)
+        
+        # Check if hypertable exists, create if not
+        try:
+            cur.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM _timescaledb_catalog.hypertable 
+                    WHERE hypertable_name = 'telemetry_sample'
+                );
+            """)
+            is_hypertable = cur.fetchone()[0]
+            
+            if not is_hypertable:
+                try:
+                    cur.execute("SELECT create_hypertable('telemetry_sample', 'time', chunk_time_interval => INTERVAL '1 day');")
+                    conn.commit()
+                except Exception as e:
+                    # Hypertable might already exist or TimescaleDB extension not enabled
+                    print(f"Note: Could not create hypertable: {e}")
+        except Exception as e:
+            # TimescaleDB catalog might not be accessible
+            print(f"Note: Could not check hypertable status: {e}")
+        
+        # Clear existing data for this point in the last hour (to avoid duplicates)
+        try:
+            cur.execute(
+                "DELETE FROM telemetry_sample WHERE point_id = %s AND time >= NOW() - INTERVAL '1 hour'",
+                (point_id,)
+            )
+            conn.commit()
+        except Exception as e:
+            print(f"Note: Could not delete existing data: {e}")
+            conn.rollback()
+        
+        # Generate data - 60 minutes of data at 1-min resolution
+        now = datetime.now(timezone.utc)
+        
+        # Different base values for different point types
+        if "sat" in point_id.lower() or "temp" in point_id.lower():
+            base_value = 20.0
+        elif "flow" in point_id.lower() or "saf" in point_id.lower():
+            base_value = 150.0
+        else:
+            base_value = 50.0
+        
+        rows = []
+        for i in range(count):
+            ts = now - timedelta(minutes=(count - i))
+            # Small random walk around base value
+            base_value += random.uniform(-0.1, 0.1)
+            rows.append((ts, point_id, round(base_value, 2), "GOOD"))
+        
+        # Use INSERT - if primary key exists, use ON CONFLICT, otherwise just INSERT
+        inserted_count = 0
+        for row in rows:
+            try:
+                # Try with ON CONFLICT first (if primary key exists)
+                try:
+                    cur.execute(
+                        """
+                        INSERT INTO telemetry_sample (time, point_id, value, quality)
+                        VALUES (%s, %s, %s, %s)
+                        ON CONFLICT (time, point_id) DO UPDATE
+                        SET value = EXCLUDED.value, quality = EXCLUDED.quality
+                        """,
+                        row,
+                    )
+                except Exception:
+                    # If ON CONFLICT fails (no primary key), use simple INSERT
+                    cur.execute(
+                        """
+                        INSERT INTO telemetry_sample (time, point_id, value, quality)
+                        VALUES (%s, %s, %s, %s)
+                        """,
+                        row,
+                    )
+                inserted_count += 1
+            except Exception as e:
+                # Skip duplicates or other errors
+                print(f"Warning: Could not insert row {row[0]}: {e}")
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {
+            "success": True,
+            "point_id": point_id,
+            "rows_inserted": inserted_count,
+            "rows_requested": count,
+            "message": f"Inserted {inserted_count} rows for {point_id}"
+        }
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error seeding telemetry data: {error_details}")
+        raise HTTPException(status_code=500, detail=f"Failed to seed telemetry data: {str(e)}")
 
 
 @router.get("/dashboard")

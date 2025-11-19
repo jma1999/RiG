@@ -25,6 +25,8 @@ def init_timescaledb():
         cur = conn.cursor()
         
         # Create table if it doesn't exist
+        # Note: For TimescaleDB hypertables, primary key should be on (time, point_id)
+        # but we'll add it after creating the hypertable if needed
         cur.execute("""
             CREATE TABLE IF NOT EXISTS telemetry_sample (
                 time TIMESTAMPTZ NOT NULL,
@@ -44,8 +46,20 @@ def init_timescaledb():
         is_hypertable = cur.fetchone()[0]
         
         if not is_hypertable:
-            cur.execute("SELECT create_hypertable('telemetry_sample', 'time');")
+            # Create hypertable with partitioning on time
+            # Note: TimescaleDB hypertables can have unique constraints on (time, point_id)
+            cur.execute("SELECT create_hypertable('telemetry_sample', 'time', chunk_time_interval => INTERVAL '1 day');")
             print("✅ Created hypertable 'telemetry_sample'")
+            
+            # Add unique constraint after hypertable creation
+            try:
+                cur.execute("""
+                    ALTER TABLE telemetry_sample 
+                    ADD CONSTRAINT telemetry_sample_pkey PRIMARY KEY (time, point_id);
+                """)
+                print("✅ Added primary key constraint")
+            except Exception as e:
+                print(f"ℹ️  Primary key constraint may already exist: {e}")
         else:
             print("ℹ️  Hypertable 'telemetry_sample' already exists")
         
