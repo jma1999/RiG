@@ -27,21 +27,31 @@ os.environ.setdefault("TRANSFORMERS_NO_TORCH_FLEX_ATTENTION", "1")
 app = FastAPI(title="RiG GraphRAG API", version="0.1")
 app.mount("/app", StaticFiles(directory="web", html=True), name="app")
 
-# CORS: prefer env-only; always allow localhost for dev
-cors_origins = []
+# CORS: Allow all origins for development (Cloudflare Tunnel + Vercel)
+# In production, set FRONTEND_ORIGINS env var with specific origins
+cors_origins = ["*"]  # Allow all origins by default for development
+allow_creds = False  # Cannot use credentials with "*"
+
+# If FRONTEND_ORIGINS is set, use those instead
 extra_origins = os.getenv("FRONTEND_ORIGINS")
 if extra_origins:
-    cors_origins.extend([o.strip() for o in extra_origins.split(",") if o.strip()])
-cors_origins.extend(["http://localhost:5173", "http://127.0.0.1:5173"])  # dev convenience
-if os.getenv("DEV_ALLOW_ALL_ORIGINS") == "1":
-    cors_origins = ["*"]
+    cors_origins = [o.strip() for o in extra_origins.split(",") if o.strip()]
+    # Always add localhost for local dev
+    cors_origins.extend(["http://localhost:5173", "http://127.0.0.1:5173"])
+    allow_creds = True  # Can use credentials with specific origins
+
+# If explicitly disabled, don't allow all
+if os.getenv("DISABLE_ALL_ORIGINS") == "1":
+    cors_origins = extra_origins.split(",") if extra_origins else []
+    allow_creds = True
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=allow_creds,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 @app.exception_handler(Exception)
