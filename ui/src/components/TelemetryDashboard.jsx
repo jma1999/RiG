@@ -2,14 +2,32 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { API_BASE } from "@/lib/env";
 import { Activity, TrendingUp, Thermometer, Gauge } from "lucide-react";
+
+// Map sensor IDs to human-readable names
+const getSensorDisplayName = (pointId) => {
+  const nameMap = {
+    "ft_136276_sat": "Supply Air Temperature",
+    "ft_136276_saf": "Supply Air Flow",
+    "ft_136276_damper_position": "Damper Position",
+    "ft_136276_damper_command": "Damper Command",
+    "ft_136276_run_status": "Run Status",
+  };
+  
+  const readableName = nameMap[pointId] || pointId.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+  return `${readableName} (${pointId})`;
+};
 
 export default function TelemetryDashboard() {
   const [telemetryPoints, setTelemetryPoints] = useState([]);
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [telemetryData, setTelemetryData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showReadingsModal, setShowReadingsModal] = useState(false);
+  const [modalPointId, setModalPointId] = useState(null);
+  const [modalReadings, setModalReadings] = useState([]);
 
   useEffect(() => {
     loadTelemetryPoints();
@@ -72,6 +90,22 @@ export default function TelemetryDashboard() {
   const latest = getLatestValue();
   const stats = getMinMax();
 
+  const handlePointClick = async (pointId) => {
+    setModalPointId(pointId);
+    setShowReadingsModal(true);
+    // Load readings for the clicked point
+    try {
+      const res = await fetch(`${API_BASE}/telemetry/points/${pointId}?hours=1&limit=60`);
+      if (res.ok) {
+        const data = await res.json();
+        setModalReadings(data.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to load modal readings:", error);
+      setModalReadings([]);
+    }
+  };
+
   return (
     <div className="flex-1 p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -132,19 +166,22 @@ export default function TelemetryDashboard() {
                 ? "ring-2 ring-[var(--palantir-text-accent)]"
                 : ""
             }`}
-            onClick={() => setSelectedPoint(point.point_id)}
+            onClick={() => {
+              setSelectedPoint(point.point_id);
+              handlePointClick(point.point_id);
+            }}
           >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-mono text-[var(--palantir-text-accent)]">
-                    {point.point_id}
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-[var(--palantir-text-primary)]">
+                    {getSensorDisplayName(point.point_id)}
                   </p>
                   <p className="text-xs text-[var(--palantir-text-muted)] mt-1">
-                    {point.data_points} readings
+                    {point.data_points} readings • Click to view all
                   </p>
                 </div>
-                <Thermometer className="h-8 w-8 text-[var(--palantir-text-accent)]" />
+                <Thermometer className="h-8 w-8 text-[var(--palantir-text-accent)] ml-2" />
               </div>
             </CardContent>
           </Card>
@@ -221,7 +258,7 @@ export default function TelemetryDashboard() {
             <CardHeader>
               <CardTitle>Time Series Data (Last Hour)</CardTitle>
               <p className="text-sm text-[var(--palantir-text-muted)]">
-                Point: {selectedPoint} | Linked via semantic overlay (223P/Brick/QUDT)
+                {getSensorDisplayName(selectedPoint)} | Linked via semantic overlay (223P/Brick/QUDT)
               </p>
             </CardHeader>
             <CardContent>
@@ -246,6 +283,90 @@ export default function TelemetryDashboard() {
           </Card>
         </>
       )}
+
+      {/* Readings Modal */}
+      <Dialog open={showReadingsModal} onOpenChange={setShowReadingsModal}>
+        <DialogContent>
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle>
+                {modalPointId ? getSensorDisplayName(modalPointId) : "Sensor Readings"}
+              </DialogTitle>
+              <DialogClose onClose={() => setShowReadingsModal(false)} />
+            </div>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            {modalPointId && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between text-sm text-[var(--palantir-text-muted)] mb-4">
+                  <span>Showing all {modalReadings.length} readings from the last hour</span>
+                  <Badge variant="outline">{modalReadings.length} total</Badge>
+                </div>
+                
+                <div className="border border-[var(--palantir-border-primary)] rounded-lg overflow-hidden">
+                  <div className="max-h-[60vh] overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-[var(--palantir-bg-secondary)] sticky top-0">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-semibold text-[var(--palantir-text-primary)] border-b border-[var(--palantir-border-primary)]">
+                            #
+                          </th>
+                          <th className="px-4 py-3 text-left font-semibold text-[var(--palantir-text-primary)] border-b border-[var(--palantir-border-primary)]">
+                            Timestamp
+                          </th>
+                          <th className="px-4 py-3 text-left font-semibold text-[var(--palantir-text-primary)] border-b border-[var(--palantir-border-primary)]">
+                            Value
+                          </th>
+                          <th className="px-4 py-3 text-left font-semibold text-[var(--palantir-text-primary)] border-b border-[var(--palantir-border-primary)]">
+                            Quality
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {modalReadings.map((reading, index) => (
+                          <tr
+                            key={index}
+                            className="border-b border-[var(--palantir-border-primary)] hover:bg-[var(--palantir-bg-secondary)] transition-colors"
+                          >
+                            <td className="px-4 py-3 text-[var(--palantir-text-muted)] font-mono">
+                              {index + 1}
+                            </td>
+                            <td className="px-4 py-3 text-[var(--palantir-text-primary)]">
+                              {new Date(reading.timestamp).toLocaleString()}
+                            </td>
+                            <td className="px-4 py-3 text-[var(--palantir-text-primary)] font-semibold">
+                              {reading.value.toFixed(2)}
+                            </td>
+                            <td className="px-4 py-3">
+                              <Badge
+                                variant={reading.quality === "GOOD" ? "default" : "outline"}
+                                className={
+                                  reading.quality === "GOOD"
+                                    ? "bg-green-600 text-white"
+                                    : ""
+                                }
+                              >
+                                {reading.quality}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                
+                {modalReadings.length === 0 && (
+                  <div className="text-center py-8 text-[var(--palantir-text-muted)]">
+                    No readings available for this sensor.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
