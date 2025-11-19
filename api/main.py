@@ -3,7 +3,7 @@ import os, json, threading, uuid
 from typing import List, Dict, Any, Optional
 from math import sqrt
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Query, Request, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, Query, Request, UploadFile, File, Form, Body, Path
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
@@ -271,6 +271,14 @@ class FileUploadRequest(BaseModel):
     file_size: int
     content_type: str
     tenant_id: str = "default"
+
+class CompletedPart(BaseModel):
+    part_number: int
+    etag: str
+
+class CompleteUploadRequest(BaseModel):
+    file_key: str
+    parts: List[CompletedPart]
 
 # ---------------- deps ----------------
 def get_driver():
@@ -841,14 +849,17 @@ def get_upload_part_url(upload_id: str, part_number: int, file_key: str = Query(
 
 @app.post("/upload/complete/{upload_id}")
 def complete_upload(
-    upload_id: str, 
-    file_key: str = Query(...),
-    parts: List[Dict[str, Any]] = Query(...)
+    upload_id: str,
+    body: CompleteUploadRequest,
 ):
     """Complete a multipart upload and start processing."""
     try:
         # Complete the multipart upload
-        result = cloud_storage.complete_multipart_upload(file_key, upload_id, parts)
+        result = cloud_storage.complete_multipart_upload(
+            body.file_key,
+            upload_id,
+            [p.dict() for p in body.parts],  # or pass body.parts directly if your helper accepts models
+        )
         
         # Start background processing
         job_id = str(uuid.uuid4())

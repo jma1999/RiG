@@ -10,7 +10,7 @@ import sys
 from typing import Dict, Any, Optional
 from datetime import datetime
 from celery import current_task
-from celery_app import celery_app
+from api.celery_app import celery_app
 from dotenv import load_dotenv
 
 load_dotenv()
