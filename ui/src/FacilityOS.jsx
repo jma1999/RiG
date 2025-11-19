@@ -31,12 +31,14 @@ import {
   X,
   Minimize2,
   Maximize2,
-  Bot
+  Bot,
+  Activity
 } from "lucide-react";
 import ForceGraph2D from "react-force-graph-2d";
 import { API_BASE } from "@/lib/env";
 import { cn } from "@/lib/utils";
 import DirectUploadComponent from "@/components/DirectUploadComponent";
+import TelemetryDashboard from "@/components/TelemetryDashboard";
 
 // === AI Assistant Component ===
 const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
@@ -44,7 +46,7 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "👋 Welcome to Gemino! I'm your AI facility manager for the sample house. I can help you with:\n\n• Exploring the house structure (walls, doors, windows)\n• Understanding room layouts and relationships\n• Analyzing building components\n• Finding specific elements in the house\n• Creating work orders for maintenance\n\nTry asking me about the house structure, rooms, or specific building elements!",
+      content: "👋 Welcome to RiG Digital Twin! I'm your AI assistant for the semantically normalized IWMS platform. I can help you with:\n\n• Exploring the semantic graph (IFC-LD + 223P + Brick + SSN/SOSA + QUDT)\n• Querying live telemetry data from TimescaleDB\n• Understanding multi-ontology relationships\n• Analyzing building systems and equipment\n• Creating work orders for maintenance\n\nTry asking about the semantic layers, telemetry points, or building structure!",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -250,7 +252,8 @@ const Navigation = ({ activeTab, onTabChange }) => {
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
     { id: "3d-viewer", label: "3D Model Viewer", icon: Cuboid },
-    { id: "graph-view", label: "Graph View", icon: Network },
+    { id: "graph-view", label: "Semantic Graph", icon: Network },
+    { id: "telemetry", label: "Live Telemetry", icon: Activity },
     { id: "assets", label: "Assets", icon: Box },
     { id: "work-orders", label: "Work Orders", icon: Clipboard }
   ];
@@ -376,10 +379,17 @@ const DashboardView = ({ onAIAction }) => {
     <div className="flex-1 p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--palantir-text-primary)]">Facility Overview</h1>
+          <h1 className="text-3xl font-bold text-[var(--palantir-text-primary)]">Digital Twin Overview</h1>
           <p className="text-[var(--palantir-text-secondary)] mt-2">
-            Ask the AI assistant anything about your facility →
+            AI-driven semantically normalized IWMS platform with live telemetry integration
           </p>
+          <div className="flex gap-2 mt-3">
+            <Badge className="bg-purple-600 text-white text-xs">GraphDB RDF</Badge>
+            <Badge className="bg-blue-600 text-white text-xs">IFC-LD</Badge>
+            <Badge className="bg-orange-600 text-white text-xs">223P/Brick</Badge>
+            <Badge className="bg-green-600 text-white text-xs">TimescaleDB</Badge>
+            <Badge className="bg-yellow-600 text-black text-xs">SSN/SOSA/QUDT</Badge>
+          </div>
         </div>
       </div>
 
@@ -988,116 +998,78 @@ const GraphView = ({ onAIAction }) => {
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    // Load initial graph data with fallback
+    // Load graph data from GraphDB
     const loadGraphData = async () => {
       setLoading(true);
       try {
-        console.log("Loading graph data...");
+        console.log("Loading GraphDB RDF graph data...");
         
-        // Try to load from API first
-        let apiData = null;
+        // Try to load from GraphDB API
         try {
-          const searchQueries = [
-            "sample house building structure",
-            "house walls doors windows",
-            "building storey space"
-          ];
-          
-          for (const query of searchQueries) {
-            try {
-              console.log(`Trying search query: ${query}`);
-              const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}&k=20&hops=2`);
-              if (res.ok) {
-                const data = await res.json();
-                if (data.subgraphs && data.subgraphs.length > 0) {
-                  const nodes = [];
-                  const links = [];
-                  const seen = new Set();
-
-                  data.subgraphs.forEach((sg) => {
-                    sg.nodes?.forEach((n) => {
-                      if (seen.has(n.id)) return;
-                      seen.add(n.id);
-                      nodes.push({
-                        id: n.id,
-                        name: n.name || n.id.slice(0, 8),
-                        type: n.type || "Unknown",
-                        labels: n.labels || [],
-                        source: n.source || "Unknown"
-                      });
-                    });
-                    
-                    sg.edges?.forEach((e) => {
-                      links.push({
-                        source: e.src,
-                        target: e.dst,
-                        type: e.type || "RELATED_TO"
-                      });
-                    });
-                  });
-
-                  if (nodes.length > 0) {
-                    apiData = { nodes, links };
-                    console.log(`Loaded ${nodes.length} nodes and ${links.length} links from API`);
-                    break;
-                  }
-                }
-              }
-            } catch (err) {
-              console.warn(`Search query "${query}" failed:`, err);
+          const res = await fetch(`${API_BASE}/graphdb/graph?limit=100&hops=2`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.nodes && data.nodes.length > 0) {
+              const nodes = data.nodes.map(n => ({
+                id: n.id,
+                name: n.name || n.id.split("/").pop() || n.id.split("#").pop(),
+                type: n.type || "Unknown",
+                labels: n.labels || []
+              }));
+              const links = data.edges.map(e => ({
+                source: e.source,
+                target: e.target,
+                type: e.type || "RELATED_TO"
+              }));
+              setGraphData({ nodes, links });
+              console.log(`Loaded ${nodes.length} nodes and ${links.length} links from GraphDB`);
+              return;
             }
           }
         } catch (apiError) {
-          console.warn("API search failed, using fallback data:", apiError);
+          console.warn("GraphDB API failed, using fallback data:", apiError);
         }
         
-        // Use API data if available, otherwise use fallback
-        if (apiData && apiData.nodes.length > 0) {
-          setGraphData(apiData);
-        } else {
-          console.log("Using fallback sample house graph data");
-          // Create a comprehensive sample house demo graph
-          setGraphData({
-            nodes: [
-              { id: "house", name: "Sample House", type: "IfcBuilding", labels: ["Building"] },
-              { id: "ground-floor", name: "Ground Floor", type: "IfcBuildingStorey", labels: ["Floor"] },
-              { id: "first-floor", name: "First Floor", type: "IfcBuildingStorey", labels: ["Floor"] },
-              { id: "living-room", name: "Living Room", type: "IfcSpace", labels: ["Space"] },
-              { id: "kitchen", name: "Kitchen", type: "IfcSpace", labels: ["Space"] },
-              { id: "bedroom-1", name: "Bedroom 1", type: "IfcSpace", labels: ["Space"] },
-              { id: "bedroom-2", name: "Bedroom 2", type: "IfcSpace", labels: ["Space"] },
-              { id: "bathroom", name: "Bathroom", type: "IfcSpace", labels: ["Space"] },
-              { id: "wall-1", name: "Wall 1", type: "IfcWall", labels: ["Wall"] },
-              { id: "wall-2", name: "Wall 2", type: "IfcWall", labels: ["Wall"] },
-              { id: "wall-3", name: "Wall 3", type: "IfcWall", labels: ["Wall"] },
-              { id: "door-1", name: "Front Door", type: "IfcDoor", labels: ["Door"] },
-              { id: "door-2", name: "Bedroom Door", type: "IfcDoor", labels: ["Door"] },
-              { id: "window-1", name: "Living Room Window", type: "IfcWindow", labels: ["Window"] },
-              { id: "window-2", name: "Kitchen Window", type: "IfcWindow", labels: ["Window"] },
-              { id: "hvac-1", name: "HVAC Unit", type: "IfcFlowTerminal", labels: ["HVAC"] },
-              { id: "electrical-1", name: "Electrical Panel", type: "IfcElectricalElement", labels: ["Electrical"] }
-            ],
-            links: [
-              { source: "house", target: "ground-floor", type: "CONTAINS" },
-              { source: "house", target: "first-floor", type: "CONTAINS" },
-              { source: "ground-floor", target: "living-room", type: "CONTAINS" },
-              { source: "ground-floor", target: "kitchen", type: "CONTAINS" },
-              { source: "first-floor", target: "bedroom-1", type: "CONTAINS" },
-              { source: "first-floor", target: "bedroom-2", type: "CONTAINS" },
-              { source: "first-floor", target: "bathroom", type: "CONTAINS" },
-              { source: "living-room", target: "wall-1", type: "BOUNDED_BY" },
-              { source: "living-room", target: "wall-2", type: "BOUNDED_BY" },
-              { source: "kitchen", target: "wall-2", type: "BOUNDED_BY" },
-              { source: "kitchen", target: "wall-3", type: "BOUNDED_BY" },
-              { source: "living-room", target: "door-1", type: "BOUNDED_BY" },
-              { source: "bedroom-1", target: "door-2", type: "BOUNDED_BY" },
-              { source: "living-room", target: "window-1", type: "BOUNDED_BY" },
-              { source: "kitchen", target: "window-2", type: "BOUNDED_BY" },
-              { source: "house", target: "hvac-1", type: "SERVES" },
-              { source: "house", target: "electrical-1", type: "SERVES" }
-            ]
-          });
-        }
+        // Fallback: Create demo graph showing semantic layers
+        console.log("Using fallback semantic graph data");
+        setGraphData({
+          nodes: [
+            // IFC-LD layer
+            { id: "ifc:building", name: "Sample House", type: "IfcBuilding", labels: ["IFC-LD"] },
+            { id: "ifc:storey", name: "Ground Floor", type: "IfcBuildingStorey", labels: ["IFC-LD"] },
+            { id: "ifc:space", name: "Living Room", type: "IfcSpace", labels: ["IFC-LD"] },
+            { id: "ifc:terminal", name: "FT_136276", type: "IfcFlowTerminal", labels: ["IFC-LD"] },
+            // 223P layer
+            { id: "s223:equipment", name: "FT_136276", type: "TerminalUnit", labels: ["223P"] },
+            { id: "s223:zone", name: "Zone_Main", type: "Zone", labels: ["223P"] },
+            // Brick layer
+            { id: "brick:point1", name: "SAT Sensor", type: "Supply_Air_Temperature_Sensor", labels: ["Brick"] },
+            { id: "brick:point2", name: "SAF Sensor", type: "Supply_Air_Flow_Sensor", labels: ["Brick"] },
+            // SOSA layer
+            { id: "sosa:obs1", name: "SAT Observable", type: "ObservableProperty", labels: ["SOSA"] },
+            // QUDT layer
+            { id: "qudt:temp", name: "Temperature", type: "QuantityKind", labels: ["QUDT"] },
+            // TimescaleDB link
+            { id: "ts:ft_136276_sat", name: "ft_136276_sat", type: "TimeseriesReference", labels: ["TimescaleDB"] }
+          ],
+          links: [
+            // IFC to 223P
+            { source: "ifc:terminal", target: "s223:equipment", type: "representsIfcElement" },
+            // 223P to Brick
+            { source: "s223:equipment", target: "brick:point1", type: "hasPoint" },
+            { source: "s223:equipment", target: "brick:point2", type: "hasPoint" },
+            { source: "s223:equipment", target: "s223:zone", type: "serves" },
+            // Brick to SOSA
+            { source: "brick:point1", target: "sosa:obs1", type: "a" },
+            // SOSA to QUDT
+            { source: "sosa:obs1", target: "qudt:temp", type: "hasQuantityKind" },
+            // Brick to TimescaleDB
+            { source: "brick:point1", target: "ts:ft_136276_sat", type: "hasTimeseriesReference" },
+            // IFC spatial
+            { source: "ifc:building", target: "ifc:storey", type: "CONTAINS" },
+            { source: "ifc:storey", target: "ifc:space", type: "CONTAINS" }
+          ]
+        });
       } catch (error) {
         console.error("Failed to load graph data:", error);
         setGraphData({ nodes: [], links: [] });
@@ -1128,13 +1100,18 @@ const GraphView = ({ onAIAction }) => {
     ctx.beginPath();
     ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI, false);
     
-    // Color by IFC type
-    ctx.fillStyle = node.type?.includes("IfcBuilding") ? "#00d4ff" :
+    // Color by semantic layer
+    const labels = node.labels || [];
+    ctx.fillStyle = labels.includes("IFC-LD") ? "#00d4ff" :
+                   labels.includes("223P") ? "#f59e0b" :
+                   labels.includes("Brick") ? "#8b5cf6" :
+                   labels.includes("SOSA") ? "#34d399" :
+                   labels.includes("QUDT") ? "#10b981" :
+                   labels.includes("TimescaleDB") ? "#ef4444" :
+                   node.type?.includes("IfcBuilding") ? "#00d4ff" :
                    node.type?.includes("IfcBuildingStorey") ? "#8b5cf6" :
                    node.type?.includes("IfcSpace") ? "#34d399" :
                    node.type?.includes("IfcFlow") ? "#f59e0b" :
-                   node.type?.includes("IfcWall") ? "#6b7280" :
-                   node.type?.includes("IfcDoor") ? "#10b981" :
                    "#e2e8f0";
     
     ctx.fill();
@@ -1148,9 +1125,9 @@ const GraphView = ({ onAIAction }) => {
     <div className="flex-1 p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--palantir-text-primary)]">Graph View</h1>
+          <h1 className="text-3xl font-bold text-[var(--palantir-text-primary)]">Semantic Graph View</h1>
           <p className="text-[var(--palantir-text-secondary)] mt-2">
-            Explore facility relationships and dependencies
+            RDF graph from GraphDB: IFC-LD + 223P + Brick + SSN/SOSA + QUDT semantic layers
           </p>
         </div>
         <div className="flex gap-3">
@@ -1171,8 +1148,10 @@ const GraphView = ({ onAIAction }) => {
 
       <Card className="palantir-card-elevated h-[600px]">
         <CardHeader>
-          <CardTitle>Facility Graph Network</CardTitle>
-          <p className="text-sm text-[var(--palantir-text-muted)]">Neo4j-style relationship visualization</p>
+          <CardTitle>RDF Semantic Graph (GraphDB)</CardTitle>
+          <p className="text-sm text-[var(--palantir-text-muted)]">
+            Multi-ontology graph: IFC-LD (physical) → 223P/Brick (operations) → SSN/SOSA (sensing) → QUDT (units)
+          </p>
         </CardHeader>
         <CardContent className="h-full p-0">
           <div ref={containerRef} className="h-full w-full">
@@ -1180,7 +1159,7 @@ const GraphView = ({ onAIAction }) => {
               <div className="h-full flex items-center justify-center">
                 <div className="text-center space-y-2">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--palantir-text-accent)] mx-auto"></div>
-                  <p className="text-sm text-[var(--palantir-text-muted)]">Loading Neo4j graph...</p>
+                  <p className="text-sm text-[var(--palantir-text-muted)]">Loading GraphDB RDF graph...</p>
                 </div>
               </div>
             ) : size.width > 0 && size.height > 0 ? (
@@ -1203,36 +1182,39 @@ const GraphView = ({ onAIAction }) => {
         </CardContent>
       </Card>
 
-      {/* Graph Legend */}
+      {/* Semantic Layers Legend */}
       <Card className="palantir-card">
         <CardHeader>
-          <CardTitle>Graph Legend</CardTitle>
+          <CardTitle>Semantic Layers</CardTitle>
+          <p className="text-sm text-[var(--palantir-text-muted)]">
+            Multi-ontology RDF graph showing semantic normalization
+          </p>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-[#00d4ff]"></div>
-              <span className="text-[var(--palantir-text-primary)]">Buildings</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#8b5cf6]"></div>
-              <span className="text-[var(--palantir-text-primary)]">Floors</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#34d399]"></div>
-              <span className="text-[var(--palantir-text-primary)]">Spaces</span>
+              <span className="text-[var(--palantir-text-primary)]">IFC-LD (Physical)</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-[#f59e0b]"></div>
-              <span className="text-[var(--palantir-text-primary)]">Flow Systems</span>
+              <span className="text-[var(--palantir-text-primary)]">223P (Operations)</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#6b7280]"></div>
-              <span className="text-[var(--palantir-text-primary)]">Walls</span>
+              <div className="w-3 h-3 rounded-full bg-[#8b5cf6]"></div>
+              <span className="text-[var(--palantir-text-primary)]">Brick (Points)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#34d399]"></div>
+              <span className="text-[var(--palantir-text-primary)]">SOSA (Sensing)</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-[#10b981]"></div>
-              <span className="text-[var(--palantir-text-primary)]">Doors</span>
+              <span className="text-[var(--palantir-text-primary)]">QUDT (Units)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#ef4444]"></div>
+              <span className="text-[var(--palantir-text-primary)]">TimescaleDB</span>
             </div>
           </div>
         </CardContent>
@@ -1781,6 +1763,8 @@ export default function FacilityOS() {
         return <ModelViewer3D />;
       case "graph-view":
         return <GraphView onAIAction={handleAIAction} />;
+      case "telemetry":
+        return <TelemetryDashboard />;
       case "assets":
         return <AssetsView onAIAction={handleAIAction} />;
       case "work-orders":
@@ -1797,13 +1781,25 @@ export default function FacilityOS() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Factory className="h-6 w-6 text-[var(--palantir-text-accent)]" />
-            <h1 className="text-xl font-semibold">RiG: Retrieval over ifcJSON Graphs</h1>
+            <div>
+              <h1 className="text-xl font-semibold">RiG: AI-Driven Semantically Normalized IWMS</h1>
+              <p className="text-xs text-[var(--palantir-text-muted)]">
+                Digital Twin Platform | IFC-LD + 223P + Brick + SSN/SOSA + QUDT
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-medium">AI-Native CMMS powered by Gemino</h2>
+            <Badge className="bg-purple-600 text-white">
+              <Network className="h-3 w-3 mr-1" />
+              GraphDB RDF
+            </Badge>
+            <Badge className="bg-green-600 text-white">
+              <Activity className="h-3 w-3 mr-1" />
+              TimescaleDB
+            </Badge>
             <Badge className="bg-[var(--palantir-text-accent)] text-black">
-              <MessageSquare className="h-3 w-3 mr-1" />
-              AI-Powered CMMS
+              <Bot className="h-3 w-3 mr-1" />
+              AI-Powered Digital Twin
             </Badge>
           </div>
         </div>
