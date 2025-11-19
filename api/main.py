@@ -632,10 +632,12 @@ import api.chat  # noqa: E402  pylint: disable=wrong-import-position
 from api.cloud_storage import cloud_storage
 from api.tasks import parse_ifc_file, get_job_status
 
-# Register GraphDB and Telemetry routers
-from api import graphdb, telemetry  # noqa: E402
+# Register GraphDB, Telemetry, Agents, and BACnet routers
+from api import graphdb, telemetry, agents, bacnet  # noqa: E402
 app.include_router(graphdb.router, prefix="/graphdb", tags=["graphdb"])
 app.include_router(telemetry.router, prefix="/telemetry", tags=["telemetry"])
+app.include_router(agents.router, prefix="/agents", tags=["agents"])
+app.include_router(bacnet.router, prefix="/bacnet", tags=["bacnet"])
 
 # ---------------- work orders ----------------
 def _ensure_workorder_indexes():

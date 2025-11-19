@@ -39,6 +39,7 @@ import { API_BASE } from "@/lib/env";
 import { cn } from "@/lib/utils";
 import DirectUploadComponent from "@/components/DirectUploadComponent";
 import TelemetryDashboard from "@/components/TelemetryDashboard";
+import AgentDashboard from "@/components/AgentDashboard";
 
 // === AI Assistant Component ===
 const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
@@ -46,7 +47,7 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "👋 Welcome to RiG Digital Twin! I'm your AI assistant for the semantically normalized IWMS platform. I can help you with:\n\n• Exploring the semantic graph (IFC-LD + 223P + Brick + SSN/SOSA + QUDT)\n• Querying live telemetry data from TimescaleDB\n• Understanding multi-ontology relationships\n• Analyzing building systems and equipment\n• Creating work orders for maintenance\n\nTry asking about the semantic layers, telemetry points, or building structure!",
+      content: "👋 Welcome to RiG Digital Twin! I'm your AI assistant for the semantically normalized IWMS platform.\n\n**Agent-Based Architecture:**\n• Detection Agent monitors telemetry for issues\n• Diagnosis Agent analyzes events and generates hypotheses\n• Recommendation Agent proposes validated actions\n\n**Capabilities:**\n• Explore semantic graph (IFC-LD + 223P + Brick + SSN/SOSA + QUDT)\n• Query live telemetry from TimescaleDB\n• Execute BACnet control operations (with approval)\n• Generate work orders from agent recommendations\n\n**Try:** \"Run detection on Zone_Main\" or \"Show me all BACnet bindings\"",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -251,6 +252,7 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
 const Navigation = ({ activeTab, onTabChange }) => {
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
+    { id: "agents", label: "AI Agents", icon: Bot },
     { id: "3d-viewer", label: "3D Model Viewer", icon: Cuboid },
     { id: "graph-view", label: "Semantic Graph", icon: Network },
     { id: "telemetry", label: "Live Telemetry", icon: Activity },
@@ -1759,6 +1761,8 @@ export default function FacilityOS() {
     switch (activeTab) {
       case "dashboard":
         return <DashboardView onAIAction={handleAIAction} />;
+      case "agents":
+        return <AgentDashboard />;
       case "3d-viewer":
         return <ModelViewer3D />;
       case "graph-view":

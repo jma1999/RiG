@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { API_BASE } from "@/lib/env";
 import { Activity, TrendingUp, Thermometer, Gauge } from "lucide-react";
 
@@ -89,8 +90,41 @@ export default function TelemetryDashboard() {
       </div>
 
       {/* Telemetry Points List */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {telemetryPoints.map((point) => (
+      {loading ? (
+        <div className="flex items-center justify-center p-12">
+          <div className="text-center space-y-2">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--palantir-text-accent)] mx-auto"></div>
+            <p className="text-sm text-[var(--palantir-text-muted)]">Loading telemetry points...</p>
+          </div>
+        </div>
+      ) : telemetryPoints.length === 0 ? (
+        <Card className="palantir-card">
+          <CardContent className="p-6 text-center space-y-4">
+            <p className="text-[var(--palantir-text-muted)]">
+              No telemetry points found. Loading mock data for demonstration...
+            </p>
+            <Button
+              onClick={() => {
+                // Force reload with mock data
+                setTelemetryPoints([
+                  {
+                    point_id: "ft_136276_sat",
+                    data_points: 60,
+                    first_reading: new Date(Date.now() - 3600000).toISOString(),
+                    last_reading: new Date().toISOString()
+                  }
+                ]);
+                setSelectedPoint("ft_136276_sat");
+              }}
+              variant="outline"
+            >
+              Load Demo Data
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {telemetryPoints.map((point) => (
           <Card
             key={point.point_id}
             className={`palantir-card cursor-pointer transition-all ${
@@ -114,11 +148,12 @@ export default function TelemetryDashboard() {
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Selected Point Details */}
-      {selectedPoint && latest && (
+      {selectedPoint && latest && telemetryData.length > 0 && (
         <>
           <div className="grid grid-cols-4 gap-6">
             <Card className="palantir-card">
