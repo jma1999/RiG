@@ -16,6 +16,7 @@ import {
   MessageSquare, 
   GitBranch,
   Home,
+  Cuboid,
   Box,
   Clipboard,
   Search,
@@ -41,10 +42,6 @@ import DirectUploadComponent from "@/components/DirectUploadComponent";
 import TelemetryDashboard from "@/components/TelemetryDashboard";
 import AgentDashboard from "@/components/AgentDashboard";
 import EnterpriseView from "@/components/EnterpriseView";
-import LeftSidebar from "@/components/LeftSidebar";
-import RightSidebar from "@/components/RightSidebar";
-import TopBar from "@/components/TopBar";
-import BottomBar from "@/components/BottomBar";
 
 // === AI Assistant Component ===
 const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
@@ -258,6 +255,7 @@ const Navigation = ({ activeTab, onTabChange }) => {
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
     { id: "agents", label: "AI Agents", icon: Bot },
+    { id: "3d-viewer", label: "3D Model Viewer", icon: Cuboid },
     { id: "graph-view", label: "Semantic Graph", icon: Network },
     { id: "telemetry", label: "Live Telemetry", icon: Activity },
     { id: "enterprise", label: "Enterprise Graph", icon: LinkIcon },
@@ -522,10 +520,8 @@ const DashboardView = ({ onAIAction }) => {
   );
 };
 
-// === 3D Model Viewer - REMOVED ===
-// This component has been removed as it doesn't offer useful functionality
-// The graph view provides more valuable semantic information
-const ModelViewer3D_REMOVED = () => {
+// === 3D Model Viewer ===
+const ModelViewer3D = () => {
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [modelInfo, setModelInfo] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -999,11 +995,9 @@ const ModelViewer3D_REMOVED = () => {
 };
 
 // === Graph View ===
-const GraphView = ({ onAIAction, selectedBuilding, onNodeOverlay }) => {
+const GraphView = ({ onAIAction }) => {
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const [selectedNode, setSelectedNode] = useState(null);
-  const [hoveredNode, setHoveredNode] = useState(null);
-  const [nodeOverlay, setNodeOverlay] = useState(null);
   const [loading, setLoading] = useState(true);
   const containerRef = useRef(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -1097,9 +1091,7 @@ const GraphView = ({ onAIAction, selectedBuilding, onNodeOverlay }) => {
     if (!el || typeof ResizeObserver === "undefined") return;
 
     const updateSize = () => {
-      if (el) {
-        setSize({ width: el.clientWidth, height: el.clientHeight });
-      }
+      setSize({ width: el.clientWidth, height: el.clientHeight });
     };
     updateSize();
 
@@ -1107,20 +1099,6 @@ const GraphView = ({ onAIAction, selectedBuilding, onNodeOverlay }) => {
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-
-  // Update overlay position when node is clicked
-  useEffect(() => {
-    if (selectedNode && containerRef.current) {
-      // Find the node in the graph and get its position
-      // This is a simplified approach - in production, you'd track node positions from the graph
-      setNodeOverlay({
-        node: selectedNode,
-        x: containerRef.current.clientWidth / 2,
-        y: containerRef.current.clientHeight / 2,
-        visible: true
-      });
-    }
-  }, [selectedNode]);
 
   const drawNode = useCallback((node, ctx, scale) => {
     const radius = 6 + Math.log((node.degree || 1) + 1) * 2;
@@ -1149,113 +1127,161 @@ const GraphView = ({ onAIAction, selectedBuilding, onNodeOverlay }) => {
   }, []);
 
   return (
-    <div className="relative flex-1 h-full">
-      {/* Graph Canvas */}
-      <div ref={containerRef} className="absolute inset-0">
-        {loading ? (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center space-y-2">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--palantir-text-accent)] mx-auto"></div>
-              <p className="text-sm text-[var(--palantir-text-muted)]">Loading GraphDB RDF graph...</p>
-            </div>
-          </div>
-        ) : size.width > 0 && size.height > 0 ? (
-          <>
-            <ForceGraph2D
-              graphData={graphData}
-              nodeId="id"
-              nodeCanvasObject={drawNode}
-              linkDirectionalArrowLength={4}
-              linkColor={() => "#94a3b8"}
-              onNodeClick={(node) => {
-                setSelectedNode(node);
-                setNodeOverlay({
-                  node,
-                  x: node.x,
-                  y: node.y,
-                  visible: true
-                });
-                onNodeOverlay?.(node);
-              }}
-              onNodeHover={(node) => {
-                setHoveredNode(node);
-              }}
-              width={size.width}
-              height={size.height}
-            />
-            
-            {/* Node Overlay (similar to 3D model popup) */}
-            {nodeOverlay && nodeOverlay.visible && (
-              <div
-                className="absolute bg-[var(--palantir-bg-elevated)] border border-[var(--palantir-border-primary)] rounded-lg shadow-xl p-4 min-w-[280px] z-50 pointer-events-auto"
-                style={{
-                  left: `${Math.min(nodeOverlay.x + 20, size.width - 300)}px`,
-                  top: `${Math.max(nodeOverlay.y - 20, 20)}px`,
-                  transform: nodeOverlay.x > size.width / 2 ? 'translate(-100%, -100%)' : 'translate(0, -100%)'
-                }}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-[var(--palantir-text-primary)]">
-                    {nodeOverlay.node.name || nodeOverlay.node.id.split("/").pop()}
-                  </h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={() => setNodeOverlay(null)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-[var(--palantir-text-muted)]">
-                    <span>📍</span>
-                    <span>{selectedBuilding?.location || "Central Zone"}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[var(--palantir-text-muted)]">
-                    <span>👥</span>
-                    <span>12 people</span>
-                  </div>
-                  <div className="pt-2 border-t border-[var(--palantir-border-primary)]">
-                    <div className="text-xs text-[var(--palantir-text-muted)] mb-1">Type</div>
-                    <div className="text-sm text-[var(--palantir-text-primary)]">{nodeOverlay.node.type}</div>
-                  </div>
-                  <div className="pt-2 border-t border-[var(--palantir-border-primary)]">
-                    <div className="text-xs text-[var(--palantir-text-muted)] mb-1">Note</div>
-                    <div className="text-sm text-[var(--palantir-text-primary)]">Semantic node from GraphDB</div>
-                  </div>
-                  <Button
-                    className="w-full mt-3 bg-[var(--palantir-text-accent)] hover:bg-[var(--palantir-info)]"
-                    size="sm"
-                    onClick={() => {
-                      // Navigate to detailed view
-                      console.log("Explore node:", nodeOverlay.node);
-                    }}
-                  >
-                    Explore
-                  </Button>
-                  <div className="flex gap-2 mt-2">
-                    <Button variant="ghost" size="sm" className="flex-1 h-7">
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="flex-1 h-7">
-                      <Download className="h-3 w-3" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="flex-1 h-7">
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="h-full flex items-center justify-center">
-            <p className="text-[var(--palantir-text-muted)]">Initializing graph...</p>
-          </div>
-        )}
+    <div className="flex-1 p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-[var(--palantir-text-primary)]">Semantic Graph View</h1>
+          <p className="text-[var(--palantir-text-secondary)] mt-2">
+            RDF graph from GraphDB: IFC-LD + 223P + Brick + SSN/SOSA + QUDT semantic layers
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" className="flex items-center gap-2">
+            <Filter className="h-4 w-4" />
+            Filter
+          </Button>
+          <Button variant="outline" className="flex items-center gap-2">
+            <Maximize2 className="h-4 w-4" />
+            Expand All
+          </Button>
+          <Button variant="outline" className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Export
+          </Button>
+        </div>
       </div>
 
+      <Card className="palantir-card-elevated h-[600px]">
+        <CardHeader>
+          <CardTitle>RDF Semantic Graph (GraphDB)</CardTitle>
+          <p className="text-sm text-[var(--palantir-text-muted)]">
+            Multi-ontology graph: IFC-LD (physical) → 223P/Brick (operations) → SSN/SOSA (sensing) → QUDT (units)
+          </p>
+        </CardHeader>
+        <CardContent className="h-full p-0">
+          <div ref={containerRef} className="h-full w-full">
+            {loading ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center space-y-2">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--palantir-text-accent)] mx-auto"></div>
+                  <p className="text-sm text-[var(--palantir-text-muted)]">Loading GraphDB RDF graph...</p>
+                </div>
+              </div>
+            ) : size.width > 0 && size.height > 0 ? (
+              <ForceGraph2D
+                graphData={graphData}
+                nodeId="id"
+                nodeCanvasObject={drawNode}
+                linkDirectionalArrowLength={4}
+                linkColor={() => "#94a3b8"}
+                onNodeClick={(node) => setSelectedNode(node)}
+                width={size.width}
+                height={size.height}
+              />
+            ) : (
+              <div className="h-full flex items-center justify-center">
+                <p className="text-[var(--palantir-text-muted)]">Initializing graph...</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Semantic Layers Legend */}
+      <Card className="palantir-card">
+        <CardHeader>
+          <CardTitle>Semantic Layers</CardTitle>
+          <p className="text-sm text-[var(--palantir-text-muted)]">
+            Multi-ontology RDF graph showing semantic normalization
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#00d4ff]"></div>
+              <span className="text-[var(--palantir-text-primary)]">IFC-LD (Physical)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#f59e0b]"></div>
+              <span className="text-[var(--palantir-text-primary)]">223P (Operations)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#8b5cf6]"></div>
+              <span className="text-[var(--palantir-text-primary)]">Brick (Points)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#34d399]"></div>
+              <span className="text-[var(--palantir-text-primary)]">SOSA (Sensing)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#10b981]"></div>
+              <span className="text-[var(--palantir-text-primary)]">QUDT (Units)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#ef4444]"></div>
+              <span className="text-[var(--palantir-text-primary)]">TimescaleDB</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Node Details & Relationships */}
+      {selectedNode && (
+        <div className="grid grid-cols-2 gap-6">
+          <Card className="palantir-card">
+            <CardHeader>
+              <CardTitle>Node Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-[var(--palantir-text-muted)]">Selected:</span>
+                  <span className="text-[var(--palantir-text-primary)]">{selectedNode.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--palantir-text-muted)]">Type:</span>
+                  <span className="text-[var(--palantir-text-primary)]">{selectedNode.type}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--palantir-text-muted)]">ID:</span>
+                  <span className="text-[var(--palantir-text-accent)] font-mono text-xs">{selectedNode.id}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--palantir-text-muted)]">Connections:</span>
+                  <span className="text-[var(--palantir-text-primary)]">
+                    {graphData.links.filter(l => l.source === selectedNode.id || l.target === selectedNode.id).length} relationships
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="palantir-card">
+            <CardHeader>
+              <CardTitle>Relationships</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                {graphData.links
+                  .filter(l => l.source === selectedNode.id || l.target === selectedNode.id)
+                  .slice(0, 5)
+                  .map((link, index) => (
+                    <div key={index} className="flex justify-between">
+                      <span className="text-[var(--palantir-text-primary)]">
+                        {link.type} → {link.source === selectedNode.id ? 
+                          graphData.nodes.find(n => n.id === link.target)?.name : 
+                          graphData.nodes.find(n => n.id === link.source)?.name}
+                      </span>
+                    </div>
+                  ))}
+                {graphData.links.filter(l => l.source === selectedNode.id || l.target === selectedNode.id).length === 0 && (
+                  <p className="text-[var(--palantir-text-muted)]">No relationships found</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
@@ -1704,12 +1730,8 @@ const WorkOrdersView = ({ onAIAction }) => {
 
 // === Main FacilityOS Component ===
 export default function FacilityOS() {
-  const [activeTab, setActiveTab] = useState("graph-view"); // Default to graph view
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [aiExpanded, setAiExpanded] = useState(false);
-  const [selectedBuilding, setSelectedBuilding] = useState(null);
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [activeTool, setActiveTool] = useState("select");
-  const [viewMode, setViewMode] = useState("3d");
 
   const handleAIAction = useCallback((action, data) => {
     // Handle AI actions - switch tabs, update data, etc.
@@ -1744,6 +1766,8 @@ export default function FacilityOS() {
         return <DashboardView onAIAction={handleAIAction} />;
       case "agents":
         return <AgentDashboard />;
+      case "3d-viewer":
+        return <ModelViewer3D />;
       case "graph-view":
         return <GraphView onAIAction={handleAIAction} />;
       case "telemetry":
@@ -1760,50 +1784,43 @@ export default function FacilityOS() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--palantir-bg-primary)] text-[var(--palantir-text-primary)] flex flex-col">
-      {/* Top Bar */}
-      <TopBar locationPath={selectedBuilding ? [selectedBuilding.location, "BMS"] : []} />
+    <div className="min-h-screen bg-[var(--palantir-bg-primary)] text-[var(--palantir-text-primary)]">
+      {/* Header */}
+      <header className="bg-[var(--palantir-bg-secondary)] border-b border-[var(--palantir-border-primary)] px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Factory className="h-6 w-6 text-[var(--palantir-text-accent)]" />
+            <div>
+              <h1 className="text-xl font-semibold">RiG: AI-Driven Semantically Normalized IWMS</h1>
+              <p className="text-xs text-[var(--palantir-text-muted)]">
+                Digital Twin Platform | IFC-LD + 223P + Brick + SSN/SOSA + QUDT | Enterprise Graph (Workday, Maximo, Office365, Network, Finance)
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Badge className="bg-purple-600 text-white">
+              <Network className="h-3 w-3 mr-1" />
+              GraphDB RDF
+            </Badge>
+            <Badge className="bg-green-600 text-white">
+              <Activity className="h-3 w-3 mr-1" />
+              TimescaleDB
+            </Badge>
+            <Badge className="bg-[var(--palantir-text-accent)] text-black">
+              <Bot className="h-3 w-3 mr-1" />
+              AI-Powered Digital Twin
+            </Badge>
+          </div>
+        </div>
+      </header>
 
       {/* Main Layout */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
-        <LeftSidebar 
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          selectedBuilding={selectedBuilding}
-          onBuildingSelect={setSelectedBuilding}
-        />
-
-        {/* Central Content Area */}
-        <main className="flex-1 overflow-hidden relative">
-          {activeTab === "graph-view" ? (
-            <GraphView 
-              onAIAction={handleAIAction}
-              selectedBuilding={selectedBuilding}
-              onNodeOverlay={setSelectedNode}
-            />
-          ) : (
-            <div className="h-full overflow-y-auto">
-              {renderActiveView()}
-            </div>
-          )}
+      <div className="flex h-[calc(100vh-80px)]">
+        <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+        <main className="flex-1 overflow-y-auto">
+          {renderActiveView()}
         </main>
-
-        {/* Right Sidebar */}
-        {activeTab === "graph-view" && (
-          <RightSidebar selectedNode={selectedNode} />
-        )}
       </div>
-
-      {/* Bottom Bar */}
-      {activeTab === "graph-view" && (
-        <BottomBar
-          activeTool={activeTool}
-          onToolChange={setActiveTool}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-        />
-      )}
 
       {/* AI Assistant */}
       <AIAssistant 
