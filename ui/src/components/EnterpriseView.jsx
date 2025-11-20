@@ -95,15 +95,15 @@ export default function EnterpriseView() {
 
   const getDomainColor = (domain) => {
     const colors = {
-      controls: "bg-blue-600",
-      finance: "bg-green-600",
-      hr: "bg-purple-600",
-      workorders: "bg-orange-600",
-      scheduling: "bg-pink-600",
-      net: "bg-cyan-600",
-      space: "bg-gray-600"
+      controls: "bg-[var(--palantir-info)]/20 text-[var(--palantir-info)] border border-[var(--palantir-info)]/30",
+      finance: "bg-[var(--palantir-success)]/20 text-[var(--palantir-success)] border border-[var(--palantir-success)]/30",
+      hr: "bg-[var(--palantir-info)]/20 text-[var(--palantir-info)] border border-[var(--palantir-info)]/30",
+      workorders: "bg-[var(--palantir-warning)]/20 text-[var(--palantir-warning)] border border-[var(--palantir-warning)]/30",
+      scheduling: "bg-[var(--palantir-info)]/20 text-[var(--palantir-info)] border border-[var(--palantir-info)]/30",
+      net: "bg-[var(--palantir-info)]/20 text-[var(--palantir-info)] border border-[var(--palantir-info)]/30",
+      space: "bg-[var(--palantir-text-muted)]/20 text-[var(--palantir-text-secondary)] border border-[var(--palantir-border-primary)]"
     };
-    return colors[domain] || "bg-gray-600";
+    return colors[domain] || "bg-[var(--palantir-text-muted)]/20 text-[var(--palantir-text-secondary)] border border-[var(--palantir-border-primary)]";
   };
 
   return (
@@ -117,7 +117,7 @@ export default function EnterpriseView() {
             Cross-domain integration: Controls, HR, Finance, Assets, Scheduling, Network
           </p>
         </div>
-        <Badge className="bg-purple-600 text-white">
+        <Badge className="bg-[var(--palantir-info)]/20 text-[var(--palantir-info)] border border-[var(--palantir-info)]/30">
           <LinkIcon className="h-3 w-3 mr-1" />
           Multi-Domain
         </Badge>

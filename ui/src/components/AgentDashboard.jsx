@@ -142,20 +142,20 @@ export default function AgentDashboard() {
 
   const getSeverityColor = (severity) => {
     switch (severity) {
-      case "critical": return "bg-red-600 text-white";
-      case "high": return "bg-orange-600 text-white";
-      case "medium": return "bg-yellow-600 text-black";
-      case "low": return "bg-blue-600 text-white";
+      case "critical": return "bg-[var(--palantir-error)]/20 text-[var(--palantir-error)] border border-[var(--palantir-error)]/30";
+      case "high": return "bg-[var(--palantir-warning)]/20 text-[var(--palantir-warning)] border border-[var(--palantir-warning)]/30";
+      case "medium": return "bg-[var(--palantir-info)]/20 text-[var(--palantir-info)] border border-[var(--palantir-info)]/30";
+      case "low": return "bg-[var(--palantir-text-muted)]/20 text-[var(--palantir-text-secondary)] border border-[var(--palantir-border-primary)]";
       default: return "bg-gray-600 text-white";
     }
   };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case "critical": return "bg-red-600 text-white";
-      case "high": return "bg-orange-600 text-white";
-      case "medium": return "bg-yellow-600 text-black";
-      case "low": return "bg-blue-600 text-white";
+      case "critical": return "bg-[var(--palantir-error)]/20 text-[var(--palantir-error)] border border-[var(--palantir-error)]/30";
+      case "high": return "bg-[var(--palantir-warning)]/20 text-[var(--palantir-warning)] border border-[var(--palantir-warning)]/30";
+      case "medium": return "bg-[var(--palantir-info)]/20 text-[var(--palantir-info)] border border-[var(--palantir-info)]/30";
+      case "low": return "bg-[var(--palantir-text-muted)]/20 text-[var(--palantir-text-secondary)] border border-[var(--palantir-border-primary)]";
       default: return "bg-gray-600 text-white";
     }
   };
@@ -212,7 +212,7 @@ export default function AgentDashboard() {
                   Detection Agent
                 </h3>
               </div>
-              <Badge className="bg-blue-600 text-white">{events.length}</Badge>
+              <Badge className="bg-[var(--palantir-info)]/20 text-[var(--palantir-info)] border border-[var(--palantir-info)]/30">{events.length}</Badge>
             </div>
             <p className="text-sm text-[var(--palantir-text-muted)]">
               Monitors telemetry for comfort violations, stability issues, and anomalies
@@ -229,7 +229,7 @@ export default function AgentDashboard() {
                   Diagnosis Agent
                 </h3>
               </div>
-              <Badge className="bg-purple-600 text-white">{diagnoses.length}</Badge>
+              <Badge className="bg-[var(--palantir-info)]/20 text-[var(--palantir-info)] border border-[var(--palantir-info)]/30">{diagnoses.length}</Badge>
             </div>
             <p className="text-sm text-[var(--palantir-text-muted)]">
               Analyzes events using graph context and generates ranked hypotheses
@@ -246,7 +246,7 @@ export default function AgentDashboard() {
                   Recommendation Agent
                 </h3>
               </div>
-              <Badge className="bg-yellow-600 text-black">{recommendations.length}</Badge>
+              <Badge className="bg-[var(--palantir-warning)]/20 text-[var(--palantir-warning)] border border-[var(--palantir-warning)]/30">{recommendations.length}</Badge>
             </div>
             <p className="text-sm text-[var(--palantir-text-muted)]">
               Proposes concrete actions with safety validation and approval gates
@@ -336,7 +336,7 @@ export default function AgentDashboard() {
                   <h4 className="font-semibold text-[var(--palantir-text-primary)]">
                     Primary Hypothesis
                   </h4>
-                  <Badge className="bg-purple-600 text-white">
+                  <Badge className="bg-[var(--palantir-info)]/20 text-[var(--palantir-info)] border border-[var(--palantir-info)]/30">
                     {(selectedDiagnosis.primary_hypothesis.confidence * 100).toFixed(0)}% confidence
                   </Badge>
                 </div>
@@ -420,7 +420,7 @@ export default function AgentDashboard() {
                         </Badge>
                         <Badge variant="outline">{rec.action_type}</Badge>
                         {rec.requires_approval && (
-                          <Badge className="bg-yellow-600 text-black">
+                          <Badge className="bg-[var(--palantir-warning)]/20 text-[var(--palantir-warning)] border border-[var(--palantir-warning)]/30">
                             Requires Approval
                           </Badge>
                         )}

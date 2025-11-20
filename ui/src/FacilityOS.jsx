@@ -161,7 +161,7 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={onToggle}
-          className="h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg"
+          className="h-14 w-14 rounded-full bg-gradient-to-br from-[var(--palantir-text-accent)] to-[#2563eb] hover:from-[#2563eb] hover:to-[#1d4ed8] shadow-lg transition-all duration-200"
         >
           <Bot className="h-6 w-6 text-white" />
         </Button>
@@ -170,12 +170,12 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-96 h-[600px] bg-[var(--palantir-bg-elevated)] border border-[var(--palantir-border-primary)] rounded-xl shadow-xl">
+    <div className="fixed bottom-6 right-6 z-50 w-96 h-[600px] bg-[var(--palantir-bg-elevated)] border border-[var(--palantir-border-primary)] rounded-xl shadow-2xl backdrop-blur-sm">
       <div className="flex items-center justify-between p-4 border-b border-[var(--palantir-border-primary)]">
         <div className="flex items-center gap-2">
           <Bot className="h-5 w-5 text-blue-600" />
           <h3 className="font-semibold text-[var(--palantir-text-primary)]">AI Assistant</h3>
-          <Badge className="bg-[var(--palantir-success)] text-black text-xs">Always On</Badge>
+          <Badge className="bg-[var(--palantir-success)]/20 text-[var(--palantir-success)] border border-[var(--palantir-success)]/30 text-xs font-medium">Always On</Badge>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -239,7 +239,7 @@ const AIAssistant = ({ isExpanded, onToggle, onSendMessage }) => {
             <Button 
               onClick={() => handleSendMessage()} 
               disabled={isLoading || !message.trim()}
-              className="w-full bg-[var(--palantir-text-accent)] hover:bg-[var(--palantir-info)]"
+              className="w-full bg-gradient-to-r from-[var(--palantir-text-accent)] to-[#2563eb] hover:from-[#2563eb] hover:to-[#1d4ed8] text-white font-medium shadow-sm hover:shadow-md transition-all duration-200"
             >
               {isLoading ? "Thinking..." : "Send"}
             </Button>
@@ -282,10 +282,10 @@ const Navigation = ({ activeTab, onTabChange }) => {
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors",
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200",
                   activeTab === item.id
-                    ? "bg-[var(--palantir-text-accent)] text-black"
-                    : "text-[var(--palantir-text-primary)] hover:bg-[var(--palantir-hover)]"
+                    ? "bg-[var(--palantir-text-accent)] text-white shadow-sm"
+                    : "text-[var(--palantir-text-secondary)] hover:bg-[var(--palantir-hover)] hover:text-[var(--palantir-text-primary)]"
                 )}
               >
                 <Icon className="h-5 w-5" />
@@ -384,16 +384,16 @@ const DashboardView = ({ onAIAction }) => {
     <div className="flex-1 p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--palantir-text-primary)]">Digital Twin Overview</h1>
-          <p className="text-[var(--palantir-text-secondary)] mt-2">
-            AI-driven semantically normalized IWMS platform with live telemetry integration
+          <h1 className="text-3xl font-bold text-[var(--palantir-text-primary)] tracking-tight">Digital Twin Platform</h1>
+          <p className="text-[var(--palantir-text-secondary)] mt-2 text-sm leading-relaxed">
+            AI-native semantically normalized IWMS with enterprise graph integration
           </p>
           <div className="flex gap-2 mt-3">
-            <Badge className="bg-purple-600 text-white text-xs">GraphDB RDF</Badge>
-            <Badge className="bg-blue-600 text-white text-xs">IFC-LD</Badge>
-            <Badge className="bg-orange-600 text-white text-xs">223P/Brick</Badge>
-            <Badge className="bg-green-600 text-white text-xs">TimescaleDB</Badge>
-            <Badge className="bg-yellow-600 text-black text-xs">SSN/SOSA/QUDT</Badge>
+            <Badge className="bg-[var(--palantir-info)]/20 text-[var(--palantir-info)] border border-[var(--palantir-info)]/30 text-xs font-medium">GraphDB RDF</Badge>
+            <Badge className="bg-[var(--palantir-info)]/20 text-[var(--palantir-info)] border border-[var(--palantir-info)]/30 text-xs font-medium">IFC-LD</Badge>
+            <Badge className="bg-[var(--palantir-warning)]/20 text-[var(--palantir-warning)] border border-[var(--palantir-warning)]/30 text-xs font-medium">223P/Brick</Badge>
+            <Badge className="bg-[var(--palantir-success)]/20 text-[var(--palantir-success)] border border-[var(--palantir-success)]/30 text-xs font-medium">TimescaleDB</Badge>
+            <Badge className="bg-[var(--palantir-text-muted)]/20 text-[var(--palantir-text-secondary)] border border-[var(--palantir-border-primary)] text-xs font-medium">SSN/SOSA/QUDT</Badge>
           </div>
         </div>
       </div>
@@ -1798,11 +1798,11 @@ export default function FacilityOS() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Badge className="bg-purple-600 text-white">
+            <Badge className="bg-[var(--palantir-info)]/20 text-[var(--palantir-info)] border border-[var(--palantir-info)]/30">
               <Network className="h-3 w-3 mr-1" />
               GraphDB RDF
             </Badge>
-            <Badge className="bg-green-600 text-white">
+            <Badge className="bg-[var(--palantir-success)]/20 text-[var(--palantir-success)] border border-[var(--palantir-success)]/30">
               <Activity className="h-3 w-3 mr-1" />
               TimescaleDB
             </Badge>

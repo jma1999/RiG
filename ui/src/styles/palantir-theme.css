@@ -1,41 +1,41 @@
-/* Palantir-inspired design system for RiG CMMS */
+/* Professional VC/YC-worthy design system for RiG Digital Twin Platform */
 
 :root {
-  /* Core palette - Dark industrial theme */
-  --palantir-bg-primary: #0a0a0a;
-  --palantir-bg-secondary: #1a1a1a;
-  --palantir-bg-tertiary: #2a2a2a;
-  --palantir-bg-elevated: #1e1e1e;
+  /* Core palette - Sophisticated dark theme inspired by Linear, Vercel, Stripe */
+  --palantir-bg-primary: #0d0d0d;
+  --palantir-bg-secondary: #161618;
+  --palantir-bg-tertiary: #1f1f23;
+  --palantir-bg-elevated: #1a1a1c;
   
-  --palantir-text-primary: #ffffff;
-  --palantir-text-secondary: #a0a0a0;
-  --palantir-text-muted: #666666;
-  --palantir-text-accent: #00d4ff;
+  --palantir-text-primary: #fafafa;
+  --palantir-text-secondary: #b4b4b8;
+  --palantir-text-muted: #71717a;
+  --palantir-text-accent: #3b82f6;
   
-  --palantir-border-primary: #333333;
-  --palantir-border-secondary: #444444;
-  --palantir-border-accent: #00d4ff;
+  --palantir-border-primary: #27272a;
+  --palantir-border-secondary: #3f3f46;
+  --palantir-border-accent: #3b82f6;
   
-  /* Status colors */
-  --palantir-success: #00ff88;
-  --palantir-warning: #ffaa00;
-  --palantir-error: #ff4444;
-  --palantir-info: #00d4ff;
+  /* Status colors - Refined and professional */
+  --palantir-success: #10b981;
+  --palantir-warning: #f59e0b;
+  --palantir-error: #ef4444;
+  --palantir-info: #3b82f6;
   
-  /* Interactive states */
-  --palantir-hover: rgba(0, 212, 255, 0.1);
-  --palantir-active: rgba(0, 212, 255, 0.2);
-  --palantir-focus: rgba(0, 212, 255, 0.3);
+  /* Interactive states - Subtle and refined */
+  --palantir-hover: rgba(59, 130, 246, 0.08);
+  --palantir-active: rgba(59, 130, 246, 0.12);
+  --palantir-focus: rgba(59, 130, 246, 0.16);
   
-  /* Shadows and effects */
-  --palantir-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
-  --palantir-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --palantir-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.3);
-  --palantir-glow: 0 0 20px rgba(0, 212, 255, 0.3);
+  /* Shadows and effects - Professional depth */
+  --palantir-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --palantir-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --palantir-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --palantir-glow: 0 0 0 1px rgba(59, 130, 246, 0.1), 0 0 20px rgba(59, 130, 246, 0.15);
   
-  /* Typography */
-  --palantir-font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-  --palantir-font-sans: 'Inter', 'SF Pro Display', -apple-system, sans-serif;
+  /* Typography - Professional and modern */
+  --palantir-font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Consolas', monospace;
+  --palantir-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
   
   /* Spacing scale */
   --palantir-space-xs: 0.25rem;
@@ -64,15 +64,22 @@
 .palantir-card {
   background-color: var(--palantir-bg-secondary);
   border: 1px solid var(--palantir-border-primary);
-  border-radius: var(--palantir-radius-lg);
-  box-shadow: var(--palantir-shadow-md);
+  border-radius: 12px;
+  box-shadow: var(--palantir-shadow-sm);
   padding: var(--palantir-space-lg);
+  transition: all 0.2s ease;
+}
+
+.palantir-card:hover {
+  border-color: var(--palantir-border-secondary);
+  box-shadow: var(--palantir-shadow-md);
 }
 
 .palantir-card-elevated {
   background-color: var(--palantir-bg-elevated);
   border: 1px solid var(--palantir-border-secondary);
   box-shadow: var(--palantir-shadow-lg);
+  border-radius: 12px;
 }
 
 /* Button styles */
@@ -100,14 +107,17 @@
 }
 
 .palantir-btn-primary {
-  background-color: var(--palantir-text-accent);
-  border-color: var(--palantir-text-accent);
-  color: var(--palantir-bg-primary);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-color: transparent;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
 }
 
 .palantir-btn-primary:hover {
-  background-color: var(--palantir-info);
-  box-shadow: var(--palantir-glow);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3), 0 2px 4px -1px rgba(37, 99, 235, 0.2);
+  transform: translateY(-1px);
 }
 
 /* Input styles */
@@ -145,27 +155,27 @@
 }
 
 .palantir-badge-success {
-  background-color: rgba(0, 255, 136, 0.1);
-  border-color: var(--palantir-success);
-  color: var(--palantir-success);
+  background-color: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10b981;
 }
 
 .palantir-badge-warning {
-  background-color: rgba(255, 170, 0, 0.1);
-  border-color: var(--palantir-warning);
-  color: var(--palantir-warning);
+  background-color: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
 }
 
 .palantir-badge-error {
-  background-color: rgba(255, 68, 68, 0.1);
-  border-color: var(--palantir-error);
-  color: var(--palantir-error);
+  background-color: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
 }
 
 .palantir-badge-info {
-  background-color: rgba(0, 212, 255, 0.1);
-  border-color: var(--palantir-info);
-  color: var(--palantir-info);
+  background-color: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
 }
 
 /* Status indicators */

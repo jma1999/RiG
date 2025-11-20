@@ -176,7 +176,7 @@ export default function TelemetryDashboard() {
             Real-time sensor data from TimescaleDB, semantically linked to GraphDB
           </p>
         </div>
-        <Badge className="bg-green-600 text-white">
+        <Badge className="bg-[var(--palantir-success)]/20 text-[var(--palantir-success)] border border-[var(--palantir-success)]/30 font-medium">
           <Activity className="h-3 w-3 mr-1" />
           Live Data
         </Badge>
@@ -419,7 +419,7 @@ export default function TelemetryDashboard() {
                                           variant={quality === "GOOD" || quality === "good" ? "default" : "outline"}
                                           className={
                                             (quality === "GOOD" || quality === "good")
-                                              ? "bg-green-600 text-white"
+                                              ? "bg-[var(--palantir-success)]/20 text-[var(--palantir-success)] border border-[var(--palantir-success)]/30"
                                               : ""
                                           }
                                         >

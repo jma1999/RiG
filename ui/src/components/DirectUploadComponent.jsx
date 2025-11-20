@@ -314,7 +314,7 @@ const DirectUploadComponent = ({ onUploadComplete, onUploadError }) => {
               </p>
               <Button
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-gradient-to-r from-[var(--palantir-text-accent)] to-[#2563eb] hover:from-[#2563eb] hover:to-[#1d4ed8] text-white font-medium shadow-sm hover:shadow-md transition-all duration-200"
               >
                 <Upload className="h-4 w-4 mr-2" />
                 Choose File

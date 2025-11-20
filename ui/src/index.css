@@ -43,7 +43,7 @@
   --chart-2: var(--palantir-success);
   --chart-3: var(--palantir-warning);
   --chart-4: var(--palantir-error);
-  --chart-5: #8b5cf6;
+  --chart-5: #6366f1;
 
   --sidebar: var(--palantir-bg-secondary);
   --sidebar-foreground: var(--palantir-text-secondary);
@@ -157,7 +157,7 @@ button:focus-visible {
   --chart-2: var(--palantir-success);
   --chart-3: var(--palantir-warning);
   --chart-4: var(--palantir-error);
-  --chart-5: #8b5cf6;
+  --chart-5: #6366f1;
   --sidebar: var(--palantir-bg-secondary);
   --sidebar-foreground: var(--palantir-text-secondary);
   --sidebar-primary: var(--palantir-text-accent);
