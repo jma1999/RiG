@@ -70,3 +70,4 @@ ex:VLANShape
         sh:message "VLAN must have a human-readable label"@en ;
     ] .
 
+

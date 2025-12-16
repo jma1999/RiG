@@ -228,3 +228,4 @@ This implementation provides a **solid foundation** for enterprise facilities gr
 
 The architecture is **client-ready** and **thesis-ready**, with clear claims, novelty statements, and acceptance test scenarios.
 
+

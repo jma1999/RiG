@@ -186,3 +186,4 @@ The agent dashboard showcases:
 4. **Extend to External Systems**: Workday, Maximo, EBS integration
 5. **Add Control Algorithms**: MPC, reinforcement learning for optimization
 
+

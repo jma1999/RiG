@@ -130,3 +130,4 @@ class NetworkTopologyClient:
             "timestamp": datetime.now().isoformat()
         }
 
+

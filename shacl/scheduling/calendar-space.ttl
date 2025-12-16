@@ -70,3 +70,4 @@ ex:CalendarEventShape
         sh:message "Calendar event must have an end time"@en ;
     ] .
 
+

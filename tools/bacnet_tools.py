@@ -193,3 +193,4 @@ class BACnetTools:
         """Get all pending action plans requiring approval."""
         return list(self._pending_actions.values())
 
+

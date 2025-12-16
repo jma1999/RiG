@@ -85,3 +85,4 @@ ex:BACnetEquipmentShape
         sh:message "BACnet equipment must have a human-readable label"@en ;
     ] .
 
+

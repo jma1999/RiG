@@ -269,3 +269,4 @@ def validate_contract_compliance(domain: str, data: Dict[str, Any]) -> Dict[str,
         "contract": contract.to_dict()
     }
 
+

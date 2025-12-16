@@ -266,3 +266,4 @@ curl http://localhost:8000/agents/workflow/end-to-end?zone_id=ex:Zone_Main
 ✅ Semantic layers visible  
 ✅ Digital twin capabilities demonstrated  
 
+

@@ -89,3 +89,4 @@ ex:OrganizationShape
         sh:message "Organization must have a human-readable label"@en ;
     ] .
 
+
