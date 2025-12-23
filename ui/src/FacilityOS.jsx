@@ -13,7 +13,9 @@ import {
   TrendingDown,
   ArrowRight,
   Sparkles,
-  Terminal
+  Terminal,
+  Network,
+  Building2
 } from "lucide-react";
 import { API_BASE } from "@/lib/env";
 import { cn } from "@/lib/utils";
@@ -22,6 +24,7 @@ import TelemetryPanel from "@/components/TelemetryPanel";
 import MaintenancePanel from "@/components/MaintenancePanel";
 import EnergyPanel from "@/components/EnergyPanel";
 import ChatInterface from "@/components/ChatInterface";
+import EnterpriseView from "@/components/EnterpriseView";
 
 function FacilityOS() {
   // State
@@ -45,16 +48,39 @@ function FacilityOS() {
 
   const loadGraphData = async () => {
     try {
-      const res = await fetch(`${API_BASE}/graphdb/graph`);
+      // Fetch graph data with reasonable limit for visualization
+      const res = await fetch(`${API_BASE}/graphdb/graph?limit=200&hops=2`);
       if (res.ok) {
         const data = await res.json();
-        // Transform GraphDB data to graph format
-        const nodes = data.nodes || [];
-        const links = data.links || [];
+        // Transform GraphDB response to graph format
+        // GraphDB returns nodes with id, name, type, labels, properties
+        // and edges with source, target, type, properties
+        const nodes = (data.nodes || []).map(node => ({
+          id: node.id,
+          label: node.name || node.id.split('/').pop()?.split('#').pop() || node.id.split('#').pop() || node.id,
+          type: node.type || (node.labels && node.labels[0]) || 'Asset',
+          status: 'nominal',
+          ontologyRef: node.type,
+          ...node
+        }));
+        
+        const links = (data.edges || []).map(edge => ({
+          source: edge.source,
+          target: edge.target,
+          relationship: edge.type || 'related',
+          ...edge
+        }));
+        
         setGraphData({ nodes, links });
+        console.log(`Loaded ${nodes.length} nodes and ${links.length} links from GraphDB`);
+      } else {
+        console.error("GraphDB request failed:", res.status, res.statusText);
+        // Set empty graph on error
+        setGraphData({ nodes: [], links: [] });
       }
     } catch (error) {
       console.error("Failed to load graph data:", error);
+      setGraphData({ nodes: [], links: [] });
     }
   };
 
@@ -162,17 +188,24 @@ function FacilityOS() {
       const pointId = args.assetId || args.point_id;
       
       try {
+        // First, ensure data is seeded for this point
+        await fetch(`${API_BASE}/telemetry/seed/${pointId}?count=60`, { method: "POST" });
+        
+        // Wait a moment for data to be committed
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Fetch telemetry data from TimescaleDB
         const res = await fetch(`${API_BASE}/telemetry/points/${pointId}?hours=24&limit=100`);
         if (res.ok) {
           const data = await res.json();
           const telemetry = {
             id: pointId,
             name: `${pointId} - ${args.metric || 'Value'}`,
-            unit: '°C',
-            data: data.data?.map(d => ({
-              timestamp: new Date(d.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              value: d.value
-            })) || []
+            unit: data.unit || '°C',
+            data: (data.data || []).map(d => ({
+              timestamp: new Date(d.time || d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              value: parseFloat(d.value) || 0
+            }))
           };
           
           setTelemetryData(telemetry);
@@ -183,7 +216,7 @@ function FacilityOS() {
             metric: args.metric || 'Value',
             current_value: telemetry.data[telemetry.data.length - 1]?.value || 0,
             trend: "Stable",
-            description: `Visualizing ${args.metric || 'data'} for ${pointId}.`
+            description: `Visualizing ${args.metric || 'data'} for ${pointId} from TimescaleDB.`
           };
         }
       } catch (error) {
@@ -386,6 +419,8 @@ function FacilityOS() {
         return <MaintenancePanel alerts={alerts} tasks={maintenanceTasks} />;
       case 'energy':
         return <EnergyPanel savings={energySavings} />;
+      case 'enterprise':
+        return <EnterpriseView />;
       default:
         return <KnowledgeGraph data={graphData} onNodeClick={handleNodeClick} />;
     }
@@ -395,7 +430,8 @@ function FacilityOS() {
     'graph': 'Knowledge Graph Explorer',
     'telemetry': 'Live Telemetry Stream',
     'maintenance': 'Predictive Operations',
-    'energy': 'Energy & Optimization'
+    'energy': 'Energy & Optimization',
+    'enterprise': 'Enterprise Integrations'
   };
 
   return (
@@ -412,7 +448,8 @@ function FacilityOS() {
                 { id: 'graph', icon: Database, label: 'Graph' },
                 { id: 'telemetry', icon: Activity, label: 'Data' },
                 { id: 'maintenance', icon: Wrench, label: 'Ops' },
-                { id: 'energy', icon: Zap, label: 'Energy' }
+                { id: 'energy', icon: Zap, label: 'Energy' },
+                { id: 'enterprise', icon: Network, label: 'Enterprise' }
             ].map((item) => (
                 <button 
                     key={item.id}
@@ -450,8 +487,8 @@ function FacilityOS() {
       </nav>
 
       {/* 2. Chat Panel (The Agentic Interface) */}
-      <div className="w-[450px] flex-shrink-0 flex flex-col border-r border-nexus-800 bg-nexus-900 z-20 shadow-2xl">
-         <div className="h-14 flex items-center justify-between px-6 border-b border-nexus-800 bg-nexus-900">
+      <div className="w-[450px] flex-shrink-0 flex flex-col bg-nexus-900 z-20 shadow-2xl border-r border-nexus-800">
+         <div className="h-14 flex items-center justify-between px-6 border-b border-nexus-800 bg-nexus-900 flex-shrink-0">
              <span className="font-bold text-slate-200 tracking-wide flex items-center text-lg">
                 ge<InfinityLogo size={18} className="text-nexus-accent mx-[1px]" strokeWidth={3} />ino
                 <span className="ml-3 px-1.5 py-0.5 rounded text-[10px] font-mono bg-nexus-800 text-nexus-accent border border-nexus-700 font-normal">AGENT</span>
@@ -460,18 +497,20 @@ function FacilityOS() {
                 <Menu size={18} />
              </button>
          </div>
-         <ChatInterface 
-            messages={messages} 
-            onSendMessage={handleSendMessage} 
-            isLoading={isLoading} 
-         />
+         <div className="flex-1 flex flex-col overflow-hidden">
+           <ChatInterface 
+              messages={messages} 
+              onSendMessage={handleSendMessage} 
+              isLoading={isLoading} 
+           />
+         </div>
       </div>
 
       {/* 3. The "Canvas" (Visualizations & Dashboard) */}
       <div className="flex-1 flex flex-col bg-nexus-950 relative overflow-hidden">
          
          {/* Canvas Header / Search */}
-         <header className="h-14 border-b border-nexus-800 flex items-center justify-between px-6 bg-nexus-900/50 backdrop-blur-sm z-10">
+         <header className="h-14 border-b border-nexus-800 flex items-center justify-between px-6 bg-nexus-900/50 backdrop-blur-sm z-10 flex-shrink-0">
             <div className="flex items-center gap-3 text-slate-400">
                 <Search size={16} />
                 <span className="text-sm">Semantic Search...</span>

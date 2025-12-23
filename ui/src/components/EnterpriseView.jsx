@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { API_BASE } from "@/lib/env";
 import { 
   Building2, 
@@ -107,46 +103,99 @@ export default function EnterpriseView() {
   };
 
   return (
-    <div className="flex-1 p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="h-full w-full bg-nexus-800 rounded-lg border border-nexus-600 p-6 overflow-y-auto">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--palantir-text-primary)]">
-            Enterprise Facilities Graph
-          </h1>
-          <p className="text-[var(--palantir-text-secondary)] mt-2">
-            Cross-domain integration: Controls, HR, Finance, Assets, Scheduling, Network
+          <h2 className="text-xl font-bold text-white tracking-wide flex items-center gap-3">
+            <Network className="text-nexus-accent" />
+            ENTERPRISE INTEGRATIONS
+          </h2>
+          <p className="text-sm text-slate-400 mt-1 font-mono">
+             HOLISTIC IWMS: MAXIMO • KUALI • WORKDAY • OFFICE365 • CALENDLY
           </p>
         </div>
-        <Badge className="bg-[var(--palantir-info)]/20 text-[var(--palantir-info)] border border-[var(--palantir-info)]/30">
+        <Badge className="bg-nexus-accent/20 text-nexus-accent border border-nexus-accent/30">
           <LinkIcon className="h-3 w-3 mr-1" />
           Multi-Domain
         </Badge>
       </div>
 
       {/* Domain Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {domains.map((domain) => {
-          const Icon = getDomainIcon(domain);
-          const color = getDomainColor(domain);
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        {[
+          { id: 'workorders', name: 'Maximo', icon: Wrench, desc: 'Asset Management & Work Orders', color: 'bg-nexus-warning/20 text-nexus-warning border-nexus-warning/30' },
+          { id: 'finance', name: 'Kuali', icon: DollarSign, desc: 'Financial Management & Billing', color: 'bg-nexus-success/20 text-nexus-success border-nexus-success/30' },
+          { id: 'hr', name: 'Workday', icon: Users, desc: 'HR & Organizational Structure', color: 'bg-nexus-accent/20 text-nexus-accent border-nexus-accent/30' },
+          { id: 'scheduling', name: 'Office365', icon: Calendar, desc: 'Calendar & Scheduling', color: 'bg-nexus-accent/20 text-nexus-accent border-nexus-accent/30' },
+          { id: 'scheduling', name: 'Calendly', icon: Calendar, desc: 'Meeting Scheduling', color: 'bg-nexus-info/20 text-nexus-info border-nexus-info/30' },
+          { id: 'controls', name: 'BACnet/BMS', icon: Activity, desc: 'Building Controls', color: 'bg-nexus-accent/20 text-nexus-accent border-nexus-accent/30' }
+        ].map((integration) => {
+          const Icon = integration.icon;
           return (
-            <Card
-              key={domain}
-              className={`palantir-card cursor-pointer transition-all ${
-                selectedDomain === domain ? "ring-2 ring-[var(--palantir-text-accent)]" : ""
-              }`}
-              onClick={() => setSelectedDomain(domain)}
+            <div
+              key={integration.id + integration.name}
+              className={`bg-nexus-900/50 border ${integration.color} rounded-xl p-4 cursor-pointer transition-all hover:bg-nexus-900 hover:scale-105`}
+              onClick={() => setSelectedDomain(integration.id)}
             >
-              <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`${integration.color} p-2 rounded-lg`}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-semibold text-white">
+                    {integration.name}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    {integration.desc}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Selected Domain Details */}
+      {selectedDomain && domainData && (
+        <div className="bg-nexus-900/50 border border-nexus-700 rounded-xl p-6 mb-6">
+          <h3 className="text-lg font-bold text-white mb-4 capitalize">{selectedDomain} Contract</h3>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="text-slate-400">Scope:</span>
+              <span className="text-white ml-2">{domainData.scope || 'N/A'}</span>
+            </div>
+            <div>
+              <span className="text-slate-400">Freshness:</span>
+              <span className="text-white ml-2">{domainData.freshness || 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Legacy domain cards for backward compatibility */}
+      {domains.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {domains.map((domain) => {
+            const Icon = getDomainIcon(domain);
+            const color = getDomainColor(domain);
+            return (
+              <div
+                key={domain}
+                className={`bg-nexus-900/50 border ${color} rounded-xl p-4 cursor-pointer transition-all ${
+                  selectedDomain === domain ? "ring-2 ring-nexus-accent" : ""
+                }`}
+                onClick={() => setSelectedDomain(domain)}
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`${color} p-2 rounded-lg`}>
-                      <Icon className="h-5 w-5 text-white" />
+                      <Icon className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="font-semibold text-[var(--palantir-text-primary)] capitalize">
+                      <p className="font-semibold text-white capitalize">
                         {domain}
                       </p>
-                      <p className="text-xs text-[var(--palantir-text-muted)]">
+                      <p className="text-xs text-slate-400">
                         {domain === "controls" && "BACnet, BMS"}
                         {domain === "finance" && "EBS/Kuali"}
                         {domain === "hr" && "Workday"}
@@ -157,197 +206,189 @@ export default function EnterpriseView() {
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Cross-Domain Search */}
-      <Card className="palantir-card-elevated">
-        <CardHeader>
-          <CardTitle>Cross-Domain Entity Search</CardTitle>
-          <p className="text-sm text-[var(--palantir-text-muted)]">
-            Find entities across multiple domains (e.g., "AHU-3" finds equipment, asset, responsible person)
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <div className="bg-nexus-900/50 border border-nexus-700 rounded-xl p-6">
+        <h3 className="text-lg font-bold text-white mb-2">Cross-Domain Entity Search</h3>
+        <p className="text-sm text-slate-400 mb-4">
+          Find entities across multiple domains (e.g., "AHU-3" finds equipment, asset, responsible person)
+        </p>
+        <div className="space-y-4">
           <div className="flex gap-2">
-            <Input
+            <input
+              type="text"
               placeholder="Enter entity ID or name (e.g., AHU-3, Conference_A, WD-EMP-12345)"
               value={crossDomainQuery}
               onChange={(e) => setCrossDomainQuery(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleCrossDomainSearch()}
+              className="flex-1 bg-nexus-800 text-white placeholder:text-slate-500 border border-nexus-700 rounded-lg px-4 py-2 focus:outline-none focus:border-nexus-accent"
             />
-            <Button
+            <button
               onClick={handleCrossDomainSearch}
               disabled={loading || !crossDomainQuery.trim()}
-              className="bg-[var(--palantir-text-accent)] hover:bg-[var(--palantir-info)]"
+              className="bg-nexus-accent text-nexus-900 px-4 py-2 rounded-lg font-medium hover:bg-nexus-accent/80 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Searching..." : "Search"}
-            </Button>
+            </button>
           </div>
 
           {crossDomainResults && (
             <div className="mt-4 space-y-2">
-              <h3 className="font-semibold text-[var(--palantir-text-primary)]">
+              <h3 className="font-semibold text-white">
                 Results for: {crossDomainResults.entity_id}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {crossDomainResults.domains_queried.map((domain) => (
-                  <Badge key={domain} className={`${getDomainColor(domain)} text-white`}>
+                {crossDomainResults.domains_queried?.map((domain) => (
+                  <span key={domain} className={`${getDomainColor(domain)} px-3 py-1 rounded text-xs font-medium`}>
                     {domain}
-                  </Badge>
+                  </span>
                 ))}
               </div>
-              <pre className="bg-[var(--palantir-bg-secondary)] p-4 rounded-lg text-xs overflow-auto max-h-64">
+              <pre className="bg-nexus-900 p-4 rounded-lg text-xs overflow-auto max-h-64 text-slate-300 border border-nexus-700">
                 {JSON.stringify(crossDomainResults.results, null, 2)}
               </pre>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Selected Domain Contract Details */}
       {selectedDomain && domainData && (
-        <Card className="palantir-card-elevated">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2 capitalize">
-                  {getDomainIcon(selectedDomain) && (
-                    <div className={`${getDomainColor(selectedDomain)} p-2 rounded-lg`}>
-                      {React.createElement(getDomainIcon(selectedDomain), {
-                        className: "h-5 w-5 text-white"
-                      })}
-                    </div>
-                  )}
-                  {selectedDomain} Domain Contract
-                </CardTitle>
-                <p className="text-sm text-[var(--palantir-text-muted)] mt-2">
-                  Source: {domainData.source}
-                </p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="bg-nexus-900/50 border border-nexus-700 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-semibold text-[var(--palantir-text-primary)] mb-2">Scope</h3>
-              <div className="bg-[var(--palantir-bg-secondary)] p-3 rounded-lg">
-                <p className="text-sm">
-                  <strong>Entities:</strong> {domainData.scope?.entities?.join(", ")}
+              <h3 className="text-lg font-bold text-white flex items-center gap-2 capitalize">
+                {getDomainIcon(selectedDomain) && (
+                  <div className={`${getDomainColor(selectedDomain)} p-2 rounded-lg`}>
+                    {React.createElement(getDomainIcon(selectedDomain), {
+                      className: "h-5 w-5"
+                    })}
+                  </div>
+                )}
+                {selectedDomain} Domain Contract
+              </h3>
+              <p className="text-sm text-slate-400 mt-2">
+                Source: {domainData.source}
+              </p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-semibold text-white mb-2">Scope</h3>
+              <div className="bg-nexus-900 p-3 rounded-lg border border-nexus-700">
+                <p className="text-sm text-slate-300">
+                  <strong className="text-white">Entities:</strong> {domainData.scope?.entities?.join(", ") || 'N/A'}
                 </p>
-                <p className="text-sm mt-1">
-                  <strong>Primary Keys:</strong> {domainData.scope?.primary_keys?.join(", ")}
+                <p className="text-sm mt-1 text-slate-300">
+                  <strong className="text-white">Primary Keys:</strong> {domainData.scope?.primary_keys?.join(", ") || 'N/A'}
                 </p>
-                <p className="text-sm mt-1">
-                  <strong>IRI Policy:</strong> {domainData.scope?.iri_policy}
+                <p className="text-sm mt-1 text-slate-300">
+                  <strong className="text-white">IRI Policy:</strong> {domainData.scope?.iri_policy || 'N/A'}
                 </p>
               </div>
             </div>
 
             <div>
-              <h3 className="font-semibold text-[var(--palantir-text-primary)] mb-2">Freshness & Cadence</h3>
-              <div className="bg-[var(--palantir-bg-secondary)] p-3 rounded-lg">
-                <p className="text-sm">
-                  <strong>Mode:</strong> {domainData.freshness?.mode}
+              <h3 className="font-semibold text-white mb-2">Freshness & Cadence</h3>
+              <div className="bg-nexus-900 p-3 rounded-lg border border-nexus-700">
+                <p className="text-sm text-slate-300">
+                  <strong className="text-white">Mode:</strong> {domainData.freshness?.mode || 'N/A'}
                 </p>
                 {domainData.freshness?.push_latency && (
-                  <p className="text-sm mt-1">
-                    <strong>Push Latency:</strong> {domainData.freshness.push_latency}
+                  <p className="text-sm mt-1 text-slate-300">
+                    <strong className="text-white">Push Latency:</strong> {domainData.freshness.push_latency}
                   </p>
                 )}
                 {domainData.freshness?.pull_latency && (
-                  <p className="text-sm mt-1">
-                    <strong>Pull Latency:</strong> {domainData.freshness.pull_latency}
+                  <p className="text-sm mt-1 text-slate-300">
+                    <strong className="text-white">Pull Latency:</strong> {domainData.freshness.pull_latency}
                   </p>
                 )}
                 {domainData.freshness?.latency && (
-                  <p className="text-sm mt-1">
-                    <strong>Latency:</strong> {domainData.freshness.latency}
+                  <p className="text-sm mt-1 text-slate-300">
+                    <strong className="text-white">Latency:</strong> {domainData.freshness.latency}
                   </p>
                 )}
-                <p className="text-sm mt-1">
-                  <strong>Cadence:</strong> {domainData.freshness?.cadence}
+                <p className="text-sm mt-1 text-slate-300">
+                  <strong className="text-white">Cadence:</strong> {domainData.freshness?.cadence || 'N/A'}
                 </p>
               </div>
             </div>
 
             <div>
-              <h3 className="font-semibold text-[var(--palantir-text-primary)] mb-2">SLAs</h3>
-              <div className="bg-[var(--palantir-bg-secondary)] p-3 rounded-lg">
-                <p className="text-sm">
-                  <strong>Uptime:</strong> {domainData.slas?.uptime}
+              <h3 className="font-semibold text-white mb-2">SLAs</h3>
+              <div className="bg-nexus-900 p-3 rounded-lg border border-nexus-700">
+                <p className="text-sm text-slate-300">
+                  <strong className="text-white">Uptime:</strong> {domainData.slas?.uptime || 'N/A'}
                 </p>
-                <p className="text-sm mt-1">
-                  <strong>Fallback:</strong> {domainData.slas?.fallback}
+                <p className="text-sm mt-1 text-slate-300">
+                  <strong className="text-white">Fallback:</strong> {domainData.slas?.fallback || 'N/A'}
                 </p>
               </div>
             </div>
 
             <div>
-              <h3 className="font-semibold text-[var(--palantir-text-primary)] mb-2">Provenance & Security</h3>
-              <div className="bg-[var(--palantir-bg-secondary)] p-3 rounded-lg">
-                <p className="text-sm">
-                  <strong>Writer:</strong> {domainData.provenance?.writer}
+              <h3 className="font-semibold text-white mb-2">Provenance & Security</h3>
+              <div className="bg-nexus-900 p-3 rounded-lg border border-nexus-700">
+                <p className="text-sm text-slate-300">
+                  <strong className="text-white">Writer:</strong> {domainData.provenance?.writer || 'N/A'}
                 </p>
-                <p className="text-sm mt-1">
-                  <strong>Security:</strong> {domainData.provenance?.security}
+                <p className="text-sm mt-1 text-slate-300">
+                  <strong className="text-white">Security:</strong> {domainData.provenance?.security || 'N/A'}
                 </p>
                 {domainData.provenance?.pii_fields && domainData.provenance.pii_fields.length > 0 && (
-                  <p className="text-sm mt-1">
-                    <strong>PII Fields:</strong> {domainData.provenance.pii_fields.join(", ")} (hashed/excluded)
+                  <p className="text-sm mt-1 text-slate-300">
+                    <strong className="text-white">PII Fields:</strong> {domainData.provenance.pii_fields.join(", ")} (hashed/excluded)
                   </p>
                 )}
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="palantir-card cursor-pointer hover:ring-2 hover:ring-[var(--palantir-text-accent)] transition-all">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-8 w-8 text-[var(--palantir-text-accent)]" />
-              <div>
-                <p className="font-semibold text-[var(--palantir-text-primary)]">FDD Faults</p>
-                <p className="text-xs text-[var(--palantir-text-muted)]">
-                  View open faults with root causes
-                </p>
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+        <div className="bg-nexus-900/50 border border-nexus-700 rounded-xl p-4 cursor-pointer hover:ring-2 hover:ring-nexus-accent transition-all">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-8 w-8 text-nexus-accent" />
+            <div>
+              <p className="font-semibold text-white">FDD Faults</p>
+              <p className="text-xs text-slate-400">
+                View open faults with root causes
+              </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="palantir-card cursor-pointer hover:ring-2 hover:ring-[var(--palantir-text-accent)] transition-all">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Users className="h-8 w-8 text-purple-600" />
-              <div>
-                <p className="font-semibold text-[var(--palantir-text-primary)]">Responsibility Chains</p>
-                <p className="text-xs text-[var(--palantir-text-muted)]">
-                  Who's responsible for what
-                </p>
-              </div>
+        <div className="bg-nexus-900/50 border border-nexus-700 rounded-xl p-4 cursor-pointer hover:ring-2 hover:ring-nexus-accent transition-all">
+          <div className="flex items-center gap-3">
+            <Users className="h-8 w-8 text-nexus-accent" />
+            <div>
+              <p className="font-semibold text-white">Responsibility Chains</p>
+              <p className="text-xs text-slate-400">
+                Who's responsible for what
+              </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="palantir-card cursor-pointer hover:ring-2 hover:ring-[var(--palantir-text-accent)] transition-all">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <DollarSign className="h-8 w-8 text-green-600" />
-              <div>
-                <p className="font-semibold text-[var(--palantir-text-primary)]">Billing & Finance</p>
-                <p className="text-xs text-[var(--palantir-text-muted)]">
-                  Meter billing and cost allocation
-                </p>
-              </div>
+        <div className="bg-nexus-900/50 border border-nexus-700 rounded-xl p-4 cursor-pointer hover:ring-2 hover:ring-nexus-accent transition-all">
+          <div className="flex items-center gap-3">
+            <DollarSign className="h-8 w-8 text-nexus-success" />
+            <div>
+              <p className="font-semibold text-white">Billing & Finance</p>
+              <p className="text-xs text-slate-400">
+                Meter billing and cost allocation
+              </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
