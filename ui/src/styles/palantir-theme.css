@@ -1,26 +1,38 @@
 /* Professional VC/YC-worthy design system for RiG Digital Twin Platform */
+/* Nexus Theme - Inspired by Gemino IWMS Mockup */
 
 :root {
-  /* Core palette - Sophisticated dark theme inspired by Linear, Vercel, Stripe */
+  /* Core palette - Nexus dark theme */
   --palantir-bg-primary: #0d0d0d;
   --palantir-bg-secondary: #161618;
   --palantir-bg-tertiary: #1f1f23;
   --palantir-bg-elevated: #1a1a1c;
   
+  /* Nexus color palette */
+  --nexus-900: #0d0d0d;
+  --nexus-950: #050505;
+  --nexus-800: #141419;
+  --nexus-700: #1e1e26;
+  --nexus-600: #2d2d3a;
+  --nexus-accent: #00f0ff;
+  --nexus-success: #00ff9d;
+  --nexus-warning: #ffb020;
+  --nexus-danger: #ff4d4d;
+  
   --palantir-text-primary: #fafafa;
   --palantir-text-secondary: #b4b4b8;
   --palantir-text-muted: #71717a;
-  --palantir-text-accent: #3b82f6;
+  --palantir-text-accent: #00f0ff;
   
   --palantir-border-primary: #27272a;
   --palantir-border-secondary: #3f3f46;
-  --palantir-border-accent: #3b82f6;
+  --palantir-border-accent: #00f0ff;
   
   /* Status colors - Refined and professional */
-  --palantir-success: #10b981;
-  --palantir-warning: #f59e0b;
-  --palantir-error: #ef4444;
-  --palantir-info: #3b82f6;
+  --palantir-success: #00ff9d;
+  --palantir-warning: #ffb020;
+  --palantir-error: #ff4d4d;
+  --palantir-info: #00f0ff;
   
   /* Interactive states - Subtle and refined */
   --palantir-hover: rgba(59, 130, 246, 0.08);

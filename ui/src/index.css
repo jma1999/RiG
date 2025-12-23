@@ -2,6 +2,30 @@
 @import "tw-animate-css";
 @import './styles/palantir-theme.css';
 
+/* Nexus Theme Colors for Tailwind v4 */
+@theme {
+  --color-nexus-900: #0d0d0d;
+  --color-nexus-950: #050505;
+  --color-nexus-800: #141419;
+  --color-nexus-700: #1e1e26;
+  --color-nexus-600: #2d2d3a;
+  --color-nexus-accent: #00f0ff;
+  --color-nexus-success: #00ff9d;
+  --color-nexus-warning: #ffb020;
+  --color-nexus-danger: #ff4d4d;
+  
+  /* Also define as CSS variables for direct use */
+  --nexus-900: #0d0d0d;
+  --nexus-950: #050505;
+  --nexus-800: #141419;
+  --nexus-700: #1e1e26;
+  --nexus-600: #2d2d3a;
+  --nexus-accent: #00f0ff;
+  --nexus-success: #00ff9d;
+  --nexus-warning: #ffb020;
+  --nexus-danger: #ff4d4d;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -175,4 +199,22 @@ button:focus-visible {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--nexus-900);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--nexus-700);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--nexus-600);
 }
