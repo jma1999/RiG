@@ -15,7 +15,9 @@ import {
   Sparkles,
   Terminal,
   Network,
-  Building2
+  Building2,
+  Box,
+  MapPin
 } from "lucide-react";
 import { API_BASE } from "@/lib/env";
 import { cn } from "@/lib/utils";
@@ -25,6 +27,7 @@ import MaintenancePanel from "@/components/MaintenancePanel";
 import EnergyPanel from "@/components/EnergyPanel";
 import ChatInterface from "@/components/ChatInterface";
 import EnterpriseView from "@/components/EnterpriseView";
+import AssetsView from "@/components/AssetsView";
 
 function FacilityOS() {
   // State
@@ -38,44 +41,212 @@ function FacilityOS() {
   const [energySavings, setEnergySavings] = useState(12450);
   const [messages, setMessages] = useState([]);
   const [facilityHealth, setFacilityHealth] = useState(98.5);
+  const [assets, setAssets] = useState([]);
+  const [spaces, setSpaces] = useState([]);
 
   // Load initial graph data
   useEffect(() => {
     loadGraphData();
     loadAlerts();
     loadMaintenanceTasks();
+    loadAssetsAndSpaces();
   }, []);
+  
+  const loadAssetsAndSpaces = async () => {
+    try {
+      console.log("Loading assets and spaces from GraphDB...");
+      
+      // Query for IFC Spaces
+      const spacesQuery = `
+        PREFIX ifc: <http://ifc-ld.org/schemas/ifc2x3#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        
+        SELECT DISTINCT ?space ?name ?type
+        WHERE {
+          ?space a ifc:IfcSpace .
+          OPTIONAL { ?space rdfs:label ?name }
+          OPTIONAL { ?space ifc:name ?name }
+          BIND("Space" as ?type)
+        }
+        LIMIT 50
+      `;
+      
+      // Query for Equipment/Assets
+      const assetsQuery = `
+        PREFIX s223: <http://data.ashrae.org/standard223#>
+        PREFIX brick: <https://brickschema.org/schema/Brick#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        
+        SELECT DISTINCT ?asset ?name ?type
+        WHERE {
+          {
+            ?asset a s223:Equipment .
+            OPTIONAL { ?asset rdfs:label ?name }
+            BIND("Equipment" as ?type)
+          }
+          UNION
+          {
+            ?asset a brick:AHU .
+            OPTIONAL { ?asset rdfs:label ?name }
+            BIND("AHU" as ?type)
+          }
+          UNION
+          {
+            ?asset a brick:VAV .
+            OPTIONAL { ?asset rdfs:label ?name }
+            BIND("VAV" as ?type)
+          }
+        }
+        LIMIT 50
+      `;
+      
+      // Load spaces
+      const spacesRes = await fetch(`${API_BASE}/graphdb/sparql`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: spacesQuery, format: "json" })
+      });
+      
+      if (spacesRes.ok) {
+        const spacesData = await spacesRes.json();
+        const spacesList = (spacesData.results?.bindings || []).map(b => ({
+          id: b.space?.value || '',
+          name: b.name?.value || b.space?.value.split('/').pop() || 'Unknown Space',
+          type: 'Space',
+          uri: b.space?.value
+        }));
+        setSpaces(spacesList);
+        console.log(`✅ Loaded ${spacesList.length} spaces`);
+      }
+      
+      // Load assets
+      const assetsRes = await fetch(`${API_BASE}/graphdb/sparql`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: assetsQuery, format: "json" })
+      });
+      
+      if (assetsRes.ok) {
+        const assetsData = await assetsRes.json();
+        const assetsList = (assetsData.results?.bindings || []).map(b => ({
+          id: b.asset?.value || '',
+          name: b.name?.value || b.asset?.value.split('/').pop() || 'Unknown Asset',
+          type: b.type?.value || 'Equipment',
+          uri: b.asset?.value,
+          status: 'nominal'
+        }));
+        setAssets(assetsList);
+        console.log(`✅ Loaded ${assetsList.length} assets`);
+      }
+    } catch (error) {
+      console.error("Failed to load assets and spaces:", error);
+    }
+  };
 
   const loadGraphData = async () => {
     try {
-      // Fetch graph data with reasonable limit for visualization
-      const res = await fetch(`${API_BASE}/graphdb/graph?limit=200&hops=2`);
+      console.log("Loading graph data from GraphDB...");
+      
+      // Try a more comprehensive SPARQL query that includes IFC entities
+      const sparqlQuery = `
+        PREFIX ifc: <http://ifc-ld.org/schemas/ifc2x3#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX ex: <https://example.com/rig#>
+        PREFIX s223: <http://data.ashrae.org/standard223#>
+        PREFIX brick: <https://brickschema.org/schema/Brick#>
+        
+        SELECT DISTINCT ?entity ?name ?type ?predicate ?object
+        WHERE {
+          {
+            ?entity a ?type .
+            FILTER(
+              STRSTARTS(STR(?type), "http://ifc-ld.org/schemas/ifc2x3#") ||
+              STRSTARTS(STR(?type), "http://data.ashrae.org/standard223#") ||
+              STRSTARTS(STR(?type), "https://brickschema.org/schema/Brick#")
+            )
+            OPTIONAL { ?entity rdfs:label ?name }
+            OPTIONAL { ?entity ifc:name ?name }
+            OPTIONAL { ?entity ?predicate ?object }
+            FILTER (isURI(?object))
+          }
+        }
+        LIMIT 200
+      `;
+      
+      const res = await fetch(`${API_BASE}/graphdb/sparql`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: sparqlQuery, format: "json" })
+      });
+      
       if (res.ok) {
-        const data = await res.json();
-        // Transform GraphDB response to graph format
-        // GraphDB returns nodes with id, name, type, labels, properties
-        // and edges with source, target, type, properties
-        const nodes = (data.nodes || []).map(node => ({
-          id: node.id,
-          label: node.name || node.id.split('/').pop()?.split('#').pop() || node.id.split('#').pop() || node.id,
-          type: node.type || (node.labels && node.labels[0]) || 'Asset',
-          status: 'nominal',
-          ontologyRef: node.type,
-          ...node
-        }));
+        const result = await res.json();
+        console.log("GraphDB SPARQL response:", result);
         
-        const links = (data.edges || []).map(edge => ({
-          source: edge.source,
-          target: edge.target,
-          relationship: edge.type || 'related',
-          ...edge
-        }));
+        // Parse SPARQL results
+        const nodesMap = new Map();
+        const links = [];
         
+        if (result.results?.bindings) {
+          for (const binding of result.results.bindings) {
+            const entityUri = binding.entity?.value;
+            if (!entityUri) continue;
+            
+            const nodeName = binding.name?.value || 
+                           entityUri.split('/').pop()?.split('#').pop() || 
+                           entityUri.split('#').pop() || 
+                           entityUri;
+            const nodeType = binding.type?.value || '';
+            const typeShort = nodeType.includes('#') 
+              ? nodeType.split('#').pop() 
+              : nodeType.split('/').pop();
+            
+            if (!nodesMap.has(entityUri)) {
+              nodesMap.set(entityUri, {
+                id: entityUri,
+                label: nodeName,
+                name: nodeName,
+                type: typeShort || 'Entity',
+                status: 'nominal',
+                ontologyRef: nodeType
+              });
+            }
+            
+            // Add edge if object is a URI
+            const objectUri = binding.object?.value;
+            if (objectUri && objectUri.startsWith('http')) {
+              const predicate = binding.predicate?.value || '';
+              const predShort = predicate.includes('#')
+                ? predicate.split('#').pop()
+                : predicate.split('/').pop();
+              
+              links.push({
+                source: entityUri,
+                target: objectUri,
+                relationship: predShort || 'related'
+              });
+              
+              // Ensure target node exists
+              if (!nodesMap.has(objectUri)) {
+                const targetName = objectUri.split('/').pop()?.split('#').pop() || objectUri;
+                nodesMap.set(objectUri, {
+                  id: objectUri,
+                  label: targetName,
+                  name: targetName,
+                  type: 'Entity',
+                  status: 'nominal'
+                });
+              }
+            }
+          }
+        }
+        
+        const nodes = Array.from(nodesMap.values());
         setGraphData({ nodes, links });
-        console.log(`Loaded ${nodes.length} nodes and ${links.length} links from GraphDB`);
+        console.log(`✅ Loaded ${nodes.length} nodes and ${links.length} links from GraphDB`);
       } else {
-        console.error("GraphDB request failed:", res.status, res.statusText);
-        // Set empty graph on error
+        const errorText = await res.text();
+        console.error("GraphDB request failed:", res.status, res.statusText, errorText);
         setGraphData({ nodes: [], links: [] });
       }
     } catch (error) {
@@ -86,35 +257,65 @@ function FacilityOS() {
 
   const loadAlerts = async () => {
     try {
-      // Load from agents or work orders
+      // Try to load from agents detection endpoint
       const res = await fetch(`${API_BASE}/agents/detection/events`);
       if (res.ok) {
         const data = await res.json();
-        setAlerts(data.events || []);
+        const events = data.events || data || [];
+        setAlerts(events.map(e => ({
+          id: e.id || Date.now().toString(),
+          assetId: e.asset_id || e.assetId || 'Unknown',
+          message: e.message || e.description || 'Anomaly detected',
+          severity: e.severity || 'critical',
+          timestamp: e.timestamp || Date.now()
+        })));
+      } else {
+        // Fallback: create mock alerts from work orders with high priority
+        const woRes = await fetch(`${API_BASE}/workorders?priority=critical`);
+        if (woRes.ok) {
+          const workOrders = await woRes.json();
+          const criticalWOs = workOrders.filter(wo => wo.priority === 'critical' || wo.priority === 'high');
+          setAlerts(criticalWOs.map(wo => ({
+            id: `alert-${wo.id}`,
+            assetId: wo.asset_id || 'Unknown',
+            message: `Critical work order: ${wo.title || wo.description}`,
+            severity: 'critical',
+            timestamp: new Date(wo.created_at || Date.now()).getTime()
+          })));
+        }
       }
     } catch (error) {
       console.error("Failed to load alerts:", error);
+      // Set empty alerts on error
+      setAlerts([]);
     }
   };
 
   const loadMaintenanceTasks = async () => {
     try {
+      console.log("Loading maintenance tasks from work orders...");
       const res = await fetch(`${API_BASE}/workorders`);
       if (res.ok) {
         const workOrders = await res.json();
+        console.log(`Loaded ${workOrders.length} work orders`);
         const tasks = workOrders.map(wo => ({
-          id: wo.id,
-          assetId: wo.asset_id || 'Unknown',
-          task: wo.description || wo.title,
-          reason: wo.priority || 'Scheduled maintenance',
-          scheduledDate: wo.created_at || new Date().toLocaleDateString(),
+          id: wo.id || wo.woId,
+          assetId: wo.asset_id || wo.assetId || wo.assetGlobalId || 'Unknown',
+          task: wo.title || wo.description || 'Maintenance task',
+          reason: wo.description || wo.priority || 'Scheduled maintenance',
+          scheduledDate: wo.created_at || wo.createdAt || new Date().toLocaleDateString(),
           priority: wo.priority || 'medium',
-          status: wo.status || 'scheduled'
+          status: wo.status || 'scheduled',
+          assignedTo: wo.assigned_to || wo.assignedTo || 'Unassigned'
         }));
         setMaintenanceTasks(tasks);
+      } else {
+        console.warn("Work orders API not available, using empty tasks");
+        setMaintenanceTasks([]);
       }
     } catch (error) {
       console.error("Failed to load maintenance tasks:", error);
+      setMaintenanceTasks([]);
     }
   };
 
@@ -413,6 +614,8 @@ function FacilityOS() {
     switch(currentView) {
       case 'graph':
         return <KnowledgeGraph data={graphData} onNodeClick={handleNodeClick} />;
+      case 'assets':
+        return <AssetsView assets={assets} spaces={spaces} onNodeClick={handleNodeClick} />;
       case 'telemetry':
         return <TelemetryPanel data={telemetryData} />;
       case 'maintenance':
@@ -428,6 +631,7 @@ function FacilityOS() {
 
   const viewTitles = {
     'graph': 'Knowledge Graph Explorer',
+    'assets': 'Assets & Spaces',
     'telemetry': 'Live Telemetry Stream',
     'maintenance': 'Predictive Operations',
     'energy': 'Energy & Optimization',
@@ -438,7 +642,7 @@ function FacilityOS() {
     <div className="flex h-screen bg-nexus-900 text-slate-300 font-sans overflow-hidden">
       
       {/* 1. Narrow Sidebar (Navigation) */}
-      <nav className="w-16 flex-shrink-0 bg-nexus-950 border-r border-nexus-800 flex flex-col items-center py-6 gap-6 z-30">
+      <nav className="w-16 flex-shrink-0 bg-nexus-950 flex flex-col items-center py-6 gap-6 z-30 border-r border-nexus-800">
         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-nexus-accent to-blue-600 flex items-center justify-center text-nexus-900 mb-4 shadow-lg shadow-nexus-accent/20">
           <InfinityLogo size={24} strokeWidth={3} />
         </div>
@@ -446,6 +650,7 @@ function FacilityOS() {
         <div className="flex flex-col gap-4 w-full px-2">
             {[
                 { id: 'graph', icon: Database, label: 'Graph' },
+                { id: 'assets', icon: Box, label: 'Assets' },
                 { id: 'telemetry', icon: Activity, label: 'Data' },
                 { id: 'maintenance', icon: Wrench, label: 'Ops' },
                 { id: 'energy', icon: Zap, label: 'Energy' },

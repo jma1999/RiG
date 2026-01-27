@@ -1,41 +1,128 @@
 import React, { useState, useEffect } from 'react';
-import { Activity } from 'lucide-react';
+import { Activity, RefreshCw } from 'lucide-react';
 import { API_BASE } from "@/lib/env";
 
 const TelemetryPanel = ({ data }) => {
   const [telemetryPoints, setTelemetryPoints] = useState([]);
-  const [selectedPoint, setSelectedPoint] = useState(null);
+  const [selectedPoint, setSelectedPoint] = useState(data);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (data) {
       setSelectedPoint(data);
     } else {
-      // Load available telemetry points
+      // Load available telemetry points on mount
       loadTelemetryPoints();
     }
   }, [data]);
 
   const loadTelemetryPoints = async () => {
+    setLoading(true);
     try {
+      console.log("Loading telemetry points from TimescaleDB...");
       const res = await fetch(`${API_BASE}/telemetry/points`);
       if (res.ok) {
         const result = await res.json();
-        setTelemetryPoints(result.points || []);
+        const points = result.points || [];
+        setTelemetryPoints(points);
+        console.log(`✅ Loaded ${points.length} telemetry points from TimescaleDB`);
+        
+        // Auto-select first point if available and no data is selected
+        if (points.length > 0 && !selectedPoint) {
+          const firstPoint = points[0];
+          await loadPointData(firstPoint.point_id);
+        }
+      } else {
+        const errorText = await res.text();
+        console.error("Failed to load telemetry points:", res.status, errorText);
       }
     } catch (error) {
       console.error("Failed to load telemetry points:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadPointData = async (pointId) => {
+    setLoading(true);
+    try {
+      console.log(`Loading data for point: ${pointId}`);
+      
+      // First seed data to ensure we have data
+      await fetch(`${API_BASE}/telemetry/seed/${pointId}?count=60`, { method: "POST" });
+      
+      // Wait for data to commit
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Then fetch the data
+      const res = await fetch(`${API_BASE}/telemetry/points/${pointId}?hours=24&limit=100`);
+      if (res.ok) {
+        const data = await res.json();
+        const telemetry = {
+          id: pointId,
+          name: `${pointId}`,
+          unit: data.unit || '°C',
+          data: (data.data || []).map(d => ({
+            timestamp: new Date(d.time || d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            value: parseFloat(d.value) || 0
+          }))
+        };
+        setSelectedPoint(telemetry);
+        console.log(`✅ Loaded ${telemetry.data.length} data points for ${pointId}`);
+      }
+    } catch (error) {
+      console.error("Failed to load point data:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   if (!selectedPoint && !data) {
     return (
-      <div className="h-full w-full flex flex-col items-center justify-center text-slate-500 bg-nexus-800 rounded-lg border border-nexus-600 p-6">
-        <Activity size={48} className="mb-4 opacity-20" />
-        <p className="font-mono text-sm">No telemetry stream selected</p>
-        <p className="text-xs mt-2 text-slate-600">Ask the agent to visualize data (e.g., "Show ft_136276_sat")</p>
-        {telemetryPoints.length > 0 && (
-          <div className="mt-4 text-xs text-slate-500">
-            Available points: {telemetryPoints.map(p => p.point_id).join(', ')}
+      <div className="h-full w-full flex flex-col bg-nexus-800 rounded-lg border border-nexus-600 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-nexus-accent font-mono text-sm uppercase tracking-wider">Available Telemetry Points</h3>
+          <button
+            onClick={loadTelemetryPoints}
+            disabled={loading}
+            className="p-2 hover:bg-nexus-700 rounded-lg transition-colors text-slate-400"
+          >
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+          </button>
+        </div>
+        
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-nexus-accent mx-auto mb-2"></div>
+              <p className="text-sm text-slate-400">Loading from TimescaleDB...</p>
+            </div>
+          </div>
+        ) : telemetryPoints.length > 0 ? (
+          <div className="space-y-2 overflow-y-auto">
+            {telemetryPoints.map((point) => (
+              <button
+                key={point.point_id}
+                onClick={() => loadPointData(point.point_id)}
+                className="w-full text-left p-3 bg-nexus-900/50 border border-nexus-700 rounded-lg hover:border-nexus-accent/50 hover:bg-nexus-900 transition-all"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-white">{point.point_id}</p>
+                    <p className="text-xs text-slate-400">
+                      {point.data_points || 0} readings • Last: {point.last_reading ? new Date(point.last_reading).toLocaleString() : 'N/A'}
+                    </p>
+                  </div>
+                  <Activity size={16} className="text-nexus-accent" />
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-slate-500">
+            <Activity size={48} className="mb-4 opacity-20" />
+            <p className="font-mono text-sm">No telemetry points found</p>
+            <p className="text-xs mt-2 text-slate-600">Ask the agent to visualize data or check TimescaleDB connection</p>
           </div>
         )}
       </div>

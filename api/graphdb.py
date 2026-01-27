@@ -107,18 +107,20 @@ async def get_graph(
             LIMIT {limit}
             """
         else:
-            # Query semantic overlay entities (223P/Brick)
+            # Query all relevant entities (IFC-LD, 223P, Brick)
             query = f"""
             PREFIX ex: <https://example.com/rig#>
             PREFIX s223: <http://data.ashrae.org/standard223#>
             PREFIX brick: <https://brickschema.org/schema/Brick#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX ifc: <http://ifc-ld.org/schemas/ifc2x3#>
             
             SELECT DISTINCT ?entity ?name ?type ?predicate ?object
             WHERE {{
                 {{
                     ?entity a s223:Equipment .
                     OPTIONAL {{ ?entity rdfs:label ?name }}
+                    OPTIONAL {{ ?entity ifc:name ?name }}
                     OPTIONAL {{ ?entity ?predicate ?object }}
                     FILTER (isURI(?object))
                 }}
@@ -126,6 +128,7 @@ async def get_graph(
                 {{
                     ?entity a brick:Point .
                     OPTIONAL {{ ?entity rdfs:label ?name }}
+                    OPTIONAL {{ ?entity ifc:name ?name }}
                     OPTIONAL {{ ?entity ?predicate ?object }}
                     FILTER (isURI(?object))
                 }}
@@ -133,6 +136,47 @@ async def get_graph(
                 {{
                     ?entity a s223:Property .
                     OPTIONAL {{ ?entity rdfs:label ?name }}
+                    OPTIONAL {{ ?entity ifc:name ?name }}
+                    OPTIONAL {{ ?entity ?predicate ?object }}
+                    FILTER (isURI(?object))
+                }}
+                UNION
+                {{
+                    ?entity a ifc:IfcSpace .
+                    OPTIONAL {{ ?entity rdfs:label ?name }}
+                    OPTIONAL {{ ?entity ifc:name ?name }}
+                    OPTIONAL {{ ?entity ?predicate ?object }}
+                    FILTER (isURI(?object))
+                }}
+                UNION
+                {{
+                    ?entity a ifc:IfcBuilding .
+                    OPTIONAL {{ ?entity rdfs:label ?name }}
+                    OPTIONAL {{ ?entity ifc:name ?name }}
+                    OPTIONAL {{ ?entity ?predicate ?object }}
+                    FILTER (isURI(?object))
+                }}
+                UNION
+                {{
+                    ?entity a ifc:IfcBuildingStorey .
+                    OPTIONAL {{ ?entity rdfs:label ?name }}
+                    OPTIONAL {{ ?entity ifc:name ?name }}
+                    OPTIONAL {{ ?entity ?predicate ?object }}
+                    FILTER (isURI(?object))
+                }}
+                UNION
+                {{
+                    ?entity a brick:AHU .
+                    OPTIONAL {{ ?entity rdfs:label ?name }}
+                    OPTIONAL {{ ?entity ifc:name ?name }}
+                    OPTIONAL {{ ?entity ?predicate ?object }}
+                    FILTER (isURI(?object))
+                }}
+                UNION
+                {{
+                    ?entity a brick:VAV .
+                    OPTIONAL {{ ?entity rdfs:label ?name }}
+                    OPTIONAL {{ ?entity ifc:name ?name }}
                     OPTIONAL {{ ?entity ?predicate ?object }}
                     FILTER (isURI(?object))
                 }}
@@ -141,6 +185,8 @@ async def get_graph(
             """
         
         results = client.execute_sparql_query(query, output_format="json")
+        
+        print(f"[GraphDB API] Query returned {len(results.get('results', {}).get('bindings', []))} bindings")
         
         # Parse results into nodes and edges
         nodes = {}

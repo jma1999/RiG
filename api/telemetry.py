@@ -70,6 +70,8 @@ async def list_telemetry_points():
         cur.close()
         conn.close()
         
+        print(f"[Telemetry API] Found {len(points)} telemetry points in TimescaleDB")
+        
         if points:
             return {
                 "points": [
@@ -84,6 +86,7 @@ async def list_telemetry_points():
             }
         else:
             # Table exists but empty - return mock data
+            print("[Telemetry API] Table exists but empty, returning mock data")
             return {
                 "points": [
                     {
@@ -102,6 +105,8 @@ async def list_telemetry_points():
             }
     except Exception as e:
         # Return mock data if database is not available
+        print(f"[Telemetry API] Error connecting to TimescaleDB: {str(e)}")
+        print("[Telemetry API] Returning mock data as fallback")
         return {
             "points": [
                 {
@@ -145,6 +150,8 @@ async def get_telemetry_data(
         rows = cur.fetchall()
         cur.close()
         conn.close()
+        
+        print(f"[Telemetry API] Retrieved {len(rows)} data points for {point_id}")
         
         data = [
             TelemetryPoint(
