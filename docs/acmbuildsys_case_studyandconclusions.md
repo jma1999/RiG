@@ -4,6 +4,236 @@
 
 ---
 
+## 0. Technology Stack Overview
+
+### System Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           CLIENT LAYER                                   │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  React 19 + Vite 7 + Tailwind CSS 4 + Radix UI                  │   │
+│  │  Three.js + web-ifc-viewer (3D IFC visualization)               │   │
+│  │  react-force-graph-2d (knowledge graph visualization)           │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                              ↓ HTTPS                                     │
+├─────────────────────────────────────────────────────────────────────────┤
+│                           API LAYER (Fly.io)                             │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  FastAPI 0.95+ / Uvicorn (ASGI)                                 │   │
+│  │  Pydantic (validation) + WebSockets (real-time)                 │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│           ↓                    ↓                      ↓                  │
+├───────────┴────────────────────┴──────────────────────┴─────────────────┤
+│                        DATA & PROCESSING LAYER                           │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌────────────┐  │
+│  │   GraphDB    │  │ TimescaleDB  │  │    Redis     │  │  Celery    │  │
+│  │   (RDF/     │  │  (time-      │  │  (message    │  │  (async    │  │
+│  │   SPARQL)   │  │   series)    │  │   broker)    │  │   tasks)   │  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └────────────┘  │
+├─────────────────────────────────────────────────────────────────────────┤
+│                        STORAGE LAYER                                     │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  Cloudflare R2 (S3-compatible object storage for IFC files)     │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Backend Stack
+
+| Component | Technology | Version | Purpose |
+|-----------|------------|---------|---------|
+| **Web Framework** | FastAPI | ≥0.95.0 | Async REST API with OpenAPI docs |
+| **ASGI Server** | Uvicorn | ≥0.22.0 | High-performance Python server |
+| **Validation** | Pydantic | ≥1.10.0 | Request/response schema validation |
+| **Task Queue** | Celery | ≥5.3.0 | Distributed background job processing |
+| **Message Broker** | Redis | ≥4.5.0 | Job queue and caching layer |
+| **Task Monitoring** | Flower | ≥2.0.0 | Celery task monitoring dashboard |
+
+### Database Stack
+
+| Component | Technology | Version | Purpose |
+|-----------|------------|---------|---------|
+| **RDF Triple Store** | Ontotext GraphDB | Desktop/Server | SPARQL 1.1 endpoint, RDF storage |
+| **Time-Series DB** | TimescaleDB | 2.16.1 (pg16) | Hypertable storage for telemetry |
+| **Graph DB (alt)** | Neo4j | ≥5.7.0 | Property graph for legacy queries |
+| **Relational DB** | PostgreSQL | 16 | Job tracking, metadata storage |
+
+### Frontend Stack
+
+| Component | Technology | Version | Purpose |
+|-----------|------------|---------|---------|
+| **UI Framework** | React | 19.1.1 | Component-based UI |
+| **Build Tool** | Vite | 7.1.6 | Fast HMR, ES module bundling |
+| **Styling** | Tailwind CSS | 4.1.13 | Utility-first CSS framework |
+| **Components** | Radix UI | Various | Accessible headless components |
+| **3D Viewer** | web-ifc-viewer | 1.0.218 | IFC model visualization (Three.js) |
+| **Graph Viz** | react-force-graph-2d | 1.29.0 | Knowledge graph rendering |
+| **Icons** | Lucide React | 0.544.0 | Icon library |
+
+### Cloud & Infrastructure
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Containerization** | Docker | Application packaging |
+| **Orchestration** | Docker Compose | Local multi-service dev environment |
+| **Backend Hosting** | Fly.io | Long-running API + workers (SJC region) |
+| **Frontend Hosting** | Vercel | Static site CDN (optional) |
+| **Object Storage** | Cloudflare R2 | S3-compatible IFC file storage (no egress fees) |
+| **File Uploads** | boto3/botocore | AWS SDK for R2 multipart uploads |
+
+### RDF & Semantic Web Stack
+
+| Component | Technology | Version | Purpose |
+|-----------|------------|---------|---------|
+| **RDF Library** | rdflib | ≥6.0.0 | RDF graph manipulation in Python |
+| **SHACL Validation** | pyshacl | ≥0.23.0 | W3C SHACL constraint checking |
+| **SPARQL Client** | SPARQLWrapper | ≥1.8.6 | SPARQL query execution |
+| **JSON-LD** | pyld | ≥2.0.3 | JSON-LD processing |
+| **IFC Parser** | ifcopenshell | ≥0.8.0 | IFC-SPF file parsing |
+| **IFC→RDF** | IFCtoRDF | 0.4 | Java-based ifcOWL conversion |
+
+### AI/ML Stack
+
+| Component | Technology | Version | Purpose |
+|-----------|------------|---------|---------|
+| **Embeddings** | sentence-transformers | ≥2.2.2 | Text embedding for semantic search |
+| **Vector Index** | FAISS (CPU) | ≥1.7.4 | Approximate nearest neighbor search |
+| **LLM Client** | Groq | ≥0.1.0 | LLM API for NL understanding |
+| **ML Utilities** | scikit-learn | ≥1.2.0 | Clustering, preprocessing |
+| **Numerical** | NumPy / Pandas | ≥1.24 / ≥2.0 | Data manipulation |
+
+### Development & Testing
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Testing** | pytest | ≥7.4.0 | Unit and integration tests |
+| **Formatting** | Black | ≥24.3.0 | Code formatting |
+| **Import Sorting** | isort | ≥6.0.0 | Import organization |
+| **Linting** | flake8 | ≥6.0.0 | Code quality checks |
+| **Type Checking** | TypeScript | (frontend) | Static type analysis |
+
+### Docker Compose Services
+
+```yaml
+services:
+  timescaledb:
+    image: timescale/timescaledb:2.16.1-pg16
+    ports: ["5432:5432"]
+    environment:
+      POSTGRES_USER: rig_user
+      POSTGRES_PASSWORD: rig_password
+      POSTGRES_DB: rig_timeseries
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+```
+
+### Dockerfile Configuration
+
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+
+# System dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential libmagic1 libmagic-dev
+
+# Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Application
+COPY . .
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### Fly.io Deployment Configuration
+
+```toml
+app = "rig-cmms-api"
+primary_region = "sjc"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = false
+  min_machines_running = 1
+
+[machine]
+  cpu_kind = "shared"
+  cpus = 2
+  memory_mb = 2048
+
+[[mounts]]
+  source = "rig_data"
+  destination = "/app/data"
+```
+
+### Key Dependencies (requirements.txt)
+
+```text
+# Core API
+fastapi>=0.95.0
+uvicorn[standard]>=0.22.0
+pydantic>=1.10.0
+
+# Background Processing
+celery>=5.3.0
+redis>=4.5.0
+
+# Databases
+psycopg2-binary>=2.9.0
+neo4j>=5.7.0
+sqlalchemy>=2.0.0
+
+# RDF/Semantic Web
+rdflib>=6.0.0
+pyshacl>=0.23.0
+SPARQLWrapper>=1.8.6
+pyld>=2.0.3
+
+# AI/ML
+sentence-transformers>=2.2.2
+faiss-cpu>=1.7.4
+groq>=0.1.0
+
+# Cloud Storage
+boto3>=1.26.0
+
+# IFC Processing
+ifcopenshell>=0.8.0
+```
+
+### Technology Selection Rationale
+
+| Choice | Rationale |
+|--------|-----------|
+| **FastAPI over Flask/Django** | Native async, automatic OpenAPI, Pydantic integration |
+| **TimescaleDB over InfluxDB** | SQL compatibility, PostgreSQL ecosystem, hypertables |
+| **GraphDB over Blazegraph** | SPARQL 1.1 compliance, enterprise features, GUI |
+| **Cloudflare R2 over AWS S3** | Zero egress fees, S3-compatible API |
+| **Celery over RQ** | Mature ecosystem, Flower monitoring, Redis backend |
+| **Vite over Webpack** | 10-100x faster HMR, native ES modules |
+| **FAISS over Pinecone** | Self-hosted, no API costs, CPU-efficient |
+
+### Network Ports Reference
+
+| Service | Port | Protocol |
+|---------|------|----------|
+| FastAPI | 8000 | HTTP/HTTPS |
+| GraphDB | 7200 | HTTP (SPARQL) |
+| TimescaleDB | 5432 | PostgreSQL |
+| Redis | 6379 | Redis protocol |
+| Neo4j Bolt | 7687 | Bolt |
+| Neo4j HTTP | 7474 | HTTP |
+| Flower | 5555 | HTTP |
+
+---
+
 ## 1. Test Subject Selection: IFC-SPF Encoding
 
 ### Rationale for Small House Model
