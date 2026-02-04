@@ -1,0 +1,258 @@
+{
+  "timestamp": "2026-02-04T17:50:02.718068+00:00",
+  "rdf_file": "/Users/jma1999/Documents/Thesis/Code/RiG/data/processed/rdf/20210125Prova_reduced.ttl",
+  "semantic_overlay": "/Users/jma1999/Documents/Thesis/Code/RiG/data/semantic/ft_136276_semantic.ttl",
+  "triples_total": 1383356,
+  "total_queries": 20,
+  "nonempty_queries": 17,
+  "correctness_pct": 85.0,
+  "avg_neighborhood_triples_2hop": 1508.8,
+  "category_coverage": {
+    "Spatial": {
+      "total": 5,
+      "nonempty": 3
+    },
+    "System": {
+      "total": 5,
+      "nonempty": 4
+    },
+    "Cross-domain": {
+      "total": 5,
+      "nonempty": 5
+    },
+    "Temporal": {
+      "total": 5,
+      "nonempty": 5
+    }
+  },
+  "timescale": {
+    "available": true,
+    "row_count": 241
+  },
+  "results": [
+    {
+      "type": "Spatial",
+      "name": "Count IfcSpace",
+      "rows": 1,
+      "count_value": 0,
+      "nonempty": false,
+      "schemas_used": [
+        "IFC"
+      ],
+      "neighborhood_triples_2hop": 0
+    },
+    {
+      "type": "Spatial",
+      "name": "Count IfcBuildingStorey",
+      "rows": 1,
+      "count_value": 3,
+      "nonempty": true,
+      "schemas_used": [
+        "IFC"
+      ],
+      "neighborhood_triples_2hop": 3260
+    },
+    {
+      "type": "Spatial",
+      "name": "Count IfcDoor",
+      "rows": 1,
+      "count_value": 1,
+      "nonempty": true,
+      "schemas_used": [
+        "IFC"
+      ],
+      "neighborhood_triples_2hop": 2994
+    },
+    {
+      "type": "Spatial",
+      "name": "Count IfcWindow",
+      "rows": 1,
+      "count_value": 4,
+      "nonempty": true,
+      "schemas_used": [
+        "IFC"
+      ],
+      "neighborhood_triples_2hop": 3366
+    },
+    {
+      "type": "Spatial",
+      "name": "List IfcSpace (sample)",
+      "rows": 0,
+      "count_value": null,
+      "nonempty": false,
+      "schemas_used": [
+        "IFC"
+      ],
+      "neighborhood_triples_2hop": 0
+    },
+    {
+      "type": "System",
+      "name": "Count IfcFlowTerminal",
+      "rows": 1,
+      "count_value": 10,
+      "nonempty": true,
+      "schemas_used": [
+        "IFC"
+      ],
+      "neighborhood_triples_2hop": 3307
+    },
+    {
+      "type": "System",
+      "name": "Count IfcEnergyConversionDevice",
+      "rows": 1,
+      "count_value": 1,
+      "nonempty": true,
+      "schemas_used": [
+        "IFC"
+      ],
+      "neighborhood_triples_2hop": 3103
+    },
+    {
+      "type": "System",
+      "name": "Count IfcFlowSegment",
+      "rows": 1,
+      "count_value": 42,
+      "nonempty": true,
+      "schemas_used": [
+        "IFC"
+      ],
+      "neighborhood_triples_2hop": 3505
+    },
+    {
+      "type": "System",
+      "name": "Count IfcDistributionElement",
+      "rows": 1,
+      "count_value": 0,
+      "nonempty": false,
+      "schemas_used": [
+        "IFC"
+      ],
+      "neighborhood_triples_2hop": 0
+    },
+    {
+      "type": "System",
+      "name": "Count IfcSystem",
+      "rows": 1,
+      "count_value": 3,
+      "nonempty": true,
+      "schemas_used": [
+        "IFC"
+      ],
+      "neighborhood_triples_2hop": 2723
+    },
+    {
+      "type": "Cross-domain",
+      "name": "Brick+223P points",
+      "rows": 5,
+      "count_value": null,
+      "nonempty": true,
+      "schemas_used": [
+        "Brick",
+        "ASHRAE223P"
+      ],
+      "neighborhood_triples_2hop": 79
+    },
+    {
+      "type": "Cross-domain",
+      "name": "SOSA observable properties",
+      "rows": 4,
+      "count_value": null,
+      "nonempty": true,
+      "schemas_used": [
+        "SOSA"
+      ],
+      "neighborhood_triples_2hop": 76
+    },
+    {
+      "type": "Cross-domain",
+      "name": "QUDT unit bindings",
+      "rows": 4,
+      "count_value": null,
+      "nonempty": true,
+      "schemas_used": [
+        "QUDT"
+      ],
+      "neighborhood_triples_2hop": 74
+    },
+    {
+      "type": "Cross-domain",
+      "name": "Brick sensors (SAT)",
+      "rows": 1,
+      "count_value": null,
+      "nonempty": true,
+      "schemas_used": [
+        "Brick"
+      ],
+      "neighborhood_triples_2hop": 61
+    },
+    {
+      "type": "Cross-domain",
+      "name": "223P equipment",
+      "rows": 1,
+      "count_value": null,
+      "nonempty": true,
+      "schemas_used": [
+        "ASHRAE223P"
+      ],
+      "neighborhood_triples_2hop": 84
+    },
+    {
+      "type": "Temporal",
+      "name": "Count SAT rows (last 60 min)",
+      "rows": 1,
+      "value": 57,
+      "nonempty": true,
+      "schemas_used": [
+        "TimescaleDB"
+      ],
+      "neighborhood_triples_2hop": 0
+    },
+    {
+      "type": "Temporal",
+      "name": "Latest SAT value",
+      "rows": 1,
+      "value": 19.49,
+      "nonempty": true,
+      "schemas_used": [
+        "TimescaleDB"
+      ],
+      "neighborhood_triples_2hop": 0
+    },
+    {
+      "type": "Temporal",
+      "name": "Avg SAT value (last 60 min)",
+      "rows": 1,
+      "value": 19.89771929824561,
+      "nonempty": true,
+      "schemas_used": [
+        "TimescaleDB"
+      ],
+      "neighborhood_triples_2hop": 0
+    },
+    {
+      "type": "Temporal",
+      "name": "Min/Max SAT value (last 60 min)",
+      "rows": 1,
+      "value": [
+        19.49,
+        20.21
+      ],
+      "nonempty": true,
+      "schemas_used": [
+        "TimescaleDB"
+      ],
+      "neighborhood_triples_2hop": 0
+    },
+    {
+      "type": "Temporal",
+      "name": "15-min buckets SAT (last 60 min)",
+      "rows": 5,
+      "value": 5,
+      "nonempty": true,
+      "schemas_used": [
+        "TimescaleDB"
+      ],
+      "neighborhood_triples_2hop": 0
+    }
+  ]
+}

@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: rig_password
       POSTGRES_DB: rig_timeseries
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - timescale_data:/var/lib/postgresql/data
     restart: unless-stopped

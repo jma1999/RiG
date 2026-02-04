@@ -1,14 +1,15 @@
+import os
 import random
 from datetime import datetime, timedelta, timezone
 
 import psycopg2
 
 conn = psycopg2.connect(
-    host="localhost",
-    port=5432,
-    dbname="rig_timeseries",
-    user="rig_user",
-    password="rig_password",
+    host=os.getenv("TIMESCALEDB_HOST", "localhost"),
+    port=int(os.getenv("TIMESCALEDB_PORT", "5432")),
+    dbname=os.getenv("TIMESCALEDB_DB", "rig_timeseries"),
+    user=os.getenv("TIMESCALEDB_USER", "rig_user"),
+    password=os.getenv("TIMESCALEDB_PASSWORD", "rig_password"),
 )
 conn.autocommit = True
 
