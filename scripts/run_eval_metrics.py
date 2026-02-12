@@ -29,11 +29,10 @@ OUT_JSON = BASE_DIR / "data/processed/eval_metrics.json"
 OUT_MD = BASE_DIR / "docs/eval_metrics.md"
 
 
-IFC = Namespace("http://standards.buildingsmart.org/IFC/DEV/IFC2x3/TC1/OWL#")
+IFC_LD = Namespace("http://ifc-ld.org/schemas/")  # Coverage: ifc2x3# and ifc4#
+IFC_LD_SCHEMA = Namespace("http://ifc-ld.org/schemas/ifc2x3#")  # IFC entity queries
 BRICK = Namespace("https://brickschema.org/schema/Brick#")
 S223 = Namespace("http://data.ashrae.org/standard223#")
-SOSA = Namespace("http://www.w3.org/ns/sosa/")
-QUDT = Namespace("http://qudt.org/schema/qudt/")
 
 
 def load_graph() -> Graph:
@@ -55,12 +54,11 @@ def run_select(graph: Graph, query: str) -> List[Dict[str, Any]]:
 
 
 def namespace_coverage(rows: List[Dict[str, Any]]) -> Dict[str, bool]:
+    """Check coverage of Brick, 223P, IFC-LD (no ifcOWL, SOSA, QUDT)."""
     namespaces = {
-        "IFC": str(IFC),
+        "IFC-LD": str(IFC_LD),
         "Brick": str(BRICK),
         "ASHRAE223P": str(S223),
-        "SOSA": str(SOSA),
-        "QUDT": str(QUDT),
     }
     coverage = {k: False for k in namespaces}
     for row in rows:
@@ -139,72 +137,72 @@ def main() -> None:
         {
             "type": "Spatial",
             "name": "Count IfcSpace",
-            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC}IfcSpace> . }}",
-            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC}IfcSpace> . }} LIMIT 10",
-            "schemas": ["IFC"],
+            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcSpace> . }}",
+            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcSpace> . }} LIMIT 10",
+            "schemas": ["IFC-LD"],
         },
         {
             "type": "Spatial",
             "name": "Count IfcBuildingStorey",
-            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC}IfcBuildingStorey> . }}",
-            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC}IfcBuildingStorey> . }} LIMIT 10",
-            "schemas": ["IFC"],
+            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcBuildingStorey> . }}",
+            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcBuildingStorey> . }} LIMIT 10",
+            "schemas": ["IFC-LD"],
         },
         {
             "type": "Spatial",
             "name": "Count IfcDoor",
-            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC}IfcDoor> . }}",
-            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC}IfcDoor> . }} LIMIT 10",
-            "schemas": ["IFC"],
+            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcDoor> . }}",
+            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcDoor> . }} LIMIT 10",
+            "schemas": ["IFC-LD"],
         },
         {
             "type": "Spatial",
             "name": "Count IfcWindow",
-            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC}IfcWindow> . }}",
-            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC}IfcWindow> . }} LIMIT 10",
-            "schemas": ["IFC"],
+            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcWindow> . }}",
+            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcWindow> . }} LIMIT 10",
+            "schemas": ["IFC-LD"],
         },
         {
             "type": "Spatial",
             "name": "List IfcSpace (sample)",
-            "query": f"SELECT ?s WHERE {{ ?s a <{IFC}IfcSpace> . }} LIMIT 10",
-            "schemas": ["IFC"],
+            "query": f"SELECT ?s WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcSpace> . }} LIMIT 10",
+            "schemas": ["IFC-LD"],
         },
         # System-level
         {
             "type": "System",
             "name": "Count IfcFlowTerminal",
-            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC}IfcFlowTerminal> . }}",
-            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC}IfcFlowTerminal> . }} LIMIT 10",
-            "schemas": ["IFC"],
+            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcFlowTerminal> . }}",
+            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcFlowTerminal> . }} LIMIT 10",
+            "schemas": ["IFC-LD"],
         },
         {
             "type": "System",
             "name": "Count IfcEnergyConversionDevice",
-            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC}IfcEnergyConversionDevice> . }}",
-            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC}IfcEnergyConversionDevice> . }} LIMIT 10",
-            "schemas": ["IFC"],
+            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcEnergyConversionDevice> . }}",
+            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcEnergyConversionDevice> . }} LIMIT 10",
+            "schemas": ["IFC-LD"],
         },
         {
             "type": "System",
             "name": "Count IfcFlowSegment",
-            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC}IfcFlowSegment> . }}",
-            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC}IfcFlowSegment> . }} LIMIT 10",
-            "schemas": ["IFC"],
+            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcFlowSegment> . }}",
+            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcFlowSegment> . }} LIMIT 10",
+            "schemas": ["IFC-LD"],
         },
         {
             "type": "System",
             "name": "Count IfcDistributionElement",
-            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC}IfcDistributionElement> . }}",
-            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC}IfcDistributionElement> . }} LIMIT 10",
-            "schemas": ["IFC"],
+            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcDistributionElement> . }}",
+            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcDistributionElement> . }} LIMIT 10",
+            "schemas": ["IFC-LD"],
         },
         {
             "type": "System",
             "name": "Count IfcSystem",
-            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC}IfcSystem> . }}",
-            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC}IfcSystem> . }} LIMIT 10",
-            "schemas": ["IFC"],
+            "query": f"SELECT (COUNT(?s) AS ?count) WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcSystem> . }}",
+            "seed_query": f"SELECT ?s WHERE {{ ?s a <{IFC_LD_SCHEMA}IfcSystem> . }} LIMIT 10",
+            "schemas": ["IFC-LD"],
         },
         # Cross-domain (requires semantic overlay)
         {
@@ -218,26 +216,6 @@ def main() -> None:
                 }} LIMIT 50
             """,
             "schemas": ["Brick", "ASHRAE223P"],
-        },
-        {
-            "type": "Cross-domain",
-            "name": "SOSA observable properties",
-            "query": f"""
-                SELECT ?p WHERE {{
-                    ?p a <{SOSA}ObservableProperty> .
-                }} LIMIT 50
-            """,
-            "schemas": ["SOSA"],
-        },
-        {
-            "type": "Cross-domain",
-            "name": "QUDT unit bindings",
-            "query": f"""
-                SELECT ?p ?unit WHERE {{
-                    ?p <{QUDT}hasUnit> ?unit .
-                }} LIMIT 50
-            """,
-            "schemas": ["QUDT"],
         },
         {
             "type": "Cross-domain",

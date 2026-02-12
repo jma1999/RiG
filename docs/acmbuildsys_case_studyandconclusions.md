@@ -91,7 +91,7 @@
 | **SPARQL Client** | SPARQLWrapper | ≥1.8.6 | SPARQL query execution |
 | **JSON-LD** | pyld | ≥2.0.3 | JSON-LD processing |
 | **IFC Parser** | ifcopenshell | ≥0.8.0 | IFC-SPF file parsing |
-| **IFC→RDF** | IFCtoRDF | 0.4 | Java-based ifcOWL conversion |
+| **IFC→RDF** | ifcld-service | - | Native IFC-LD conversion |
 
 ### AI/ML Stack
 
@@ -259,7 +259,7 @@ ifcopenshell>=0.8.0
 ### Conversion Toolchain
 - **Tool**: IFCtoRDF v0.4 (Pieter Pauwels, Ghent University)
 - **Reference**: https://github.com/pipauwel/IFCtoRDF
-- **Output ontology**: ifcOWL (W3C Linked Building Data Community Group)
+- **Output ontology**: IFC-LD (ifc-ld.org)
 
 ### Key Function: `convert_ifc_to_turtle()`
 
@@ -364,14 +364,12 @@ def load_turtle_file(
 
 | Ontology | Purpose | Namespace Prefix |
 |----------|---------|------------------|
-| **ifcOWL** | Physical geometry, spatial structure | `ifc:` |
-| **Brick Schema** | Operational vocabulary, point classification | `brick:` |
+| **IFC-LD** | Physical geometry, spatial structure | `ifc:` |
+| **Brick Schema** | Operational vocabulary, point classification, units | `brick:` |
 | **ASHRAE 223P** | Equipment topology, connection semantics | `s223:` |
-| **SSN/SOSA** | Sensor/observation modeling | `sosa:` |
-| **QUDT** | Units and quantities | `qudt:`, `unit:` |
 
 ### Layering Pattern
-- Base layer: ifcOWL triples (auto-generated from IFC)
+- Base layer: IFC-LD triples (from ifcld-service conversion)
 - Overlay layer: Brick/223P triples (manually or semi-auto constructed)
 - Linking predicate: `ex:representsIfcElement` bridges IFC instance → operational entity
 
@@ -381,9 +379,10 @@ def load_turtle_file(
 @prefix ifc:   <http://ifc-ld.org/schemas/ifc2x3#> .
 @prefix brick: <https://brickschema.org/schema/Brick#> .
 @prefix s223:  <http://data.ashrae.org/standard223#> .
-@prefix sosa:  <http://www.w3.org/ns/sosa/> .
-@prefix qudt:  <http://qudt.org/schema/qudt/> .
-@prefix unit:  <http://qudt.org/vocab/unit/> .
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
 ```
 
 ### Multi-Classification Pattern
@@ -417,7 +416,7 @@ ex:FT_136276
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <https://example.com/rig#> .
 @prefix brick: <https://brickschema.org/schema/Brick#> .
-@prefix qudt: <http://qudt.org/schema/qudt/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 ex:BACnetPointShape
     a sh:NodeShape ;
@@ -437,10 +436,10 @@ ex:BACnetPointShape
                "binaryInput" "binaryOutput" "binaryValue") ;
     ] ;
     sh:property [
-        sh:path qudt:hasUnit ;
+        sh:path brick:hasUnit ;
         sh:nodeKind sh:IRI ;
         sh:minCount 1 ;
-        sh:message "BACnet point must have a QUDT unit"@en ;
+        sh:message "BACnet point must have a Brick unit"@en ;
     ] .
 ```
 
@@ -525,13 +524,11 @@ async def seed_telemetry_data(point_id: str, count: int = 60):
 ex:FT_136276_air-temp
     a s223:Property ,
       s223:QuantifiableObservableProperty ,
-      sosa:ObservableProperty ,
       brick:Supply_Air_Temperature_Sensor ;
     rdfs:label "FT_136276 supply air temperature"@en ;
     
-    # QUDT unit binding
-    qudt:hasQuantityKind quantitykind:Temperature ;
-    qudt:hasUnit unit:DEG_C ;
+    # Brick unit binding
+    brick:hasUnit brick:DegreeCelsius ;
     
     # BACnet external reference
     s223:hasExternalReference ex:FT_136276_air-temp_bacnetRef ;
@@ -778,7 +775,7 @@ $$
 ### Key Contributions
 - Standards-first architecture using W3C RDF, SHACL, SPARQL
 - Static/dynamic data separation via IRI references
-- Multi-ontology layering (ifcOWL + Brick + 223P + SSN/SOSA + QUDT)
+- Multi-ontology layering (IFC-LD + Brick + 223P)
 - LLM-agnostic GraphRAG over semantic building data
 
 ### Limitations

@@ -12,7 +12,7 @@ import os
 import sys
 import pathlib
 import argparse
-from typing import List, Set, Dict, Any, Optional
+from typing import List, Set, Dict, Any, Optional, Iterable
 import ifcopenshell
 
 # Facility Management MVD - Core entity types to retain
@@ -86,178 +86,177 @@ FACILITY_MGMT_TYPES = {
     "IfcGeometricRepresentationItem",
 }
 
-
-def get_required_relationships(ifc_file: ifcopenshell.file) -> Set[str]:
-    """
-    Get all GlobalIds of entities that are referenced by entities we're keeping.
-    This ensures we maintain referential integrity.
-    """
-    required_ids: Set[str] = set()
-    
-    # Get all entities we're keeping
-    kept_entities = []
-    for entity_type in FACILITY_MGMT_TYPES:
-        try:
-            entities = ifc_file.by_type(entity_type)
-            kept_entities.extend(entities)
-        except Exception:
-            continue
-    
-    # Collect all GlobalIds of kept entities
-    for entity in kept_entities:
-        try:
-            gid = entity.GlobalId
-            if gid:
-                required_ids.add(str(gid))
-        except Exception:
-            pass
-    
-    # For each kept entity, collect all referenced entities
-    for entity in kept_entities:
-        # Get all attributes that might reference other entities
+def _iter_refs_forward(entity):
+    """Yield forward references from entity attributes."""
+    try:
         for attr in entity:
             if attr is None:
                 continue
-            
-            # Handle single references
-            if hasattr(attr, 'GlobalId'):
-                try:
-                    required_ids.add(str(attr.GlobalId))
-                except Exception:
-                    pass
-            
-            # Handle lists/tuples of references
             if isinstance(attr, (list, tuple)):
                 for item in attr:
-                    if hasattr(item, 'GlobalId'):
-                        try:
-                            required_ids.add(str(item.GlobalId))
-                        except Exception:
-                            pass
-    
-    return required_ids
+                    if hasattr(item, "id"):
+                        yield item
+            else:
+                if hasattr(attr, "id"):
+                    yield attr
+    except Exception:
+        return
 
+def _iter_refs_inverse(ifc_file: ifcopenshell.file, entity):
+    """Yield inverse references (things that point to this entity)."""
+    try:
+        # In IfcOpenShell, get_inverse returns all inverse relationships
+        inv = ifc_file.get_inverse(entity)
+        for x in inv:
+            yield x
+    except Exception:
+        return
 
-def apply_mvd_reduction(input_path: str, output_path: str, 
-                        base_uri: Optional[str] = None) -> Dict[str, Any]:
+def _bfs_closure(ifc_file: ifcopenshell.file, seeds: Iterable, max_nodes: Optional[int] = None) -> Set[int]:
     """
-    Apply Facility Management MVD reduction to an IFC file.
-    
-    Args:
-        input_path: Path to input IFC-SPF file
-        output_path: Path to output reduced IFC-SPF file
-        base_uri: Optional base URI for RDF conversion (not used here but kept for consistency)
-    
-    Returns:
-        Dictionary with reduction statistics
+    Compute transitive closure of reachable entities by forward + inverse refs.
+    Returns a set of STEP ids (entity.id()).
     """
-    input_path = pathlib.Path(input_path)
-    output_path = pathlib.Path(output_path)
-    
-    if not input_path.exists():
-        raise FileNotFoundError(f"Input file not found: {input_path}")
-    
-    print(f"📖 Loading IFC file: {input_path}")
-    ifc_file = ifcopenshell.open(str(input_path))
-    
-    # Get initial statistics
-    all_entities = ifc_file.by_type("IfcRoot")  # Most entities inherit from IfcRoot
-    initial_count = len(all_entities)
-    
-    print(f"📊 Initial entity count: {initial_count}")
-    
-    # Get entities we want to keep
-    kept_entities = []
-    type_counts: Dict[str, int] = {}
-    
-    for entity_type in FACILITY_MGMT_TYPES:
+    keep_ids: Set[int] = set()
+    queue = []
+
+    for s in seeds:
         try:
-            entities = ifc_file.by_type(entity_type)
-            count = len(entities)
-            if count > 0:
-                type_counts[entity_type] = count
-                kept_entities.extend(entities)
-        except Exception as e:
-            # Entity type might not exist in this IFC schema version
-            continue
-    
-    # Get required relationships
-    print("🔗 Collecting required relationships...")
-    required_ids = get_required_relationships(ifc_file)
-    
-    # Create a new IFC file with only the entities we need
-    print("✂️  Creating reduced IFC file...")
-    
-    # Start with a fresh IFC file using the same schema
-    schema_version = ifc_file.schema
-    reduced_file = ifcopenshell.file(schema=schema_version)
-    
-    # Copy header information
-    ifc_file.wrapped_data.header.file_description.description = \
-        ifc_file.wrapped_data.header.file_description.description or ()
-    ifc_file.wrapped_data.header.file_name.name = \
-        ifc_file.wrapped_data.header.file_name.name or ""
-    
-    # Use IfcOpenShell's add() method to copy entities
-    # We'll keep entities that are in our required set
-    entities_to_copy = set()
-    for entity in kept_entities:
-        entities_to_copy.add(entity)
-    
-    # Also include any entities referenced by required_ids
-    for entity in all_entities:
-        try:
-            if str(entity.GlobalId) in required_ids:
-                entities_to_copy.add(entity)
+            sid = s.id()
+            if sid and sid not in keep_ids:
+                keep_ids.add(sid)
+                queue.append(s)
         except Exception:
             continue
-    
-    # Copy entities to new file
-    # Note: IfcOpenShell doesn't have a direct "copy entity" method,
-    # so we'll use a workaround: create a new file and add entities
-    # Actually, the best approach is to use IfcOpenShell's save functionality
-    # with entity filtering. However, IfcOpenShell doesn't support filtering directly.
-    # We'll need to use a different approach: write entities manually or
-    # use IfcOpenShell's entity removal methods.
-    
-    # For now, let's use a simpler approach: save the file and note that
-    # full entity filtering would require more complex logic or a different tool.
-    # We'll create a script that at least documents what should be kept.
-    
-    # Save reduced file (this is a simplified version - full implementation
-    # would require more sophisticated entity copying)
-    print(f"💾 Saving reduced IFC file: {output_path}")
-    
-    # Note: Full entity filtering requires more complex logic.
-    # For now, we'll save the file and log what was selected.
-    # A more complete implementation would use IfcOpenShell's entity manipulation
-    # or a third-party tool for precise filtering.
-    
-    # Create output directory if needed
+
+    while queue:
+        cur = queue.pop()
+        # forward refs
+        for nxt in _iter_refs_forward(cur):
+            try:
+                nid = nxt.id()
+                if nid and nid not in keep_ids:
+                    keep_ids.add(nid)
+                    queue.append(nxt)
+            except Exception:
+                pass
+
+        # inverse refs
+        for nxt in _iter_refs_inverse(ifc_file, cur):
+            try:
+                nid = nxt.id()
+                if nid and nid not in keep_ids:
+                    keep_ids.add(nid)
+                    queue.append(nxt)
+            except Exception:
+                pass
+
+        if max_nodes is not None and len(keep_ids) >= max_nodes:
+            break
+
+    return keep_ids
+
+def _count_step_entities(path: pathlib.Path) -> int:
+    n = 0
+    with open(path, "r", errors="ignore") as f:
+        for line in f:
+            if line.lstrip().startswith("#") and "=" in line:
+                n += 1
+    return n
+
+def apply_mvd_reduction(input_path: str, output_path: str, base_uri: Optional[str] = None) -> Dict[str, Any]:
+    input_path = pathlib.Path(input_path)
+    output_path = pathlib.Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    # Save the file (simplified - in production you'd want more sophisticated filtering)
-    ifc_file.write(str(output_path))
-    
-    final_count = len(entities_to_copy)
-    reduction_percentage = ((initial_count - final_count) / initial_count * 100) if initial_count > 0 else 0
-    
+
+    if not input_path.exists():
+        raise FileNotFoundError(f"Input file not found: {input_path}")
+
+    print(f"📖 Loading IFC file: {input_path}")
+    ifc_file = ifcopenshell.open(str(input_path))
+
+    initial_step_count = _count_step_entities(input_path)
+    print(f"📊 Initial STEP entity count: {initial_step_count}")
+
+    # 1) Seed selection (FM types)
+    seeds = []
+    type_counts: Dict[str, int] = {}
+    for t in FACILITY_MGMT_TYPES:
+        try:
+            ents = ifc_file.by_type(t)
+            if ents:
+                type_counts[t] = len(ents)
+                seeds.extend(ents)
+        except Exception:
+            continue
+
+    print(f"🌱 Seed entities collected: {len(seeds)} (across {len(type_counts)} types)")
+    print("🔗 Building referential closure (forward + inverse refs)...")
+
+    keep_ids = _bfs_closure(ifc_file, seeds)
+    print(f"✅ Closure size (unique STEP ids): {len(keep_ids)}")
+
+    # 2) Copy subset to new file
+    # IfcOpenShell 0.8.x includes util.file for copying; API differs slightly across versions.
+    # We'll use a robust pattern: create target file and add entities by "add()" which deep-copies dependencies.
+    schema_version = ifc_file.schema
+    reduced = ifcopenshell.file(schema=schema_version)
+
+    # Copy header (minimal)
+    try:
+        reduced.wrapped_data.header = ifc_file.wrapped_data.header
+    except Exception:
+        pass
+
+    # IMPORTANT:
+    # reduced.add(entity) in IfcOpenShell will clone the entity and referenced entities,
+    # but we only want those in keep_ids. So we add in a stable order and skip others.
+    # We'll first map id->entity from original.
+    id_map = {}
+    for e in ifc_file:
+        try:
+            id_map[e.id()] = e
+        except Exception:
+            continue
+
+    # Add entities in ascending STEP id order to preserve stability
+    added = 0
+    for sid in sorted(keep_ids):
+        ent = id_map.get(sid)
+        if ent is None:
+            continue
+        try:
+            reduced.add(ent)
+            added += 1
+        except Exception:
+            # Some entities may fail to add individually; ignore and continue
+            pass
+
+    print(f"✂️  Added to reduced file (attempted): {added}")
+
+    print(f"💾 Saving reduced IFC file: {output_path}")
+    reduced.write(str(output_path))
+
+    final_step_count = _count_step_entities(output_path)
+    reduction_pct = (1 - (final_step_count / initial_step_count)) * 100 if initial_step_count else 0.0
+
     stats = {
-        "initial_count": initial_count,
-        "final_count": final_count,
-        "reduction_percentage": round(reduction_percentage, 2),
+        "initial_step_entities": initial_step_count,
+        "final_step_entities": final_step_count,
+        "selected_closure_ids": len(keep_ids),
+        "seed_count": len(seeds),
+        "reduction_percentage": round(reduction_pct, 2),
         "type_counts": type_counts,
-        "kept_entities": len(kept_entities),
-        "required_ids": len(required_ids),
     }
-    
-    print(f"✅ MVD reduction complete!")
-    print(f"   Initial entities: {initial_count}")
-    print(f"   Kept entities: {final_count}")
-    print(f"   Reduction: {reduction_percentage:.2f}%")
-    print(f"   Entity types kept: {len(type_counts)}")
-    
+
+    print("✅ MVD reduction complete!")
+    print(f"   Initial STEP entities: {initial_step_count}")
+    print(f"   Final   STEP entities: {final_step_count}")
+    print(f"   Reduction: {reduction_pct:.2f}%")
+    print(f"   Seed types used: {len(type_counts)}")
+
     return stats
+
 
 
 def main():

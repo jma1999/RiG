@@ -22,6 +22,7 @@ from typing import Optional, Dict, Any
 # Import pipeline components
 from ingest.mvd_reduction import apply_mvd_reduction
 from ingest.ifc_to_rdf import convert_ifc_to_turtle
+from ingest.ifc_to_rdf_ifcld import convert_ifc_to_turtle as convert_ifc_to_turtle_ifcld
 from ingest.graphdb_client import GraphDBClient
 from ingest.shacl_validation import validate_graph
 
@@ -35,7 +36,9 @@ def run_pipeline(
     validate: bool = True,
     shacl_shapes: Optional[str] = None,
     export_jsonld: bool = False,
-    skip_mvd: bool = False
+    skip_mvd: bool = False,
+    converter: str = "ifcld",
+    ifcld_service_url: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Run complete IFC to RDF pipeline.
@@ -47,9 +50,11 @@ def run_pipeline(
         graphdb_url: GraphDB base URL
         graphdb_repo: GraphDB repository name
         validate: Whether to run SHACL validation
-        shacl_shapes: Path to SHACL shapes file (defaults to ingest/ifc2x3.ttl)
+        shacl_shapes: Path to SHACL shapes file (defaults to ingest/ifc2x3.fixed.ttl)
         export_jsonld: Whether to export as JSON-LD
         skip_mvd: Skip MVD reduction step
+        converter: "ifcld" (native IFC-LD) or "ifctordf" (Peter Pauwels ifcOWL)
+        ifcld_service_url: URL for ifcld-service (when converter="ifcld")
     
     Returns:
         Dictionary with pipeline results
@@ -98,13 +103,21 @@ def run_pipeline(
     turtle_file = output_dir / (pathlib.Path(current_ifc).stem + ".ttl")
     
     try:
-        rdf_stats = convert_ifc_to_turtle(
-            str(current_ifc),
-            str(turtle_file),
-            base_uri=base_uri
-        )
+        if converter == "ifcld":
+            rdf_stats = convert_ifc_to_turtle_ifcld(
+                str(current_ifc),
+                str(turtle_file),
+                base_uri=base_uri,
+                service_url=ifcld_service_url or os.getenv("IFCLD_SERVICE_URL", "http://localhost:5000"),
+            )
+        else:
+            rdf_stats = convert_ifc_to_turtle(
+                str(current_ifc),
+                str(turtle_file),
+                base_uri=base_uri
+            )
         pipeline_results["steps"]["rdf_conversion"] = rdf_stats
-        print(f"✅ RDF conversion complete")
+        print(f"✅ RDF conversion complete ({converter})")
     except Exception as e:
         print(f"❌ RDF conversion failed: {e}")
         pipeline_results["steps"]["rdf_conversion"] = {"error": str(e)}
@@ -148,7 +161,7 @@ def run_pipeline(
         
         if shacl_shapes is None:
             # Default to ingest/ifc2x3.ttl
-            shacl_shapes = pathlib.Path(__file__).parent / "ifc2x3.ttl"
+            shacl_shapes = pathlib.Path(__file__).parent / "ifc2x3.fixed.ttl"
         else:
             shacl_shapes = pathlib.Path(shacl_shapes)
         
@@ -234,11 +247,15 @@ def main():
     parser.add_argument("--skip-validation", action="store_true",
                        help="Skip SHACL validation")
     parser.add_argument("--shacl-shapes", default=None,
-                       help="Path to SHACL shapes file (defaults to ingest/ifc2x3.ttl)")
+                       help="Path to SHACL shapes file (defaults to ingest/ifc2x3.fixed.ttl)")
     parser.add_argument("--export-jsonld", action="store_true",
                        help="Export as JSON-LD")
     parser.add_argument("--skip-mvd", action="store_true",
                        help="Skip MVD schema reduction")
+    parser.add_argument("--converter", choices=["ifcld", "ifctordf"], default="ifcld",
+                       help="RDF converter: ifcld (native IFC-LD) or ifctordf (ifcOWL)")
+    parser.add_argument("--ifcld-url", default=None,
+                       help="IFC-LD service URL (default: http://localhost:5000)")
     parser.add_argument("--results", default=None,
                        help="Output JSON file for pipeline results")
     
@@ -254,7 +271,9 @@ def main():
             validate=not args.skip_validation,
             shacl_shapes=args.shacl_shapes,
             export_jsonld=args.export_jsonld,
-            skip_mvd=args.skip_mvd
+            skip_mvd=args.skip_mvd,
+            converter=args.converter,
+            ifcld_service_url=args.ifcld_url,
         )
         
         # Save results if requested

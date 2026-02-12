@@ -329,7 +329,7 @@ function FacilityOS() {
         // Use SPARQL to query GraphDB
         const sparqlQuery = `
           PREFIX brick: <https://brickschema.org/schema/Brick#>
-          PREFIX ifc: <http://www.buildingsmart-tech.org/ifcOWL/IFC2X3#>
+          PREFIX ifc: <http://ifc-ld.org/schemas/ifc2x3#>
           SELECT ?subject ?predicate ?object WHERE {
             ?subject ?predicate ?object .
             FILTER(

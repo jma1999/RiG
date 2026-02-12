@@ -5,7 +5,7 @@ SHACL Validation for IFC-LD RDF Graphs.
 This module validates RDF graphs against SHACL shapes to ensure IFC-LD compliance.
 Uses the pyshacl library for validation.
 
-Reference: IFC2x3 SHACL schema (ingest/ifc2x3.ttl)
+Reference: IFC2x3 SHACL schema (ingest/ifc2x3.fixed.ttl)
 """
 import os
 import sys

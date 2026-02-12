@@ -245,8 +245,6 @@ async def get_semantic_layers():
         query = """
         PREFIX s223: <http://data.ashrae.org/standard223#>
         PREFIX brick: <https://brickschema.org/schema/Brick#>
-        PREFIX sosa: <http://www.w3.org/ns/sosa/>
-        PREFIX qudt: <http://qudt.org/schema/qudt/>
         PREFIX ifc: <http://ifc-ld.org/schemas/ifc2x3#>
         
         SELECT ?layer (COUNT(DISTINCT ?entity) as ?count)
@@ -262,18 +260,8 @@ async def get_semantic_layers():
             }
             UNION
             {
-                ?entity a sosa:ObservableProperty .
-                BIND ("SOSA Observable" as ?layer)
-            }
-            UNION
-            {
-                ?entity a qudt:Quantity .
-                BIND ("QUDT Quantity" as ?layer)
-            }
-            UNION
-            {
                 ?entity a ifc:IfcFlowTerminal .
-                BIND ("IFC Flow Terminal" as ?layer)
+                BIND ("IFC-LD Flow Terminal" as ?layer)
             }
         }
         GROUP BY ?layer
@@ -298,8 +286,7 @@ async def get_semantic_layers():
                 {"layer": "IFC-LD", "count": 1250},
                 {"layer": "223P Equipment", "count": 45},
                 {"layer": "Brick Points", "count": 180},
-                {"layer": "SOSA Observable", "count": 120},
-                {"layer": "QUDT Quantity", "count": 150}
+                {"layer": "IFC-LD Flow Terminal", "count": 150}
             ]
         }
 

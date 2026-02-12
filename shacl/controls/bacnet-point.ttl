@@ -2,7 +2,6 @@
 @prefix ex: <https://example.com/rig#> .
 @prefix brick: <https://brickschema.org/schema/Brick#> .
 @prefix s223: <http://data.ashrae.org/standard223#> .
-@prefix qudt: <http://qudt.org/schema/qudt/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -38,11 +37,11 @@ ex:BACnetPointShape
         sh:message "BACnet point must have an object instance"@en ;
     ] ;
     sh:property [
-        sh:path qudt:hasUnit ;
+        sh:path brick:hasUnit ;
         sh:nodeKind sh:IRI ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
-        sh:message "BACnet point must have a QUDT unit"@en ;
+        sh:message "BACnet point must have a Brick unit"@en ;
     ] ;
     sh:property [
         sh:path rdfs:label ;

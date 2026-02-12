@@ -1,6 +1,17 @@
 # version: "3.8"   # optional; Compose ignores this now
 
 services:
+  # IFC-LD Instance Builder - native IFC to RDF conversion (devonsparks/ifcld-service)
+  # Start with: docker compose --profile ifcld up -d ifcld-service
+  ifcld-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.ifcld
+    ports:
+      - "5050:5000"
+    profiles:
+      - ifcld
+
   timescaledb:
     image: timescale/timescaledb:2.16.1-pg16
     environment:

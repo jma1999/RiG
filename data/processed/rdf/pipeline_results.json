@@ -1,0 +1,79 @@
+{
+  "input_file": "data/raw/ifc/20231012_CASE Office.ifc",
+  "output_dir": "data/processed/rdf",
+  "steps": {
+    "mvd_reduction": {
+      "initial_step_entities": 216252,
+      "final_step_entities": 216252,
+      "selected_closure_ids": 216252,
+      "seed_count": 48851,
+      "reduction_percentage": 0.0,
+      "type_counts": {
+        "IfcRelAggregates": 4,
+        "IfcWindow": 32,
+        "IfcPropertySetDefinition": 1181,
+        "IfcRelServicesBuildings": 3,
+        "IfcPropertyEnumeratedValue": 46,
+        "IfcColumn": 17,
+        "IfcSite": 1,
+        "IfcRelContainedInSpatialStructure": 7,
+        "IfcMaterial": 30,
+        "IfcPropertyBoundedValue": 2,
+        "IfcShapeRepresentation": 618,
+        "IfcRelConnectsElements": 21,
+        "IfcPropertySet": 1084,
+        "IfcProject": 1,
+        "IfcBuilding": 1,
+        "IfcBuildingStorey": 3,
+        "IfcWall": 25,
+        "IfcSlab": 1,
+        "IfcDistributionElement": 111,
+        "IfcFlowSegment": 44,
+        "IfcFlowTerminal": 32,
+        "IfcMaterialLayer": 4,
+        "IfcRelDefinesByType": 62,
+        "IfcPropertySingleValue": 415,
+        "IfcElementQuantity": 89,
+        "IfcSystem": 3,
+        "IfcProductDefinitionShape": 455,
+        "IfcFlowMovingDevice": 3,
+        "IfcDistributionFlowElement": 111,
+        "IfcWallStandardCase": 25,
+        "IfcGeometricRepresentationItem": 42917,
+        "IfcRelDefinesByProperties": 1090,
+        "IfcMaterialList": 11,
+        "IfcDoor": 4,
+        "IfcTypeObject": 62,
+        "IfcRelConnectsPortToElement": 239,
+        "IfcSpace": 6,
+        "IfcRelConnectsPorts": 88,
+        "IfcRelAssignsToGroup": 3
+      }
+    },
+    "rdf_conversion": {
+      "success": true,
+      "input_file": "data/processed/rdf/20231012_CASE Office_reduced.ifc",
+      "output_file": "data/processed/rdf/20231012_CASE Office_reduced.ttl",
+      "input_size_mb": 10.31,
+      "output_size_mb": 56.09,
+      "base_uri": null,
+      "converter": "ifcld-service"
+    },
+    "graphdb_ingestion": {
+      "repository": "rig-facility-mgmt",
+      "statements": 0,
+      "size": {
+        "inferred": 921640,
+        "total": 6445237,
+        "explicit": 5523597
+      }
+    },
+    "shacl_validation": {
+      "error": "Validation path too deep!\n<NodeShape ifcrelconnectsports> -> <PropertyConstraintComponent on <NodeShape ifcrelconnectsports>> -> <PropertyShape relatedport> -> <NodeConstraintComponent on <PropertyShape relatedport>> -> <NodeShape ifcport> -> <AndConstraintComponent on <NodeShape ifcport>> -> <NodeShape ifcproduct> -> <AndConstraintComponent on <NodeShape ifcproduct>> -> <NodeShape ifcobject> -> <AndConstraintComponent on <NodeShape ifcobject>> -> <NodeShape ifcobjectdefinition> -> <AndConstraintComponent on <NodeShape ifcobjectdefinition>> -> <NodeShape ifcroot> -> <PropertyConstraintComponent on <NodeShape ifcroot>> -> <PropertyShape ownerhistory> -> <NodeConstraintComponent on <PropertyShape ownerhistory>> -> <NodeShape ifcownerhistory> -> <PropertyConstraintComponent on <NodeShape ifcownerhistory>> -> <PropertyShape owningapplication> -> <NodeConstraintComponent on <PropertyShape owningapplication>> -> <NodeShape ifcapplication> -> <PropertyConstraintComponent on <NodeShape ifcapplication>> -> <PropertyShape applicationdeveloper> -> <NodeConstraintComponent on <PropertyShape applicationdeveloper>> -> <NodeShape ifcorganization> -> <PropertyConstraintComponent on <NodeShape ifcorganization>> -> <PropertyShape name> -> <NodeConstraintComponent on <PropertyShape name>> -> <NodeShape http://ifc-ld.org/schemas/ifc2x3#ifcidentifier> -> <PropertyConstraintComponent on <NodeShape http://ifc-ld.org/schemas/ifc2x3#ifcidentifier>>"
+    },
+    "jsonld_export": {
+      "output_file": "data/processed/rdf/20231012_CASE Office_reduced.jsonld"
+    }
+  },
+  "success": true
+}

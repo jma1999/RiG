@@ -7,8 +7,12 @@ This document describes the new IFC-LD RDF pipeline that replaces the previous N
 ## Architecture
 
 ```
-IFC-SPF → MVD Reduction → IFCtoRDF → Turtle → GraphDB → SHACL Validation → JSON-LD → GraphRAG (SPARQL)
+IFC-SPF → MVD Reduction → IFC-LD Converter (default) or IFCtoRDF → Turtle → GraphDB → SHACL Validation → JSON-LD → GraphRAG (SPARQL + LLM)
 ```
+
+- **IFC-LD converter**: Uses [devonsparks/ifcld-service](https://github.com/devonsparks/ifcld-service) for native IFC-LD output (default).
+- **NL-to-SPARQL**: Uses OpenAI LLM when `OPENAI_API_KEY` is set; falls back to keyword heuristics otherwise.
+- **Graph traversal**: Neighborhood expansion with ranking (hop distance, connectivity, keyword match).
 
 ## Components
 
@@ -26,27 +30,30 @@ python ingest/mvd_reduction.py input.ifc output_reduced.ifc
 - Keeps essential spatial structure, building elements, and distribution systems
 - Reduces file size for faster RDF conversion
 
-### 2. IFC to RDF Conversion (`ingest/ifc_to_rdf.py`)
+### 2. IFC to RDF Conversion (IFC-LD or IFCtoRDF)
 
-**Purpose**: Convert IFC-SPF files to RDF Turtle format using IFCtoRDF (Java).
+**Default: IFC-LD converter** (`ingest/ifc_to_rdf_ifcld.py`)
 
-**Usage**:
+Uses the [ifcld-service](https://github.com/devonsparks/ifcld-service) HTTP API for native IFC-LD output.
+
+**Prerequisites**:
 ```bash
-# Single file
-python ingest/ifc_to_rdf.py input.ifc output.ttl --base-uri https://example.com/ifc/
-
-# Directory
-python ingest/ifc_to_rdf.py --dir input_dir/ output_dir/ --base-uri https://example.com/ifc/
+# Start IFC-LD service via Docker
+docker compose --profile ifcld up -d ifcld-service
+# Or: docker build -f Dockerfile.ifcld . && docker run -d -p 5000:5000 <image>
 ```
 
-**Requirements**:
-- Java JDK 8+ installed
-- IFCtoRDF JAR (auto-downloads from GitHub releases)
+**Usage** (via pipeline):
+```bash
+python ingest/ifc_to_rdf_pipeline.py input.ifc --output-dir data/processed/rdf --converter ifcld
+```
 
-**Features**:
-- Converts IFC to ifcOWL-compliant RDF
-- Supports IFC2x3, IFC4, and IFC4x3
-- Memory-efficient processing with configurable heap size
+**Alternative: IFCtoRDF** (`ingest/ifc_to_rdf.py`) – Peter Pauwels ifcOWL converter
+
+```bash
+python ingest/ifc_to_rdf_pipeline.py input.ifc --converter ifctordf
+# Requires Java JDK 8+ and IFCtoRDF JAR
+```
 
 ### 3. GraphDB Client (`ingest/graphdb_client.py`)
 
@@ -109,18 +116,21 @@ python ingest/ifc_to_rdf_pipeline.py input.ifc \
 
 ### 6. SPARQL GraphRAG (`rag/sparql_rag.py`)
 
-**Purpose**: GraphRAG using SPARQL queries instead of Cypher.
+**Purpose**: GraphRAG using SPARQL queries with LLM-based NL-to-SPARQL and neighborhood expansion ranking.
 
 **Usage**:
 ```bash
-python rag/sparql_rag.py "show me all doors" \
-    --repository rig-facility-mgmt \
-    --top-k 20
+# With OpenAI (set OPENAI_API_KEY for LLM-based SPARQL generation)
+python rag/sparql_rag.py "show me all doors" --repository rig-facility-mgmt --top-k 20
+
+# Heuristics only (no API key needed)
+python rag/sparql_rag.py "how many doors are in the building?" --no-llm --output evidence.json
 ```
 
 **Features**:
-- Natural language to SPARQL query generation
-- Graph neighborhood expansion
+- **LLM-based NL-to-SPARQL**: Uses OpenAI GPT-4o-mini when `OPENAI_API_KEY` is set
+- **Heuristics fallback**: Keyword-based patterns when LLM unavailable
+- **Neighborhood expansion ranking**: Ranks nodes by hop distance, connectivity, and keyword match
 - Evidence building for LLM context
 
 ## Quick Start
@@ -167,7 +177,14 @@ GRAPHDB_REPOSITORY=rig-facility-mgmt
 GRAPHDB_USERNAME=  # Optional
 GRAPHDB_PASSWORD=  # Optional
 
-# IFCtoRDF
+# IFC-LD converter (default)
+IFCLD_SERVICE_URL=http://localhost:5000
+
+# OpenAI for NL-to-SPARQL (optional; falls back to heuristics if unset)
+OPENAI_API_KEY=
+OPENAI_NL2SPARQL_MODEL=gpt-4o-mini
+
+# IFCtoRDF (when --converter ifctordf)
 IFCTORDF_JAR_PATH=  # Optional, auto-downloads if not set
 JAVA_MEMORY=8g  # Java heap memory
 

@@ -49,6 +49,9 @@ fastapi-websocket>=0.0.1
 # Or pip if a wheel exists for your platform:
 ifcopenshell>=0.8.0
 
+# LLM for NL-to-SPARQL (OpenAI)
+openai>=1.0.0
+
 # RDF and GraphDB support
 rdflib>=6.0.0
 pyshacl>=0.23.0  # SHACL validation
