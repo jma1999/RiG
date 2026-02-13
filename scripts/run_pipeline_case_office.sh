@@ -37,7 +37,6 @@ PYTHONPATH="$(pwd)" python -m ingest.ifc_to_rdf_pipeline "$INPUT_IFC" \
   --output-dir "$OUTPUT_DIR" \
   --converter ifcld \
   --ifcld-url "$IFCLD_BASE_URL" \
-  --export-jsonld \
   --results "$OUTPUT_DIR/pipeline_results.json"
 
 echo ""

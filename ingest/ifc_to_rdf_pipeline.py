@@ -7,7 +7,6 @@ This script orchestrates the complete pipeline from IFC-SPF to RDF graph:
 2. IFC to RDF (Turtle) conversion
 3. GraphDB ingestion
 4. SHACL validation
-5. JSON-LD export (optional)
 
 Usage:
     python ingest/ifc_to_rdf_pipeline.py input.ifc --output-dir data/processed/rdf/
@@ -35,7 +34,6 @@ def run_pipeline(
     graphdb_repo: str = "rig-facility-mgmt",
     validate: bool = True,
     shacl_shapes: Optional[str] = None,
-    export_jsonld: bool = False,
     skip_mvd: bool = False,
     converter: str = "ifcld",
     ifcld_service_url: Optional[str] = None,
@@ -50,8 +48,7 @@ def run_pipeline(
         graphdb_url: GraphDB base URL
         graphdb_repo: GraphDB repository name
         validate: Whether to run SHACL validation
-        shacl_shapes: Path to SHACL shapes file (defaults to ingest/ifc2x3.fixed.ttl)
-        export_jsonld: Whether to export as JSON-LD
+        shacl_shapes: Path to SHACL shapes file (defaults to ingest/ifc2x3.fixed.fm4.ttl)
         skip_mvd: Skip MVD reduction step
         converter: "ifcld" (native IFC-LD) or "ifctordf" (Peter Pauwels ifcOWL)
         ifcld_service_url: URL for ifcld-service (when converter="ifcld")
@@ -161,7 +158,7 @@ def run_pipeline(
         
         if shacl_shapes is None:
             # Default to ingest/ifc2x3.ttl
-            shacl_shapes = pathlib.Path(__file__).parent / "ifc2x3.fixed.ttl"
+            shacl_shapes = pathlib.Path(__file__).parent / "ifc2x3.fixed.fm4.ttl"
         else:
             shacl_shapes = pathlib.Path(shacl_shapes)
         
@@ -184,26 +181,6 @@ def run_pipeline(
             print(f"⚠️  SHACL shapes file not found: {shacl_shapes}")
             pipeline_results["steps"]["shacl_validation"] = {"error": "SHACL shapes file not found"}
     
-    # Step 5: JSON-LD Export (optional)
-    if export_jsonld:
-        print("\n📤 Step 5: JSON-LD Export")
-        print("-" * 60)
-        
-        try:
-            jsonld_file = output_dir / (pathlib.Path(current_ifc).stem + ".jsonld")
-            export_success = client.export_as_jsonld(str(jsonld_file))
-            
-            if export_success:
-                pipeline_results["steps"]["jsonld_export"] = {
-                    "output_file": str(jsonld_file)
-                }
-                print(f"✅ JSON-LD export complete")
-            else:
-                pipeline_results["steps"]["jsonld_export"] = {"error": "Export failed"}
-        except Exception as e:
-            print(f"⚠️  JSON-LD export error: {e}")
-            pipeline_results["steps"]["jsonld_export"] = {"error": str(e)}
-    
     # Pipeline summary
     print("\n" + "=" * 60)
     print("📊 Pipeline Summary")
@@ -223,10 +200,6 @@ def run_pipeline(
     
     print(f"\n📁 Output files:")
     print(f"   Turtle: {turtle_file}")
-    if "jsonld_export" in pipeline_results["steps"]:
-        jsonld_file = pipeline_results["steps"]["jsonld_export"].get("output_file")
-        if jsonld_file:
-            print(f"   JSON-LD: {jsonld_file}")
     
     return pipeline_results
 
@@ -247,7 +220,7 @@ def main():
     parser.add_argument("--skip-validation", action="store_true",
                        help="Skip SHACL validation")
     parser.add_argument("--shacl-shapes", default=None,
-                       help="Path to SHACL shapes file (defaults to ingest/ifc2x3.fixed.ttl)")
+                       help="Path to SHACL shapes file (defaults to ingest/ifc2x3.fixed.fm4.ttl)")
     parser.add_argument("--export-jsonld", action="store_true",
                        help="Export as JSON-LD")
     parser.add_argument("--skip-mvd", action="store_true",
@@ -270,7 +243,6 @@ def main():
             graphdb_repo=args.graphdb_repo,
             validate=not args.skip_validation,
             shacl_shapes=args.shacl_shapes,
-            export_jsonld=args.export_jsonld,
             skip_mvd=args.skip_mvd,
             converter=args.converter,
             ifcld_service_url=args.ifcld_url,
