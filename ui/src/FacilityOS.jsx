@@ -209,25 +209,27 @@ function FacilityOS() {
       const sparqlQuery = `
         PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        PREFIX ifc:  <http://ifc-ld.org/schemas/ifc2x3#>
         PREFIX s223: <http://data.ashrae.org/standard223#>
         PREFIX brick1: <http://brickschema.org/schema/1.1.0/Brick#>
 
         SELECT ?s ?sLabel ?p ?o ?oLabel
         WHERE {
-          ?s ?p ?o .
-          FILTER(isIRI(?s) && isIRI(?o))
-          FILTER(?p IN (
-            skos:exactMatch,
-            brick1:isPointOf, brick1:hasPart, brick1:isPartOf,
-            s223:hasPhysicalLocation, s223:observes, s223:hasZone,
-            s223:hasProperty, s223:connected
-          ))
+          {
+            SELECT ?s ?p ?o WHERE {
+              ?s ?p ?o .
+              FILTER(isIRI(?s) && isIRI(?o))
+              FILTER(?p IN (
+                skos:exactMatch,
+                brick1:isPointOf, brick1:hasPart, brick1:isPartOf,
+                s223:hasPhysicalLocation, s223:observes, s223:hasZone,
+                s223:hasProperty, s223:connected
+              ))
+            }
+            LIMIT 500
+          }
           OPTIONAL { ?s rdfs:label ?sLabel }
           OPTIONAL { ?o rdfs:label ?oLabel }
         }
-        LIMIT 500
       `;
       
       const res = await fetch(`${API_BASE}/graphdb/sparql`, {
