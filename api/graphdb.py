@@ -66,11 +66,16 @@ async def execute_sparql(query_request: SPARQLQueryRequest):
     """Execute a SPARQL query against GraphDB."""
     try:
         client = get_graphdb_client()
-        results = client.execute_sparql_query(
+        raw = client.execute_sparql_query(
             query_request.query,
             output_format=query_request.format
         )
-        return {"results": results}
+        # SPARQLWrapper returns {"head": ..., "results": {"bindings": [...]}}.
+        # Flatten so the API always returns {"results": {"bindings": [...]}}
+        # instead of double-nesting {"results": {"head": ..., "results": {...}}}.
+        if isinstance(raw, dict) and "results" in raw:
+            return {"results": raw["results"]}
+        return {"results": raw}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"SPARQL query failed: {str(e)}")
 

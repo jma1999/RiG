@@ -31,7 +31,7 @@ logger = logging.getLogger("chat")
 GRAPHDB_URL = os.getenv("GRAPHDB_URL", "http://localhost:7200")
 GRAPHDB_REPOSITORY = os.getenv("GRAPHDB_REPOSITORY", "rig-facility-mgmt")
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip().strip('"').strip("'")
 CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", os.getenv("OPENAI_NL2SPARQL_MODEL", "gpt-4o-mini"))
 
 SYSTEM_PROMPT = """\

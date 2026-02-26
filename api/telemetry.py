@@ -125,6 +125,104 @@ async def list_telemetry_points():
         }
 
 
+@router.get("/graph-sensors")
+async def get_graph_sensors():
+    """
+    Query GraphDB for all s223:Sensor entities and merge with TimescaleDB
+    to show every sensor (even offline ones with no readings yet).
+    """
+    import sys, pathlib
+    sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
+
+    sensors_from_graph = []
+    try:
+        from api.graphdb import get_graphdb_client
+        client = get_graphdb_client()
+        query = """
+        PREFIX s223: <http://data.ashrae.org/standard223#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX qudt: <http://qudt.org/schema/qudt/>
+
+        SELECT DISTINCT ?sensor ?label ?sensorType ?quantityKind
+        WHERE {
+          ?sensor a ?sensorType .
+          FILTER(
+            ?sensorType = s223:Sensor ||
+            ?sensorType = s223:HumiditySensor ||
+            ?sensorType = s223:TemperatureSensor ||
+            ?sensorType = s223:OccupantPresenceSensor
+          )
+          OPTIONAL { ?sensor rdfs:label ?label }
+          OPTIONAL { ?sensor s223:observes ?prop .
+                     ?prop qudt:hasQuantityKind ?quantityKind }
+        }
+        ORDER BY ?label
+        """
+        raw = client.execute_sparql_query(query, output_format="json")
+        bindings = []
+        if isinstance(raw, dict):
+            inner = raw.get("results", raw)
+            bindings = inner.get("bindings", []) if isinstance(inner, dict) else []
+
+        for b in bindings:
+            uri = b.get("sensor", {}).get("value", "")
+            label = b.get("label", {}).get("value", "")
+            s_type = b.get("sensorType", {}).get("value", "").split("#")[-1]
+            qk = b.get("quantityKind", {}).get("value", "").split("#")[-1] if b.get("quantityKind") else ""
+            short = label or uri.split("/")[-1].split("#")[-1]
+            point_id = f"dt_sensor_{short.lower().replace('sensor', '').strip().zfill(2)}" if "sensor" in short.lower() else f"graph_{short.lower().replace(' ', '_')}"
+            sensors_from_graph.append({
+                "point_id": point_id,
+                "label": short,
+                "uri": uri,
+                "sensor_type": s_type,
+                "quantity_kind": qk,
+                "source": "223p",
+                "status": "OFFLINE",
+                "data_points": 0
+            })
+    except Exception as e:
+        print(f"[graph-sensors] Could not query GraphDB: {e}")
+
+    # Merge with actual TimescaleDB data
+    live_points = set()
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT DISTINCT point_id, COUNT(*) as cnt,
+                   MAX(time) as last_reading
+            FROM telemetry_sample
+            GROUP BY point_id
+        """)
+        for row in cur.fetchall():
+            live_points.add(row["point_id"])
+            for s in sensors_from_graph:
+                if s["point_id"] == row["point_id"]:
+                    s["status"] = "LIVE"
+                    s["data_points"] = row["cnt"]
+                    s["last_reading"] = row["last_reading"].isoformat() if row["last_reading"] else None
+                    break
+            else:
+                sensors_from_graph.append({
+                    "point_id": row["point_id"],
+                    "label": row["point_id"],
+                    "uri": "",
+                    "sensor_type": "",
+                    "quantity_kind": "",
+                    "source": "timescaledb",
+                    "status": "LIVE",
+                    "data_points": row["cnt"],
+                    "last_reading": row["last_reading"].isoformat() if row["last_reading"] else None
+                })
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"[graph-sensors] Could not query TimescaleDB: {e}")
+
+    return {"sensors": sensors_from_graph}
+
+
 @router.get("/points/{point_id}", response_model=TelemetryResponse)
 async def get_telemetry_data(
     point_id: str,

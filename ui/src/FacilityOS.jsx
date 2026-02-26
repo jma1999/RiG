@@ -43,6 +43,7 @@ function FacilityOS() {
   const [facilityHealth, setFacilityHealth] = useState(98.5);
   const [assets, setAssets] = useState([]);
   const [spaces, setSpaces] = useState([]);
+  const [graphSensors, setGraphSensors] = useState([]);
 
   // Load initial graph data
   useEffect(() => {
@@ -50,6 +51,7 @@ function FacilityOS() {
     loadAlerts();
     loadMaintenanceTasks();
     loadAssetsAndSpaces();
+    loadGraphSensors();
   }, []);
   
   const loadAssetsAndSpaces = async () => {
@@ -61,36 +63,29 @@ function FacilityOS() {
         PREFIX s223:  <http://data.ashrae.org/standard223#>
         PREFIX brick1: <http://brickschema.org/schema/1.1.0/Brick#>
         PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
-        PREFIX skos:  <http://www.w3.org/2004/02/skos/core#>
 
         SELECT DISTINCT ?space ?name ?type ?source
         WHERE {
           {
-            GRAPH <https://example.com/case-office/g/ifcld> {
-              ?space a ifc:ifcspace .
-              OPTIONAL { ?space ifc:name ?ifcName }
-              OPTIONAL { ?space rdfs:label ?rdfsName }
-            }
+            ?space a ifc:ifcspace .
+            OPTIONAL { ?space ifc:name ?ifcName }
+            OPTIONAL { ?space rdfs:label ?rdfsName }
             BIND(COALESCE(?rdfsName, ?ifcName, REPLACE(STR(?space), "^.*/|^.*#", "")) AS ?name)
             BIND("IFC Space" AS ?type)
             BIND("ifcld" AS ?source)
           }
           UNION
           {
-            GRAPH <https://example.com/case-office/g/223p> {
-              ?space a s223:PhysicalSpace .
-              OPTIONAL { ?space rdfs:label ?lab223 }
-            }
+            ?space a s223:PhysicalSpace .
+            OPTIONAL { ?space rdfs:label ?lab223 }
             BIND(COALESCE(?lab223, REPLACE(STR(?space), "^.*/", "")) AS ?name)
             BIND("223P Space" AS ?type)
             BIND("223p" AS ?source)
           }
           UNION
           {
-            GRAPH <https://example.com/case-office/g/brick> {
-              ?space a brick1:Room .
-              OPTIONAL { ?space rdfs:label ?labBrick }
-            }
+            ?space a brick1:Room .
+            OPTIONAL { ?space rdfs:label ?labBrick }
             BIND(COALESCE(?labBrick, REPLACE(REPLACE(STR(?space), "^.*#", ""), "_", " ")) AS ?name)
             BIND("Brick Room" AS ?type)
             BIND("brick" AS ?source)
@@ -109,44 +104,38 @@ function FacilityOS() {
         SELECT DISTINCT ?asset ?name ?type ?source
         WHERE {
           {
-            GRAPH <https://example.com/case-office/g/ifcld> {
-              ?asset a ?ifcType .
-              FILTER(?ifcType IN (
-                ifc:ifcflowterminal, ifc:ifcflowsegment, ifc:ifcflowfitting,
-                ifc:ifcenergyconversiondevice, ifc:ifcflowcontroller,
-                ifc:ifcflowmovingdevice, ifc:ifcflowstoragedevice,
-                ifc:ifcflowtreatmentdevice, ifc:ifcsensor, ifc:ifcactuator
-              ))
-              OPTIONAL { ?asset ifc:name ?ifcName }
-              OPTIONAL { ?asset rdfs:label ?rdfsName }
-            }
+            ?asset a ?ifcType .
+            FILTER(?ifcType IN (
+              ifc:ifcflowterminal, ifc:ifcflowsegment, ifc:ifcflowfitting,
+              ifc:ifcenergyconversiondevice, ifc:ifcflowcontroller,
+              ifc:ifcflowmovingdevice, ifc:ifcflowstoragedevice,
+              ifc:ifcflowtreatmentdevice, ifc:ifcsensor, ifc:ifcactuator
+            ))
+            OPTIONAL { ?asset ifc:name ?ifcName }
+            OPTIONAL { ?asset rdfs:label ?rdfsName }
             BIND(COALESCE(?rdfsName, ?ifcName, REPLACE(STR(?asset), "^.*/|^.*#", "")) AS ?name)
             BIND(REPLACE(STR(?ifcType), "^.*#", "") AS ?type)
             BIND("ifcld" AS ?source)
           }
           UNION
           {
-            GRAPH <https://example.com/case-office/g/223p> {
-              ?asset a ?s223Type .
-              FILTER(?s223Type IN (
-                s223:Sensor, s223:HumiditySensor, s223:TemperatureSensor,
-                s223:OccupantPresenceSensor, s223:Equipment, s223:TerminalUnit
-              ))
-              OPTIONAL { ?asset rdfs:label ?lab223 }
-            }
+            ?asset a ?s223Type .
+            FILTER(?s223Type IN (
+              s223:Sensor, s223:HumiditySensor, s223:TemperatureSensor,
+              s223:OccupantPresenceSensor, s223:Equipment, s223:TerminalUnit
+            ))
+            OPTIONAL { ?asset rdfs:label ?lab223 }
             BIND(COALESCE(?lab223, REPLACE(STR(?asset), "^.*/", "")) AS ?name)
             BIND(REPLACE(STR(?s223Type), "^.*#", "") AS ?type)
             BIND("223p" AS ?source)
           }
           UNION
           {
-            GRAPH <https://example.com/case-office/g/brick> {
-              ?asset a ?brickType .
-              FILTER(?brickType IN (
-                brick1:AHU, brick1:VAV, brick1:HVAC_ZONE, brick1:Floor
-              ))
-              OPTIONAL { ?asset rdfs:label ?labBrick }
-            }
+            ?asset a ?brickType .
+            FILTER(?brickType IN (
+              brick1:AHU, brick1:VAV, brick1:HVAC_ZONE, brick1:Floor
+            ))
+            OPTIONAL { ?asset rdfs:label ?labBrick }
             BIND(COALESCE(?labBrick, REPLACE(REPLACE(STR(?asset), "^.*#", ""), "_", " ")) AS ?name)
             BIND(REPLACE(STR(?brickType), "^.*#", "") AS ?type)
             BIND("brick" AS ?source)
@@ -200,6 +189,19 @@ function FacilityOS() {
     }
   };
 
+  const loadGraphSensors = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/telemetry/graph-sensors`);
+      if (res.ok) {
+        const data = await res.json();
+        setGraphSensors(data.sensors || []);
+        console.log(`Loaded ${(data.sensors || []).length} sensors from GraphDB + TimescaleDB`);
+      }
+    } catch (error) {
+      console.error("Failed to load graph sensors:", error);
+    }
+  };
+
   const loadGraphData = async () => {
     try {
       console.log("Loading overlay graph data from GraphDB...");
@@ -210,73 +212,20 @@ function FacilityOS() {
         PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         PREFIX ifc:  <http://ifc-ld.org/schemas/ifc2x3#>
         PREFIX s223: <http://data.ashrae.org/standard223#>
-        PREFIX brick: <https://brickschema.org/schema/Brick#>
         PREFIX brick1: <http://brickschema.org/schema/1.1.0/Brick#>
-        PREFIX qudt: <http://qudt.org/schema/qudt/>
 
-        SELECT ?s ?sLabel ?sType ?sOntology ?p ?o ?oLabel ?oType ?oOntology
+        SELECT ?s ?sLabel ?p ?o ?oLabel
         WHERE {
-          {
-            GRAPH <https://example.com/case-office/g/overlay> {
-              ?s ?p ?o .
-            }
-          }
-          UNION
-          {
-            GRAPH <https://example.com/case-office/g/223p> {
-              ?s ?p ?o .
-              FILTER(?p IN (
-                s223:hasPhysicalLocation, s223:observes, s223:hasZone,
-                s223:hasProperty, s223:connected, rdf:type
-              ))
-            }
-          }
-          UNION
-          {
-            GRAPH <https://example.com/case-office/g/brick> {
-              ?s ?p ?o .
-              FILTER(?p IN (brick1:hasPart, brick1:isPartOf, rdf:type))
-            }
-          }
-          OPTIONAL {
-            GRAPH ?g1 { ?s rdfs:label ?sLabel }
-          }
-          OPTIONAL {
-            GRAPH ?g2 { ?s a ?sType }
-            FILTER(
-              STRSTARTS(STR(?sType), "http://data.ashrae.org/standard223#") ||
-              STRSTARTS(STR(?sType), "https://brickschema.org/schema/Brick#") ||
-              STRSTARTS(STR(?sType), "http://brickschema.org/schema/") ||
-              STRSTARTS(STR(?sType), "http://ifc-ld.org/")
-            )
-          }
-          OPTIONAL {
-            GRAPH ?g3 { ?o rdfs:label ?oLabel }
-          }
-          OPTIONAL {
-            GRAPH ?g4 { ?o a ?oType }
-            FILTER(
-              STRSTARTS(STR(?oType), "http://data.ashrae.org/standard223#") ||
-              STRSTARTS(STR(?oType), "https://brickschema.org/schema/Brick#") ||
-              STRSTARTS(STR(?oType), "http://brickschema.org/schema/") ||
-              STRSTARTS(STR(?oType), "http://ifc-ld.org/")
-            )
-          }
+          ?s ?p ?o .
           FILTER(isIRI(?s) && isIRI(?o))
-          FILTER(?p != rdf:type)
-
-          BIND(
-            IF(CONTAINS(STR(?s), "ifc-ld.org"), "ifcld",
-              IF(CONTAINS(STR(?s), "ashrae.org"), "223p",
-                IF(CONTAINS(STR(?s), "brickschema.org") || CONTAINS(STR(?s), "mybuilding"), "brick",
-                  "overlay"))) AS ?sOntology
-          )
-          BIND(
-            IF(CONTAINS(STR(?o), "ifc-ld.org"), "ifcld",
-              IF(CONTAINS(STR(?o), "ashrae.org"), "223p",
-                IF(CONTAINS(STR(?o), "brickschema.org") || CONTAINS(STR(?o), "mybuilding"), "brick",
-                  "overlay"))) AS ?oOntology
-          )
+          FILTER(?p IN (
+            skos:exactMatch,
+            brick1:isPointOf, brick1:hasPart, brick1:isPartOf,
+            s223:hasPhysicalLocation, s223:observes, s223:hasZone,
+            s223:hasProperty, s223:connected
+          ))
+          OPTIONAL { ?s rdfs:label ?sLabel }
+          OPTIONAL { ?o rdfs:label ?oLabel }
         }
         LIMIT 500
       `;
@@ -302,10 +251,12 @@ function FacilityOS() {
           return afterSlash?.replace(/_/g, ' ') || uri;
         };
 
-        const classifyType = (typeUri, ontology) => {
-          if (!typeUri) return ontology === 'brick' ? 'Room' : 'Entity';
-          const local = typeUri.split('#').pop();
-          return local || 'Entity';
+        const classifyOntology = (uri) => {
+          if (!uri) return 'overlay';
+          if (uri.includes('ifc-ld.org')) return 'ifcld';
+          if (uri.includes('ashrae.org') || uri.includes('standard223')) return '223p';
+          if (uri.includes('brickschema.org') || uri.includes('mybuilding')) return 'brick';
+          return 'overlay';
         };
         
         for (const b of bindings) {
@@ -315,28 +266,26 @@ function FacilityOS() {
           if (!sUri || !oUri) continue;
           
           if (!nodesMap.has(sUri)) {
-            const ont = b.sOntology?.value || 'overlay';
+            const ont = classifyOntology(sUri);
             nodesMap.set(sUri, {
               id: sUri,
               label: b.sLabel?.value || shortName(sUri),
               name: b.sLabel?.value || shortName(sUri),
-              type: classifyType(b.sType?.value, ont),
+              type: 'Entity',
               ontology: ont,
-              status: 'nominal',
-              ontologyRef: b.sType?.value || ''
+              status: 'nominal'
             });
           }
           
           if (!nodesMap.has(oUri)) {
-            const ont = b.oOntology?.value || 'overlay';
+            const ont = classifyOntology(oUri);
             nodesMap.set(oUri, {
               id: oUri,
               label: b.oLabel?.value || shortName(oUri),
               name: b.oLabel?.value || shortName(oUri),
-              type: classifyType(b.oType?.value, ont),
+              type: 'Entity',
               ontology: ont,
-              status: 'nominal',
-              ontologyRef: b.oType?.value || ''
+              status: 'nominal'
             });
           }
           
@@ -735,7 +684,7 @@ function FacilityOS() {
       case 'assets':
         return <AssetsView assets={assets} spaces={spaces} onNodeClick={handleNodeClick} />;
       case 'telemetry':
-        return <TelemetryPanel data={telemetryData} />;
+        return <TelemetryPanel data={telemetryData} graphSensors={graphSensors} />;
       case 'maintenance':
         return <MaintenancePanel alerts={alerts} tasks={maintenanceTasks} />;
       case 'energy':

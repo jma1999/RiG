@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Activity, RefreshCw } from 'lucide-react';
 import { API_BASE } from "@/lib/env";
 
-const TelemetryPanel = ({ data }) => {
+const TelemetryPanel = ({ data, graphSensors = [] }) => {
   const [telemetryPoints, setTelemetryPoints] = useState([]);
   const [selectedPoint, setSelectedPoint] = useState(data);
   const [loading, setLoading] = useState(false);
@@ -11,30 +11,42 @@ const TelemetryPanel = ({ data }) => {
     if (data) {
       setSelectedPoint(data);
     } else {
-      // Load available telemetry points on mount
       loadTelemetryPoints();
     }
   }, [data]);
 
+  useEffect(() => {
+    if (graphSensors.length > 0 && telemetryPoints.length === 0) {
+      setTelemetryPoints(graphSensors);
+    }
+  }, [graphSensors]);
+
   const loadTelemetryPoints = async () => {
     setLoading(true);
     try {
-      console.log("Loading telemetry points from TimescaleDB...");
+      const gsRes = await fetch(`${API_BASE}/telemetry/graph-sensors`);
+      if (gsRes.ok) {
+        const gsData = await gsRes.json();
+        const sensors = gsData.sensors || [];
+        if (sensors.length > 0) {
+          setTelemetryPoints(sensors);
+          console.log(`Loaded ${sensors.length} sensors from graph-sensors endpoint`);
+          setLoading(false);
+          return;
+        }
+      }
+
       const res = await fetch(`${API_BASE}/telemetry/points`);
       if (res.ok) {
         const result = await res.json();
         const points = result.points || [];
         setTelemetryPoints(points);
-        console.log(`✅ Loaded ${points.length} telemetry points from TimescaleDB`);
+        console.log(`Loaded ${points.length} telemetry points from TimescaleDB`);
         
-        // Auto-select first point if available and no data is selected
         if (points.length > 0 && !selectedPoint) {
           const firstPoint = points[0];
           await loadPointData(firstPoint.point_id);
         }
-      } else {
-        const errorText = await res.text();
-        console.error("Failed to load telemetry points:", res.status, errorText);
       }
     } catch (error) {
       console.error("Failed to load telemetry points:", error);
@@ -100,23 +112,36 @@ const TelemetryPanel = ({ data }) => {
           </div>
         ) : telemetryPoints.length > 0 ? (
           <div className="space-y-2 overflow-y-auto">
-            {telemetryPoints.map((point) => (
-              <button
-                key={point.point_id}
-                onClick={() => loadPointData(point.point_id)}
-                className="w-full text-left p-3 bg-nexus-900/50 border border-nexus-700 rounded-lg hover:border-nexus-accent/50 hover:bg-nexus-900 transition-all"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-white">{point.point_id}</p>
-                    <p className="text-xs text-slate-400">
-                      {point.data_points || 0} readings • Last: {point.last_reading ? new Date(point.last_reading).toLocaleString() : 'N/A'}
-                    </p>
+            {telemetryPoints.map((point) => {
+              const isLive = point.status === 'LIVE';
+              return (
+                <button
+                  key={point.point_id}
+                  onClick={() => isLive ? loadPointData(point.point_id) : null}
+                  className={`w-full text-left p-3 bg-nexus-900/50 border rounded-lg transition-all ${
+                    isLive
+                      ? 'border-nexus-700 hover:border-nexus-accent/50 hover:bg-nexus-900 cursor-pointer'
+                      : 'border-nexus-800 opacity-60 cursor-default'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-white">{point.label || point.point_id}</p>
+                      <p className="text-xs text-slate-400">
+                        {point.sensor_type || point.quantity_kind || 'Sensor'}
+                        {point.data_points ? ` • ${point.data_points} readings` : ''}
+                        {point.last_reading ? ` • Last: ${new Date(point.last_reading).toLocaleString()}` : ''}
+                      </p>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono ${
+                      isLive ? 'bg-green-900/50 text-green-400' : 'bg-slate-800 text-slate-500'
+                    }`}>
+                      {isLive ? 'LIVE' : 'OFFLINE'}
+                    </span>
                   </div>
-                  <Activity size={16} className="text-nexus-accent" />
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-slate-500">

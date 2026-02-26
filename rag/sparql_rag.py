@@ -102,7 +102,7 @@ ENTITY_TO_BRICK = {
 
 
 def _get_openai_client():
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = (os.getenv("OPENAI_API_KEY") or "").strip().strip('"').strip("'")
     if not api_key:
         return None
     try:
