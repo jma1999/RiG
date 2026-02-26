@@ -1,0 +1,52 @@
+@prefix brick1: <http://brickschema.org/schema/1.1.0/Brick#> .
+
+<http://example.com/mybuilding#Level_1> a brick1:Floor ;
+    brick1:hasPart <http://example.com/mybuilding#Kitchen5>,
+        <http://example.com/mybuilding#Meeting_Room3>,
+        <http://example.com/mybuilding#Office1>,
+        <http://example.com/mybuilding#Reception6>,
+        <http://example.com/mybuilding#Space1>,
+        <http://example.com/mybuilding#Space2>,
+        <http://example.com/mybuilding#Space3>,
+        <http://example.com/mybuilding#Space4>,
+        <http://example.com/mybuilding#Space5>,
+        <http://example.com/mybuilding#Space6>,
+        <http://example.com/mybuilding#Work_Area_&_Storage2>,
+        <http://example.com/mybuilding#Work_Area_&_Storage4> .
+
+<http://example.com/mybuilding#Level_2> a brick1:Floor .
+
+<http://example.com/mybuilding#Level_3> a brick1:Floor .
+
+<http://example.com/mybuilding#Kitchen5> a brick1:Room .
+
+<http://example.com/mybuilding#Meeting_Room3> a brick1:Room .
+
+<http://example.com/mybuilding#Office1> a brick1:Room .
+
+<http://example.com/mybuilding#Reception6> a brick1:Room .
+
+<http://example.com/mybuilding#Space1> a brick1:Room ;
+    brick1:isPartOf <http://example.com/mybuilding#Zone_67572> .
+
+<http://example.com/mybuilding#Space2> a brick1:Room ;
+    brick1:isPartOf <http://example.com/mybuilding#Zone_67572> .
+
+<http://example.com/mybuilding#Space3> a brick1:Room ;
+    brick1:isPartOf <http://example.com/mybuilding#Zone_67572> .
+
+<http://example.com/mybuilding#Space4> a brick1:Room ;
+    brick1:isPartOf <http://example.com/mybuilding#Zone_67572> .
+
+<http://example.com/mybuilding#Space5> a brick1:Room ;
+    brick1:isPartOf <http://example.com/mybuilding#Zone_67572> .
+
+<http://example.com/mybuilding#Space6> a brick1:Room ;
+    brick1:isPartOf <http://example.com/mybuilding#Zone_67572> .
+
+<http://example.com/mybuilding#Work_Area_&_Storage2> a brick1:Room .
+
+<http://example.com/mybuilding#Work_Area_&_Storage4> a brick1:Room .
+
+<http://example.com/mybuilding#Zone_67572> a brick1:HVAC_ZONE .
+

@@ -3,16 +3,24 @@ __pycache__/
 *.pyc
 .rigenv/
 .env
+.env.docker
 
 #data
 data/raw/ifc/
 data/raw/ifcjson/
 data/processed/rag/index.faiss
+data/processed/rdf/*.jsonld
+data/processed/rdf/*.ttl
+data/processed/ifcld/
+data/processed/graphdb_snapshots/
 
 # Neo4j
 neo4j/data/
 neo4j/plugins/
 neo4j/import/
+
+# External tools (embedded repos)
+tools/brick-ifc-convert/
 
 # OS / misc
 .DS_Store
