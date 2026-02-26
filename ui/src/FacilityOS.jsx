@@ -54,89 +54,146 @@ function FacilityOS() {
   
   const loadAssetsAndSpaces = async () => {
     try {
-      console.log("Loading assets and spaces from GraphDB...");
+      console.log("Loading assets, spaces, sensors from all graphs...");
       
-      // Query for IFC Spaces
       const spacesQuery = `
-        PREFIX ifc: <http://ifc-ld.org/schemas/ifc2x3#>
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        
-        SELECT DISTINCT ?space ?name ?type
+        PREFIX ifc:   <http://ifc-ld.org/schemas/ifc2x3#>
+        PREFIX s223:  <http://data.ashrae.org/standard223#>
+        PREFIX brick1: <http://brickschema.org/schema/1.1.0/Brick#>
+        PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX skos:  <http://www.w3.org/2004/02/skos/core#>
+
+        SELECT DISTINCT ?space ?name ?type ?source
         WHERE {
-          ?space a ifc:IfcSpace .
-          OPTIONAL { ?space rdfs:label ?name }
-          OPTIONAL { ?space ifc:name ?name }
-          BIND("Space" as ?type)
+          {
+            GRAPH <https://example.com/case-office/g/ifcld> {
+              ?space a ifc:ifcspace .
+              OPTIONAL { ?space ifc:name ?ifcName }
+              OPTIONAL { ?space rdfs:label ?rdfsName }
+            }
+            BIND(COALESCE(?rdfsName, ?ifcName, REPLACE(STR(?space), "^.*/|^.*#", "")) AS ?name)
+            BIND("IFC Space" AS ?type)
+            BIND("ifcld" AS ?source)
+          }
+          UNION
+          {
+            GRAPH <https://example.com/case-office/g/223p> {
+              ?space a s223:PhysicalSpace .
+              OPTIONAL { ?space rdfs:label ?lab223 }
+            }
+            BIND(COALESCE(?lab223, REPLACE(STR(?space), "^.*/", "")) AS ?name)
+            BIND("223P Space" AS ?type)
+            BIND("223p" AS ?source)
+          }
+          UNION
+          {
+            GRAPH <https://example.com/case-office/g/brick> {
+              ?space a brick1:Room .
+              OPTIONAL { ?space rdfs:label ?labBrick }
+            }
+            BIND(COALESCE(?labBrick, REPLACE(REPLACE(STR(?space), "^.*#", ""), "_", " ")) AS ?name)
+            BIND("Brick Room" AS ?type)
+            BIND("brick" AS ?source)
+          }
         }
-        LIMIT 50
+        ORDER BY ?name
+        LIMIT 100
       `;
       
-      // Query for Equipment/Assets
       const assetsQuery = `
-        PREFIX s223: <http://data.ashrae.org/standard223#>
-        PREFIX brick: <https://brickschema.org/schema/Brick#>
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        
-        SELECT DISTINCT ?asset ?name ?type
+        PREFIX ifc:   <http://ifc-ld.org/schemas/ifc2x3#>
+        PREFIX s223:  <http://data.ashrae.org/standard223#>
+        PREFIX brick1: <http://brickschema.org/schema/1.1.0/Brick#>
+        PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+
+        SELECT DISTINCT ?asset ?name ?type ?source
         WHERE {
           {
-            ?asset a s223:Equipment .
-            OPTIONAL { ?asset rdfs:label ?name }
-            BIND("Equipment" as ?type)
+            GRAPH <https://example.com/case-office/g/ifcld> {
+              ?asset a ?ifcType .
+              FILTER(?ifcType IN (
+                ifc:ifcflowterminal, ifc:ifcflowsegment, ifc:ifcflowfitting,
+                ifc:ifcenergyconversiondevice, ifc:ifcflowcontroller,
+                ifc:ifcflowmovingdevice, ifc:ifcflowstoragedevice,
+                ifc:ifcflowtreatmentdevice, ifc:ifcsensor, ifc:ifcactuator
+              ))
+              OPTIONAL { ?asset ifc:name ?ifcName }
+              OPTIONAL { ?asset rdfs:label ?rdfsName }
+            }
+            BIND(COALESCE(?rdfsName, ?ifcName, REPLACE(STR(?asset), "^.*/|^.*#", "")) AS ?name)
+            BIND(REPLACE(STR(?ifcType), "^.*#", "") AS ?type)
+            BIND("ifcld" AS ?source)
           }
           UNION
           {
-            ?asset a brick:AHU .
-            OPTIONAL { ?asset rdfs:label ?name }
-            BIND("AHU" as ?type)
+            GRAPH <https://example.com/case-office/g/223p> {
+              ?asset a ?s223Type .
+              FILTER(?s223Type IN (
+                s223:Sensor, s223:HumiditySensor, s223:TemperatureSensor,
+                s223:OccupantPresenceSensor, s223:Equipment, s223:TerminalUnit
+              ))
+              OPTIONAL { ?asset rdfs:label ?lab223 }
+            }
+            BIND(COALESCE(?lab223, REPLACE(STR(?asset), "^.*/", "")) AS ?name)
+            BIND(REPLACE(STR(?s223Type), "^.*#", "") AS ?type)
+            BIND("223p" AS ?source)
           }
           UNION
           {
-            ?asset a brick:VAV .
-            OPTIONAL { ?asset rdfs:label ?name }
-            BIND("VAV" as ?type)
+            GRAPH <https://example.com/case-office/g/brick> {
+              ?asset a ?brickType .
+              FILTER(?brickType IN (
+                brick1:AHU, brick1:VAV, brick1:HVAC_ZONE, brick1:Floor
+              ))
+              OPTIONAL { ?asset rdfs:label ?labBrick }
+            }
+            BIND(COALESCE(?labBrick, REPLACE(REPLACE(STR(?asset), "^.*#", ""), "_", " ")) AS ?name)
+            BIND(REPLACE(STR(?brickType), "^.*#", "") AS ?type)
+            BIND("brick" AS ?source)
           }
         }
-        LIMIT 50
+        ORDER BY ?name
+        LIMIT 200
       `;
       
-      // Load spaces
-      const spacesRes = await fetch(`${API_BASE}/graphdb/sparql`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: spacesQuery, format: "json" })
-      });
-      
+      const [spacesRes, assetsRes] = await Promise.all([
+        fetch(`${API_BASE}/graphdb/sparql`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: spacesQuery, format: "json" })
+        }),
+        fetch(`${API_BASE}/graphdb/sparql`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: assetsQuery, format: "json" })
+        })
+      ]);
+
       if (spacesRes.ok) {
         const spacesData = await spacesRes.json();
         const spacesList = (spacesData.results?.bindings || []).map(b => ({
           id: b.space?.value || '',
-          name: b.name?.value || b.space?.value.split('/').pop() || 'Unknown Space',
-          type: 'Space',
+          name: b.name?.value || 'Unknown Space',
+          type: b.type?.value || 'Space',
+          source: b.source?.value || '',
           uri: b.space?.value
         }));
         setSpaces(spacesList);
-        console.log(`✅ Loaded ${spacesList.length} spaces`);
+        console.log(`Loaded ${spacesList.length} spaces from all graphs`);
       }
-      
-      // Load assets
-      const assetsRes = await fetch(`${API_BASE}/graphdb/sparql`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: assetsQuery, format: "json" })
-      });
       
       if (assetsRes.ok) {
         const assetsData = await assetsRes.json();
         const assetsList = (assetsData.results?.bindings || []).map(b => ({
           id: b.asset?.value || '',
-          name: b.name?.value || b.asset?.value.split('/').pop() || 'Unknown Asset',
+          name: b.name?.value || 'Unknown Asset',
           type: b.type?.value || 'Equipment',
+          source: b.source?.value || '',
           uri: b.asset?.value,
           status: 'nominal'
         }));
         setAssets(assetsList);
-        console.log(`✅ Loaded ${assetsList.length} assets`);
+        console.log(`Loaded ${assetsList.length} assets from all graphs`);
       }
     } catch (error) {
       console.error("Failed to load assets and spaces:", error);
@@ -145,32 +202,83 @@ function FacilityOS() {
 
   const loadGraphData = async () => {
     try {
-      console.log("Loading graph data from GraphDB...");
+      console.log("Loading overlay graph data from GraphDB...");
       
-      // Try a more comprehensive SPARQL query that includes IFC entities
       const sparqlQuery = `
-        PREFIX ifc: <http://ifc-ld.org/schemas/ifc2x3#>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        PREFIX ex: <https://example.com/rig#>
+        PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX ifc:  <http://ifc-ld.org/schemas/ifc2x3#>
         PREFIX s223: <http://data.ashrae.org/standard223#>
         PREFIX brick: <https://brickschema.org/schema/Brick#>
-        
-        SELECT DISTINCT ?entity ?name ?type ?predicate ?object
+        PREFIX brick1: <http://brickschema.org/schema/1.1.0/Brick#>
+        PREFIX qudt: <http://qudt.org/schema/qudt/>
+
+        SELECT ?s ?sLabel ?sType ?sOntology ?p ?o ?oLabel ?oType ?oOntology
         WHERE {
           {
-            ?entity a ?type .
-            FILTER(
-              STRSTARTS(STR(?type), "http://ifc-ld.org/schemas/ifc2x3#") ||
-              STRSTARTS(STR(?type), "http://data.ashrae.org/standard223#") ||
-              STRSTARTS(STR(?type), "https://brickschema.org/schema/Brick#")
-            )
-            OPTIONAL { ?entity rdfs:label ?name }
-            OPTIONAL { ?entity ifc:name ?name }
-            OPTIONAL { ?entity ?predicate ?object }
-            FILTER (isURI(?object))
+            GRAPH <https://example.com/case-office/g/overlay> {
+              ?s ?p ?o .
+            }
           }
+          UNION
+          {
+            GRAPH <https://example.com/case-office/g/223p> {
+              ?s ?p ?o .
+              FILTER(?p IN (
+                s223:hasPhysicalLocation, s223:observes, s223:hasZone,
+                s223:hasProperty, s223:connected, rdf:type
+              ))
+            }
+          }
+          UNION
+          {
+            GRAPH <https://example.com/case-office/g/brick> {
+              ?s ?p ?o .
+              FILTER(?p IN (brick1:hasPart, brick1:isPartOf, rdf:type))
+            }
+          }
+          OPTIONAL {
+            GRAPH ?g1 { ?s rdfs:label ?sLabel }
+          }
+          OPTIONAL {
+            GRAPH ?g2 { ?s a ?sType }
+            FILTER(
+              STRSTARTS(STR(?sType), "http://data.ashrae.org/standard223#") ||
+              STRSTARTS(STR(?sType), "https://brickschema.org/schema/Brick#") ||
+              STRSTARTS(STR(?sType), "http://brickschema.org/schema/") ||
+              STRSTARTS(STR(?sType), "http://ifc-ld.org/")
+            )
+          }
+          OPTIONAL {
+            GRAPH ?g3 { ?o rdfs:label ?oLabel }
+          }
+          OPTIONAL {
+            GRAPH ?g4 { ?o a ?oType }
+            FILTER(
+              STRSTARTS(STR(?oType), "http://data.ashrae.org/standard223#") ||
+              STRSTARTS(STR(?oType), "https://brickschema.org/schema/Brick#") ||
+              STRSTARTS(STR(?oType), "http://brickschema.org/schema/") ||
+              STRSTARTS(STR(?oType), "http://ifc-ld.org/")
+            )
+          }
+          FILTER(isIRI(?s) && isIRI(?o))
+          FILTER(?p != rdf:type)
+
+          BIND(
+            IF(CONTAINS(STR(?s), "ifc-ld.org"), "ifcld",
+              IF(CONTAINS(STR(?s), "ashrae.org"), "223p",
+                IF(CONTAINS(STR(?s), "brickschema.org") || CONTAINS(STR(?s), "mybuilding"), "brick",
+                  "overlay"))) AS ?sOntology
+          )
+          BIND(
+            IF(CONTAINS(STR(?o), "ifc-ld.org"), "ifcld",
+              IF(CONTAINS(STR(?o), "ashrae.org"), "223p",
+                IF(CONTAINS(STR(?o), "brickschema.org") || CONTAINS(STR(?o), "mybuilding"), "brick",
+                  "overlay"))) AS ?oOntology
+          )
         }
-        LIMIT 200
+        LIMIT 500
       `;
       
       const res = await fetch(`${API_BASE}/graphdb/sparql`, {
@@ -181,72 +289,71 @@ function FacilityOS() {
       
       if (res.ok) {
         const result = await res.json();
-        console.log("GraphDB SPARQL response:", result);
+        const bindings = result.results?.bindings || [];
+        console.log(`GraphDB overlay query returned ${bindings.length} bindings`);
         
-        // Parse SPARQL results
         const nodesMap = new Map();
         const links = [];
+
+        const shortName = (uri) => {
+          if (!uri) return '';
+          const afterHash = uri.split('#').pop();
+          const afterSlash = afterHash?.split('/').pop();
+          return afterSlash?.replace(/_/g, ' ') || uri;
+        };
+
+        const classifyType = (typeUri, ontology) => {
+          if (!typeUri) return ontology === 'brick' ? 'Room' : 'Entity';
+          const local = typeUri.split('#').pop();
+          return local || 'Entity';
+        };
         
-        if (result.results?.bindings) {
-          for (const binding of result.results.bindings) {
-            const entityUri = binding.entity?.value;
-            if (!entityUri) continue;
-            
-            const nodeName = binding.name?.value || 
-                           entityUri.split('/').pop()?.split('#').pop() || 
-                           entityUri.split('#').pop() || 
-                           entityUri;
-            const nodeType = binding.type?.value || '';
-            const typeShort = nodeType.includes('#') 
-              ? nodeType.split('#').pop() 
-              : nodeType.split('/').pop();
-            
-            if (!nodesMap.has(entityUri)) {
-              nodesMap.set(entityUri, {
-                id: entityUri,
-                label: nodeName,
-                name: nodeName,
-                type: typeShort || 'Entity',
-                status: 'nominal',
-                ontologyRef: nodeType
-              });
-            }
-            
-            // Add edge if object is a URI
-            const objectUri = binding.object?.value;
-            if (objectUri && objectUri.startsWith('http')) {
-              const predicate = binding.predicate?.value || '';
-              const predShort = predicate.includes('#')
-                ? predicate.split('#').pop()
-                : predicate.split('/').pop();
-              
-              links.push({
-                source: entityUri,
-                target: objectUri,
-                relationship: predShort || 'related'
-              });
-              
-              // Ensure target node exists
-              if (!nodesMap.has(objectUri)) {
-                const targetName = objectUri.split('/').pop()?.split('#').pop() || objectUri;
-                nodesMap.set(objectUri, {
-                  id: objectUri,
-                  label: targetName,
-                  name: targetName,
-                  type: 'Entity',
-                  status: 'nominal'
-                });
-              }
-            }
+        for (const b of bindings) {
+          const sUri = b.s?.value;
+          const oUri = b.o?.value;
+          const pred = b.p?.value;
+          if (!sUri || !oUri) continue;
+          
+          if (!nodesMap.has(sUri)) {
+            const ont = b.sOntology?.value || 'overlay';
+            nodesMap.set(sUri, {
+              id: sUri,
+              label: b.sLabel?.value || shortName(sUri),
+              name: b.sLabel?.value || shortName(sUri),
+              type: classifyType(b.sType?.value, ont),
+              ontology: ont,
+              status: 'nominal',
+              ontologyRef: b.sType?.value || ''
+            });
           }
+          
+          if (!nodesMap.has(oUri)) {
+            const ont = b.oOntology?.value || 'overlay';
+            nodesMap.set(oUri, {
+              id: oUri,
+              label: b.oLabel?.value || shortName(oUri),
+              name: b.oLabel?.value || shortName(oUri),
+              type: classifyType(b.oType?.value, ont),
+              ontology: ont,
+              status: 'nominal',
+              ontologyRef: b.oType?.value || ''
+            });
+          }
+          
+          const predShort = pred?.includes('#') ? pred.split('#').pop() : pred?.split('/').pop();
+          links.push({
+            source: sUri,
+            target: oUri,
+            relationship: predShort || 'related'
+          });
         }
         
         const nodes = Array.from(nodesMap.values());
         setGraphData({ nodes, links });
-        console.log(`✅ Loaded ${nodes.length} nodes and ${links.length} links from GraphDB`);
+        console.log(`Loaded ${nodes.length} nodes and ${links.length} links from overlay graph`);
       } else {
         const errorText = await res.text();
-        console.error("GraphDB request failed:", res.status, res.statusText, errorText);
+        console.error("GraphDB request failed:", res.status, errorText);
         setGraphData({ nodes: [], links: [] });
       }
     } catch (error) {
@@ -565,26 +672,37 @@ function FacilityOS() {
       if (res.ok) {
         const data = await res.json();
         
-        // Check if the response indicates tool usage
         let toolInvocation = null;
         if (data.tool?.action) {
-          // Execute tool based on action
           const action = data.tool.action;
-          if (action === 'search' && toolHandlers.onQueryGraph) {
+
+          if (action === 'graph' && data.tool.graphData) {
+            setGraphData(data.tool.graphData);
+            setCurrentView('graph');
+            toolInvocation = 'queryGraph';
+          } else if (action === 'search') {
             await toolHandlers.onQueryGraph({ query: data.tool.query || text });
             toolInvocation = 'queryGraph';
-          } else if (action === 'telemetry' && toolHandlers.onGetTelemetry) {
-            await toolHandlers.onGetTelemetry({ assetId: data.tool.asset_id });
+          } else if (action === 'telemetry') {
+            if (data.tool.asset_id) {
+              await toolHandlers.onGetTelemetry({ assetId: data.tool.asset_id });
+            }
             toolInvocation = 'getTelemetry';
           }
         }
+
+        const evidence = data.evidence;
+        const evidenceSummary = evidence
+          ? `${evidence.node_count} nodes, ${evidence.edge_count} edges`
+          : null;
         
         const modelMsg = {
           id: (Date.now() + 1).toString(),
           role: 'model',
           content: data.reply || data.message || "I received your message.",
           timestamp: Date.now(),
-          toolInvocation
+          toolInvocation,
+          evidenceSummary
         };
         
         setMessages(prev => [...prev, modelMsg]);
@@ -751,9 +869,10 @@ function FacilityOS() {
                  <h2 className="text-xl font-light text-white tracking-tight">{viewTitles[currentView]}</h2>
                  {currentView === 'graph' && (
                      <div className="flex gap-2">
-                         <span className="px-2 py-1 bg-nexus-800 rounded text-[10px] text-slate-400">IFC</span>
-                         <span className="px-2 py-1 bg-nexus-800 rounded text-[10px] text-slate-400">BRICK</span>
-                         <span className="px-2 py-1 bg-nexus-800 rounded text-[10px] text-slate-400">223P</span>
+                         <span className="px-2 py-1 bg-nexus-800 rounded text-[10px] text-blue-400">IFC-LD</span>
+                         <span className="px-2 py-1 bg-nexus-800 rounded text-[10px] text-green-400">BRICK</span>
+                         <span className="px-2 py-1 bg-nexus-800 rounded text-[10px] text-purple-400">223P</span>
+                         <span className="px-2 py-1 bg-nexus-800 rounded text-[10px] text-amber-400">OVERLAY</span>
                      </div>
                  )}
              </div>

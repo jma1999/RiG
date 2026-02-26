@@ -2134,33 +2134,6 @@ ifc:ifcoutlettype a sh:NodeShape ;
         ifc:predefinedtype ;
     sh:targetClass ifc:ifcoutlettype .
 
-ifc:ifcownerhistory a sh:NodeShape ;
-    sh:name "ifcownerhistory"@en ;
-    sh:property [ sh:order 0 ;
-            sh:path ifc:owninguser ],
-        [ sh:order 1 ;
-            sh:path ifc:owningapplication ],
-        [ sh:order 2 ;
-            sh:path ifc:state ],
-        [ sh:order 3 ;
-            sh:path ifc:changeaction ],
-        [ sh:order 4 ;
-            sh:path ifc:lastmodifieddate ],
-        [ sh:order 5 ;
-            sh:path ifc:lastmodifyinguser ],
-        [ sh:order 6 ;
-            sh:path ifc:lastmodifyingapplication ],
-        [ sh:order 7 ;
-            sh:path ifc:creationdate ],
-        ifc:changeaction,
-        ifc:creationdate,
-        ifc:lastmodifieddate,
-        ifc:lastmodifyingapplication,
-        ifc:lastmodifyinguser,
-        ifc:owninguser,
-        ifc:state ;
-    sh:targetClass ifc:ifcownerhistory .
-
 ifc:ifcpath a sh:NodeShape ;
     sh:and ( ifc:ifctopologicalrepresentationitem ) ;
     sh:name "ifcpath"@en ;
@@ -2979,6 +2952,31 @@ ifc:ifcrelconnectspathelements a sh:NodeShape ;
         ifc:relatingpriorities ;
     sh:targetClass ifc:ifcrelconnectspathelements .
 
+ifc:ifcrelconnectsports a sh:NodeShape ;
+    sh:and ( ifc:ifcrelconnects ) ;
+    sh:name "ifcrelconnectsports"@en ;
+    sh:property [ sh:order 4 ;
+            sh:path ifc:relatingport ],
+        [ sh:order 5 ;
+            sh:path ifc:relatedport ],
+        [ sh:order 6 ;
+            sh:path ifc:realizingelement ],
+        ifc:realizingelement,
+        ifc:relatedport,
+        ifc:relatingport ;
+    sh:targetClass ifc:ifcrelconnectsports .
+
+ifc:ifcrelconnectsporttoelement a sh:NodeShape ;
+    sh:and ( ifc:ifcrelconnects ) ;
+    sh:name "ifcrelconnectsporttoelement"@en ;
+    sh:property [ sh:order 4 ;
+            sh:path ifc:relatingport ],
+        [ sh:order 5 ;
+            sh:path ifc:relatedelement ],
+        ifc:relatedelement,
+        ifc:relatingport ;
+    sh:targetClass ifc:ifcrelconnectsporttoelement .
+
 ifc:ifcrelconnectsstructuralactivity a sh:NodeShape ;
     sh:and ( ifc:ifcrelconnects ) ;
     sh:name "ifcrelconnectsstructuralactivity"@en ;
@@ -3768,6 +3766,38 @@ ifc:ifcsurfaceofrevolution a sh:NodeShape ;
         ifc:axisposition ;
     sh:targetClass ifc:ifcsurfaceofrevolution .
 
+ifc:ifcsurfacestyleelementselect a sh:NodeShape ;
+    sh:xone ( ifc:ifcsurfacestyleshading ifc:ifcsurfacestylelighting ifc:ifcsurfacestylewithtextures ifc:ifcexternallydefinedsurfacestyle ifc:ifcsurfacestylerefraction ) .
+
+ifc:ifcsurfacestylerendering a sh:NodeShape ;
+    sh:and ( ifc:ifcsurfacestyleshading ) ;
+    sh:name "ifcsurfacestylerendering"@en ;
+    sh:property [ sh:order 1 ;
+            sh:path ifc:transparency ],
+        [ sh:order 2 ;
+            sh:path ifc:diffusecolour ],
+        [ sh:order 3 ;
+            sh:path ifc:transmissioncolour ],
+        [ sh:order 4 ;
+            sh:path ifc:diffusetransmissioncolour ],
+        [ sh:order 5 ;
+            sh:path ifc:reflectioncolour ],
+        [ sh:order 6 ;
+            sh:path ifc:specularcolour ],
+        [ sh:order 7 ;
+            sh:path ifc:specularhighlight ],
+        [ sh:order 8 ;
+            sh:path ifc:reflectancemethod ],
+        ifc:diffusecolour,
+        ifc:diffusetransmissioncolour,
+        ifc:reflectancemethod,
+        ifc:reflectioncolour,
+        ifc:specularcolour,
+        ifc:specularhighlight,
+        ifc:transmissioncolour,
+        ifc:transparency ;
+    sh:targetClass ifc:ifcsurfacestylerendering .
+
 ifc:ifcsweptdisksolid a sh:NodeShape ;
     sh:and ( ifc:ifcsolidmodel ) ;
     sh:name "ifcsweptdisksolid"@en ;
@@ -4317,27 +4347,6 @@ ifc:ifczshapeprofiledef a sh:NodeShape ;
         ifc:webthickness ;
     sh:targetClass ifc:ifczshapeprofiledef .
 
-ifc:diffusecolour a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 0 ;
-    sh:name "diffusecolour"@en ;
-    sh:node ifc:ifccolourorfactor ;
-    sh:path ifc:diffusecolour .
-
-ifc:diffusereflectioncolour a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 1 ;
-    sh:name "diffusereflectioncolour"@en ;
-    sh:node ifc:ifccolourrgb ;
-    sh:path ifc:diffusereflectioncolour .
-
-ifc:dispersionfactor a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 0 ;
-    sh:name "dispersionfactor"@en ;
-    sh:node ifc:ifcreal ;
-    sh:path ifc:dispersionfactor .
-
 ifc:ifcabsorbeddosemeasure a sh:NodeShape ;
     sh:property [ sh:datatype xsd:decimal ;
             sh:maxCount 1 ;
@@ -4458,21 +4467,6 @@ ifc:ifcannotationtextoccurrence a sh:NodeShape ;
     sh:and ( ifc:ifcannotationoccurrence ) ;
     sh:name "ifcannotationtextoccurrence"@en ;
     sh:targetClass ifc:ifcannotationtextoccurrence .
-
-ifc:ifcapplication a sh:NodeShape ;
-    sh:name "ifcapplication"@en ;
-    sh:property [ sh:order 0 ;
-            sh:path ifc:applicationdeveloper ],
-        [ sh:order 1 ;
-            sh:path ifc:version ],
-        [ sh:order 2 ;
-            sh:path ifc:applicationfullname ],
-        [ sh:order 3 ;
-            sh:path ifc:applicationidentifier ],
-        ifc:applicationfullname,
-        ifc:applicationidentifier,
-        ifc:version ;
-    sh:targetClass ifc:ifcapplication .
 
 ifc:ifcarbitraryclosedprofiledef a sh:NodeShape ;
     sh:and ( ifc:ifcprofiledef ) ;
@@ -5851,6 +5845,34 @@ ifc:ifcoutlettypeenum a sh:NodeShape ;
             sh:path rdf:value ] ;
     sh:targetClass ifc:ifcoutlettypeenum .
 
+ifc:ifcownerhistory a sh:NodeShape ;
+    sh:name "ifcownerhistory"@en ;
+    sh:property [ sh:order 0 ;
+            sh:path ifc:owninguser ],
+        [ sh:order 1 ;
+            sh:path ifc:owningapplication ],
+        [ sh:order 2 ;
+            sh:path ifc:state ],
+        [ sh:order 3 ;
+            sh:path ifc:changeaction ],
+        [ sh:order 4 ;
+            sh:path ifc:lastmodifieddate ],
+        [ sh:order 5 ;
+            sh:path ifc:lastmodifyinguser ],
+        [ sh:order 6 ;
+            sh:path ifc:lastmodifyingapplication ],
+        [ sh:order 7 ;
+            sh:path ifc:creationdate ],
+        ifc:changeaction,
+        ifc:creationdate,
+        ifc:lastmodifieddate,
+        ifc:lastmodifyingapplication,
+        ifc:lastmodifyinguser,
+        ifc:owningapplication,
+        ifc:owninguser,
+        ifc:state ;
+    sh:targetClass ifc:ifcownerhistory .
+
 ifc:ifcpermeablecoveringoperationenum a sh:NodeShape ;
     sh:property [ sh:datatype xsd:string ;
             sh:in ( "notdefined" "userdefined" "grill" "louver" "screen" ) ;
@@ -5937,6 +5959,16 @@ ifc:ifcpresentationlayerassignment a sh:NodeShape ;
         ifc:identifier,
         ifc:name ;
     sh:targetClass ifc:ifcpresentationlayerassignment .
+
+ifc:ifcpresentationstyleassignment a sh:NodeShape ;
+    sh:name "ifcpresentationstyleassignment"@en ;
+    sh:property [ sh:order 0 ;
+            sh:path ifc:styles ],
+        ifc:styles ;
+    sh:targetClass ifc:ifcpresentationstyleassignment .
+
+ifc:ifcpresentationstyleselect a sh:NodeShape ;
+    sh:xone ( ifc:ifcnullstyle ifc:ifccurvestyle ifc:ifcsymbolstyle ifc:ifcfillareastyle ifc:ifctextstyle ifc:ifcsurfacestyle ) .
 
 ifc:ifcproceduretypeenum a sh:NodeShape ;
     sh:property [ sh:datatype xsd:string ;
@@ -6663,6 +6695,20 @@ ifc:ifcstructuralsurfacetypeenum a sh:NodeShape ;
             sh:path rdf:value ] ;
     sh:targetClass ifc:ifcstructuralsurfacetypeenum .
 
+ifc:ifcstyleditem a sh:NodeShape ;
+    sh:and ( ifc:ifcrepresentationitem ) ;
+    sh:name "ifcstyleditem"@en ;
+    sh:property [ sh:order 0 ;
+            sh:path ifc:item ],
+        [ sh:order 1 ;
+            sh:path ifc:styles ],
+        [ sh:order 2 ;
+            sh:path ifc:name ],
+        ifc:item,
+        ifc:name,
+        ifc:styles ;
+    sh:targetClass ifc:ifcstyleditem .
+
 ifc:ifcstylemodel a sh:NodeShape ;
     dash:abstract true ;
     sh:and ( ifc:ifcrepresentation ) ;
@@ -6679,6 +6725,50 @@ ifc:ifcsurfaceside a sh:NodeShape ;
             sh:minCount 1 ;
             sh:path rdf:value ] ;
     sh:targetClass ifc:ifcsurfaceside .
+
+ifc:ifcsurfacestyle a sh:NodeShape ;
+    sh:and ( ifc:ifcpresentationstyle ) ;
+    sh:name "ifcsurfacestyle"@en ;
+    sh:property [ sh:order 1 ;
+            sh:path ifc:side ],
+        [ sh:order 2 ;
+            sh:path ifc:styles ],
+        ifc:side,
+        ifc:styles ;
+    sh:targetClass ifc:ifcsurfacestyle .
+
+ifc:ifcsurfacestylelighting a sh:NodeShape ;
+    sh:name "ifcsurfacestylelighting"@en ;
+    sh:property [ sh:order 0 ;
+            sh:path ifc:diffusetransmissioncolour ],
+        [ sh:order 1 ;
+            sh:path ifc:diffusereflectioncolour ],
+        [ sh:order 2 ;
+            sh:path ifc:transmissioncolour ],
+        [ sh:order 3 ;
+            sh:path ifc:reflectancecolour ],
+        ifc:diffusereflectioncolour,
+        ifc:diffusetransmissioncolour,
+        ifc:reflectancecolour,
+        ifc:transmissioncolour ;
+    sh:targetClass ifc:ifcsurfacestylelighting .
+
+ifc:ifcsurfacestylerefraction a sh:NodeShape ;
+    sh:name "ifcsurfacestylerefraction"@en ;
+    sh:property [ sh:order 0 ;
+            sh:path ifc:refractionindex ],
+        [ sh:order 1 ;
+            sh:path ifc:dispersionfactor ],
+        ifc:dispersionfactor,
+        ifc:refractionindex ;
+    sh:targetClass ifc:ifcsurfacestylerefraction .
+
+ifc:ifcsurfacestylewithtextures a sh:NodeShape ;
+    sh:name "ifcsurfacestylewithtextures"@en ;
+    sh:property [ sh:order 0 ;
+            sh:path ifc:textures ],
+        ifc:textures ;
+    sh:targetClass ifc:ifcsurfacestylewithtextures .
 
 ifc:ifcsurfacetextureenum a sh:NodeShape ;
     sh:property [ sh:datatype xsd:string ;
@@ -7107,93 +7197,6 @@ ifc:ifcyearnumber a sh:NodeShape ;
             sh:path rdf:value ] ;
     sh:targetClass ifc:ifcyearnumber .
 
-ifc:realizingelement a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 0 ;
-    sh:name "realizingelement"@en ;
-    sh:node ifc:ifcelement ;
-    sh:path ifc:realizingelement .
-
-ifc:reflectancecolour a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 1 ;
-    sh:name "reflectancecolour"@en ;
-    sh:node ifc:ifccolourrgb ;
-    sh:path ifc:reflectancecolour .
-
-ifc:reflectancemethod a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 1 ;
-    sh:name "reflectancemethod"@en ;
-    sh:node ifc:ifcreflectancemethodenum ;
-    sh:path ifc:reflectancemethod .
-
-ifc:reflectioncolour a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 0 ;
-    sh:name "reflectioncolour"@en ;
-    sh:node ifc:ifccolourorfactor ;
-    sh:path ifc:reflectioncolour .
-
-ifc:refractionindex a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 0 ;
-    sh:name "refractionindex"@en ;
-    sh:node ifc:ifcreal ;
-    sh:path ifc:refractionindex .
-
-ifc:relatedport a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 1 ;
-    sh:name "relatedport"@en ;
-    sh:path ifc:relatedport .
-
-ifc:side a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 1 ;
-    sh:name "side"@en ;
-    sh:node ifc:ifcsurfaceside ;
-    sh:path ifc:side .
-
-ifc:specularcolour a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 0 ;
-    sh:name "specularcolour"@en ;
-    sh:node ifc:ifccolourorfactor ;
-    sh:path ifc:specularcolour .
-
-ifc:specularhighlight a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 0 ;
-    sh:name "specularhighlight"@en ;
-    sh:node ifc:ifcspecularhighlightselect ;
-    sh:path ifc:specularhighlight .
-
-ifc:surfacecolour a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 1 ;
-    sh:name "surfacecolour"@en ;
-    sh:node ifc:ifccolourrgb ;
-    sh:path ifc:surfacecolour .
-
-ifc:textures a sh:PropertyShape ;
-    rdf:ordered true ;
-    sh:maxCount 1 ;
-    sh:minCount 1 ;
-    sh:name "textures"@en ;
-    sh:node dash:ListShape ;
-    sh:path ifc:textures ;
-    sh:property [ sh:minCount 1 ;
-            sh:node ifc:ifcsurfacetexture ;
-            sh:path ( [ sh:zeroOrMorePath rdf:rest ] rdf:first ) ] .
-
-ifc:transparency a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 0 ;
-    sh:name "transparency"@en ;
-    sh:node ifc:ifcnormalisedratiomeasure ;
-    sh:path ifc:transparency .
-
 ifc:acidityconcentration a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
@@ -7362,6 +7365,13 @@ ifc:applicablevalueratio a sh:PropertyShape ;
     sh:name "applicablevalueratio"@en ;
     sh:node ifc:ifcpositiveratiomeasure ;
     sh:path ifc:applicablevalueratio .
+
+ifc:applicationdeveloper a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:name "applicationdeveloper"@en ;
+    sh:node ifc:ifcorganization ;
+    sh:path ifc:applicationdeveloper .
 
 ifc:applicationfullname a sh:PropertyShape ;
     sh:maxCount 1 ;
@@ -8272,13 +8282,19 @@ ifc:destabilizingload a sh:PropertyShape ;
     sh:node xsd:boolean ;
     sh:path ifc:destabilizingload .
 
-ifc:diffusetransmissioncolour a sh:PropertyShape ;
+ifc:diffusecolour a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
-    sh:name "diffusetransmissioncolour"@en ;
-    sh:node ifc:ifccolourorfactor,
-        ifc:ifccolourrgb ;
-    sh:path ifc:diffusetransmissioncolour .
+    sh:name "diffusecolour"@en ;
+    sh:node ifc:ifccolourorfactor ;
+    sh:path ifc:diffusecolour .
+
+ifc:diffusereflectioncolour a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:name "diffusereflectioncolour"@en ;
+    sh:node ifc:ifccolourrgb ;
+    sh:path ifc:diffusereflectioncolour .
 
 ifc:dimensions a sh:PropertyShape ;
     sh:maxCount 1 ;
@@ -8322,6 +8338,13 @@ ifc:discrimination a sh:PropertyShape ;
     sh:name "discrimination"@en ;
     sh:node ifc:ifclabel ;
     sh:path ifc:discrimination .
+
+ifc:dispersionfactor a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:name "dispersionfactor"@en ;
+    sh:node ifc:ifcreal ;
+    sh:path ifc:dispersionfactor .
 
 ifc:displacementx a sh:PropertyShape ;
     sh:maxCount 1 ;
@@ -8998,6 +9021,22 @@ ifc:ifcactor a sh:NodeShape ;
         ifc:theactor ;
     sh:targetClass ifc:ifcactor .
 
+ifc:ifcapplication a sh:NodeShape ;
+    sh:name "ifcapplication"@en ;
+    sh:property [ sh:order 0 ;
+            sh:path ifc:applicationdeveloper ],
+        [ sh:order 1 ;
+            sh:path ifc:version ],
+        [ sh:order 2 ;
+            sh:path ifc:applicationfullname ],
+        [ sh:order 3 ;
+            sh:path ifc:applicationidentifier ],
+        ifc:applicationdeveloper,
+        ifc:applicationfullname,
+        ifc:applicationidentifier,
+        ifc:version ;
+    sh:targetClass ifc:ifcapplication .
+
 ifc:ifcaxis1placement a sh:NodeShape ;
     sh:and ( ifc:ifcplacement ) ;
     sh:name "ifcaxis1placement"@en ;
@@ -9535,6 +9574,20 @@ ifc:ifcreinforcingbarroleenum a sh:NodeShape ;
             sh:path rdf:value ] ;
     sh:targetClass ifc:ifcreinforcingbarroleenum .
 
+ifc:ifcrelconnectselements a sh:NodeShape ;
+    sh:and ( ifc:ifcrelconnects ) ;
+    sh:name "ifcrelconnectselements"@en ;
+    sh:property [ sh:order 4 ;
+            sh:path ifc:connectiongeometry ],
+        [ sh:order 5 ;
+            sh:path ifc:relatingelement ],
+        [ sh:order 6 ;
+            sh:path ifc:relatedelement ],
+        ifc:connectiongeometry,
+        ifc:relatedelement,
+        ifc:relatingelement ;
+    sh:targetClass ifc:ifcrelconnectselements .
+
 ifc:ifcreldecomposes a sh:NodeShape ;
     dash:abstract true ;
     sh:and ( ifc:ifcrelationship ) ;
@@ -9635,6 +9688,13 @@ ifc:ifcstructuralreaction a sh:NodeShape ;
     sh:and ( ifc:ifcstructuralactivity ) ;
     sh:name "ifcstructuralreaction"@en ;
     sh:targetClass ifc:ifcstructuralreaction .
+
+ifc:ifcsurfacestyleshading a sh:NodeShape ;
+    sh:name "ifcsurfacestyleshading"@en ;
+    sh:property [ sh:order 0 ;
+            sh:path ifc:surfacecolour ],
+        ifc:surfacecolour ;
+    sh:targetClass ifc:ifcsurfacestyleshading .
 
 ifc:ifcsweptsurface a sh:NodeShape ;
     dash:abstract true ;
@@ -10106,6 +10166,7 @@ ifc:layerstyles a sh:PropertyShape ;
     rdf:ordered false ;
     sh:minCount 0 ;
     sh:name "layerstyles"@en ;
+    sh:node ifc:ifcpresentationstyleselect ;
     sh:path ifc:layerstyles .
 
 ifc:layerthickness a sh:PropertyShape ;
@@ -10948,6 +11009,20 @@ ifc:owner a sh:PropertyShape ;
     sh:node ifc:ifcactorselect ;
     sh:path ifc:owner .
 
+ifc:ownerhistory a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:name "ownerhistory"@en ;
+    sh:node ifc:ifcownerhistory ;
+    sh:path ifc:ownerhistory .
+
+ifc:owningapplication a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:name "owningapplication"@en ;
+    sh:node ifc:ifcapplication ;
+    sh:path ifc:owningapplication .
+
 ifc:owninguser a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
@@ -11505,6 +11580,13 @@ ifc:ratesource a sh:PropertyShape ;
     sh:node ifc:ifclibraryinformation ;
     sh:path ifc:ratesource .
 
+ifc:realizingelement a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:name "realizingelement"@en ;
+    sh:node ifc:ifcelement ;
+    sh:path ifc:realizingelement .
+
 ifc:realizingelements a sh:PropertyShape ;
     rdf:ordered false ;
     sh:minCount 1 ;
@@ -11580,6 +11662,27 @@ ifc:reflatitude a sh:PropertyShape ;
     sh:node dash:ListShape ;
     sh:path ifc:reflatitude .
 
+ifc:reflectancecolour a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:name "reflectancecolour"@en ;
+    sh:node ifc:ifccolourrgb ;
+    sh:path ifc:reflectancecolour .
+
+ifc:reflectancemethod a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:name "reflectancemethod"@en ;
+    sh:node ifc:ifcreflectancemethodenum ;
+    sh:path ifc:reflectancemethod .
+
+ifc:reflectioncolour a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:name "reflectioncolour"@en ;
+    sh:node ifc:ifccolourorfactor ;
+    sh:path ifc:reflectioncolour .
+
 ifc:reflongitude a sh:PropertyShape ;
     rdf:ordered true ;
     sh:maxCount 1 ;
@@ -11587,6 +11690,13 @@ ifc:reflongitude a sh:PropertyShape ;
     sh:name "reflongitude"@en ;
     sh:node dash:ListShape ;
     sh:path ifc:reflongitude .
+
+ifc:refractionindex a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:name "refractionindex"@en ;
+    sh:node ifc:ifcreal ;
+    sh:path ifc:refractionindex .
 
 ifc:region a sh:PropertyShape ;
     sh:maxCount 1 ;
@@ -11662,13 +11772,6 @@ ifc:relateddraughtingcallout a sh:PropertyShape ;
     sh:node ifc:ifcdraughtingcallout ;
     sh:path ifc:relateddraughtingcallout .
 
-ifc:relatedelement a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 1 ;
-    sh:name "relatedelement"@en ;
-    sh:node ifc:ifcelement ;
-    sh:path ifc:relatedelement .
-
 ifc:relatedfeatureelement a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
@@ -11710,6 +11813,13 @@ ifc:relatedorganizations a sh:PropertyShape ;
     sh:name "relatedorganizations"@en ;
     sh:node ifc:ifcorganization ;
     sh:path ifc:relatedorganizations .
+
+ifc:relatedport a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:name "relatedport"@en ;
+    sh:node ifc:ifcport ;
+    sh:path ifc:relatedport .
 
 ifc:relatedpriorities a sh:PropertyShape ;
     rdf:ordered true ;
@@ -11872,12 +11982,6 @@ ifc:relatingorganization a sh:PropertyShape ;
     sh:name "relatingorganization"@en ;
     sh:node ifc:ifcorganization ;
     sh:path ifc:relatingorganization .
-
-ifc:relatingport a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 1 ;
-    sh:name "relatingport"@en ;
-    sh:path ifc:relatingport .
 
 ifc:relatingpriorities a sh:PropertyShape ;
     rdf:ordered true ;
@@ -12468,6 +12572,13 @@ ifc:shearmodulus a sh:PropertyShape ;
     sh:node ifc:ifcmodulusofelasticitymeasure ;
     sh:path ifc:shearmodulus .
 
+ifc:side a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:name "side"@en ;
+    sh:node ifc:ifcsurfaceside ;
+    sh:path ifc:side .
+
 ifc:siteaddress a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
@@ -12592,6 +12703,20 @@ ifc:spaceprogramidentifier a sh:PropertyShape ;
     sh:node ifc:ifcidentifier ;
     sh:path ifc:spaceprogramidentifier .
 
+ifc:specularcolour a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:name "specularcolour"@en ;
+    sh:node ifc:ifccolourorfactor ;
+    sh:path ifc:specularcolour .
+
+ifc:specularhighlight a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:name "specularhighlight"@en ;
+    sh:node ifc:ifcspecularhighlightselect ;
+    sh:path ifc:specularhighlight .
+
 ifc:spinecurve a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
@@ -12711,6 +12836,13 @@ ifc:supportedlength a sh:PropertyShape ;
     sh:name "supportedlength"@en ;
     sh:node ifc:ifclengthmeasure ;
     sh:path ifc:supportedlength .
+
+ifc:surfacecolour a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:name "surfacecolour"@en ;
+    sh:node ifc:ifccolourrgb ;
+    sh:path ifc:surfacecolour .
 
 ifc:surfaceonrelatedelement a sh:PropertyShape ;
     sh:maxCount 1 ;
@@ -12907,6 +13039,17 @@ ifc:texturepoints a sh:PropertyShape ;
     sh:path ifc:texturepoints ;
     sh:property [ sh:minCount 3 ;
             sh:node ifc:ifccartesianpoint ;
+            sh:path ( [ sh:zeroOrMorePath rdf:rest ] rdf:first ) ] .
+
+ifc:textures a sh:PropertyShape ;
+    rdf:ordered true ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:name "textures"@en ;
+    sh:node dash:ListShape ;
+    sh:path ifc:textures ;
+    sh:property [ sh:minCount 1 ;
+            sh:node ifc:ifcsurfacetexture ;
             sh:path ( [ sh:zeroOrMorePath rdf:rest ] rdf:first ) ] .
 
 ifc:texturetransform a sh:PropertyShape ;
@@ -13228,20 +13371,19 @@ ifc:transition a sh:PropertyShape ;
     sh:node ifc:ifctransitioncode ;
     sh:path ifc:transition .
 
-ifc:transmissioncolour a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 0 ;
-    sh:name "transmissioncolour"@en ;
-    sh:node ifc:ifccolourorfactor,
-        ifc:ifccolourrgb ;
-    sh:path ifc:transmissioncolour .
-
 ifc:transomoffset a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "transomoffset"@en ;
     sh:node ifc:ifclengthmeasure ;
     sh:path ifc:transomoffset .
+
+ifc:transparency a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:name "transparency"@en ;
+    sh:node ifc:ifcnormalisedratiomeasure ;
+    sh:path ifc:transparency .
 
 ifc:transversebarcrosssectionarea a sh:PropertyShape ;
     sh:maxCount 1 ;
@@ -13839,13 +13981,6 @@ ifc:zone a sh:PropertyShape ;
     sh:node ifc:ifccoordinateduniversaltimeoffset ;
     sh:path ifc:zone .
 
-ifc:connectiongeometry a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 0 ;
-    sh:name "connectiongeometry"@en ;
-    sh:node ifc:ifcconnectiongeometry ;
-    sh:path ifc:connectiongeometry .
-
 ifc:ifcannotationsymboloccurrence a sh:NodeShape ;
     sh:and ( ifc:ifcannotationoccurrence ) ;
     sh:name "ifcannotationsymboloccurrence"@en ;
@@ -14093,6 +14228,12 @@ ifc:ifcplacement a sh:NodeShape ;
         ifc:location ;
     sh:targetClass ifc:ifcplacement .
 
+ifc:ifcport a sh:NodeShape ;
+    dash:abstract true ;
+    sh:and ( ifc:ifcproduct ) ;
+    sh:name "ifcport"@en ;
+    sh:targetClass ifc:ifcport .
+
 ifc:ifcpositiveplaneanglemeasure a sh:NodeShape ;
     sh:property [ sh:datatype xsd:decimal ;
             sh:maxCount 1 ;
@@ -14239,21 +14380,6 @@ ifc:ifcwarpingmomentmeasure a sh:NodeShape ;
             sh:path rdf:value ] ;
     sh:targetClass ifc:ifcwarpingmomentmeasure .
 
-ifc:item a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 0 ;
-    sh:name "item"@en ;
-    sh:node ifc:ifcgeometricrepresentationitem,
-        ifc:ifcrepresentationitem ;
-    sh:path ifc:item .
-
-ifc:styles a sh:PropertyShape ;
-    rdf:ordered false ;
-    sh:maxCount 5 ;
-    sh:minCount 1 ;
-    sh:name "styles"@en ;
-    sh:path ifc:styles .
-
 ifc:addresses a sh:PropertyShape ;
     rdf:ordered true ;
     sh:maxCount 1 ;
@@ -14317,6 +14443,13 @@ ifc:compositiontype a sh:PropertyShape ;
     sh:node ifc:ifcelementcompositionenum ;
     sh:path ifc:compositiontype .
 
+ifc:connectiongeometry a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:name "connectiongeometry"@en ;
+    sh:node ifc:ifcconnectiongeometry ;
+    sh:path ifc:connectiongeometry .
+
 ifc:coordinates a sh:PropertyShape ;
     rdf:ordered true ;
     sh:maxCount 1 ;
@@ -14337,16 +14470,14 @@ ifc:creationdate a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
     sh:name "creationdate"@en ;
-    sh:node ifc:ifcdatetimeselect,
-        ifc:ifctimestamp ;
+    sh:or ( ifc:ifcdatetimeselect ifc:ifctimestamp ) ;
     sh:path ifc:creationdate .
 
 ifc:creationtime a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "creationtime"@en ;
-    sh:node ifc:ifcdateandtime,
-        ifc:ifcdatetimeselect ;
+    sh:or ( ifc:ifcdateandtime ifc:ifcdatetimeselect ) ;
     sh:path ifc:creationtime .
 
 ifc:currentvalue a sh:PropertyShape ;
@@ -14360,9 +14491,15 @@ ifc:curvefont a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "curvefont"@en ;
-    sh:node ifc:ifccurvefontorscaledcurvefontselect,
-        ifc:ifccurvestylefontselect ;
+    sh:or ( ifc:ifccurvefontorscaledcurvefontselect ifc:ifccurvestylefontselect ) ;
     sh:path ifc:curvefont .
+
+ifc:diffusetransmissioncolour a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:name "diffusetransmissioncolour"@en ;
+    sh:or ( ifc:ifccolourorfactor ifc:ifccolourrgb ) ;
+    sh:path ifc:diffusetransmissioncolour .
 
 ifc:directrix a sh:PropertyShape ;
     sh:maxCount 1 ;
@@ -14396,8 +14533,7 @@ ifc:elements a sh:PropertyShape ;
     rdf:ordered false ;
     sh:minCount 1 ;
     sh:name "elements"@en ;
-    sh:node ifc:ifcderivedunitelement,
-        ifc:ifcgeometricsetselect ;
+    sh:or ( ifc:ifcderivedunitelement ifc:ifcgeometricsetselect ) ;
     sh:path ifc:elements .
 
 ifc:endparam a sh:PropertyShape ;
@@ -14730,7 +14866,8 @@ ifc:ifcroot a sh:NodeShape ;
             sh:path ifc:description ],
         ifc:description,
         ifc:globalid,
-        ifc:name ;
+        ifc:name,
+        ifc:ownerhistory ;
     sh:targetClass ifc:ifcroot .
 
 ifc:ifcrotationalstiffnessmeasure a sh:NodeShape ;
@@ -14832,6 +14969,13 @@ ifc:innerboundaries a sh:PropertyShape ;
     sh:node ifc:ifccurve ;
     sh:path ifc:innerboundaries .
 
+ifc:item a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:name "item"@en ;
+    sh:or ( ifc:ifcgeometricrepresentationitem ifc:ifcrepresentationitem ) ;
+    sh:path ifc:item .
+
 ifc:label a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
@@ -14857,8 +15001,7 @@ ifc:location a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "location"@en ;
-    sh:node ifc:ifccartesianpoint,
-        ifc:ifclabel ;
+    sh:or ( ifc:ifccartesianpoint ifc:ifclabel ) ;
     sh:path ifc:location .
 
 ifc:longname a sh:PropertyShape ;
@@ -14879,8 +15022,7 @@ ifc:operator a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
     sh:name "operator"@en ;
-    sh:node ifc:ifcbooleanoperator,
-        ifc:ifccartesiantransformationoperator2d ;
+    sh:or ( ifc:ifcbooleanoperator ifc:ifccartesiantransformationoperator2d ) ;
     sh:path ifc:operator .
 
 ifc:originalvalue a sh:PropertyShape ;
@@ -14945,8 +15087,7 @@ ifc:relatedconstraints a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
     sh:name "relatedconstraints"@en ;
-    sh:node dash:ListShape,
-        ifc:ifcconstraint ;
+    sh:or ( dash:ListShape ifc:ifcconstraint ) ;
     sh:path ifc:relatedconstraints ;
     sh:property [ sh:minCount 1 ;
             sh:node ifc:ifcconstraint ;
@@ -14958,6 +15099,13 @@ ifc:relatedcoverings a sh:PropertyShape ;
     sh:name "relatedcoverings"@en ;
     sh:node ifc:ifccovering ;
     sh:path ifc:relatedcoverings .
+
+ifc:relatedelement a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:name "relatedelement"@en ;
+    sh:node ifc:ifcelement ;
+    sh:path ifc:relatedelement .
 
 ifc:relatedelements a sh:PropertyShape ;
     rdf:ordered false ;
@@ -14984,9 +15132,15 @@ ifc:relatingdocument a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
     sh:name "relatingdocument"@en ;
-    sh:node ifc:ifcdocumentinformation,
-        ifc:ifcdocumentselect ;
+    sh:or ( ifc:ifcdocumentinformation ifc:ifcdocumentselect ) ;
     sh:path ifc:relatingdocument .
+
+ifc:relatingport a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:name "relatingport"@en ;
+    sh:node ifc:ifcport ;
+    sh:path ifc:relatingport .
 
 ifc:relatingprocess a sh:PropertyShape ;
     sh:maxCount 1 ;
@@ -15079,6 +15233,13 @@ ifc:totalfloat a sh:PropertyShape ;
     sh:node ifc:ifctimemeasure ;
     sh:path ifc:totalfloat .
 
+ifc:transmissioncolour a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:name "transmissioncolour"@en ;
+    sh:or ( ifc:ifccolourorfactor ifc:ifccolourrgb ) ;
+    sh:path ifc:transmissioncolour .
+
 ifc:transomthickness a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
@@ -15090,16 +15251,14 @@ ifc:unittype a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
     sh:name "unittype"@en ;
-    sh:node ifc:ifcderivedunitenum,
-        ifc:ifcunitenum ;
+    sh:or ( ifc:ifcderivedunitenum ifc:ifcunitenum ) ;
     sh:path ifc:unittype .
 
 ifc:usagename a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "usagename"@en ;
-    sh:node ifc:ifcidentifier,
-        ifc:ifclabel ;
+    sh:or ( ifc:ifcidentifier ifc:ifclabel ) ;
     sh:path ifc:usagename .
 
 ifc:userdefinedpropertysource a sh:PropertyShape ;
@@ -15318,25 +15477,21 @@ ifc:axis a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "axis"@en ;
-    sh:node ifc:ifcaxis1placement,
-        ifc:ifcdirection ;
+    sh:or ( ifc:ifcaxis1placement ifc:ifcdirection ) ;
     sh:path ifc:axis .
 
 ifc:basissurface a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
     sh:name "basissurface"@en ;
-    sh:node ifc:ifcplane,
-        ifc:ifcsurface ;
+    sh:or ( ifc:ifcplane ifc:ifcsurface ) ;
     sh:path ifc:basissurface .
 
 ifc:constructiontype a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "constructiontype"@en ;
-    sh:node ifc:ifcdoorstyleconstructionenum,
-        ifc:ifcpileconstructionenum,
-        ifc:ifcwindowstyleconstructionenum ;
+    sh:or ( ifc:ifcdoorstyleconstructionenum ifc:ifcpileconstructionenum ifc:ifcwindowstyleconstructionenum ) ;
     sh:path ifc:constructiontype .
 
 ifc:crosssectionarea a sh:PropertyShape ;
@@ -15427,25 +15582,6 @@ ifc:ifcelementtype a sh:NodeShape ;
             sh:path ifc:elementtype ],
         ifc:elementtype ;
     sh:targetClass ifc:ifcelementtype .
-
-ifc:ifcorganization a sh:NodeShape ;
-    sh:name "ifcorganization"@en ;
-    sh:property [ sh:order 0 ;
-            sh:path ifc:id ],
-        [ sh:order 1 ;
-            sh:path ifc:name ],
-        [ sh:order 2 ;
-            sh:path ifc:description ],
-        [ sh:order 3 ;
-            sh:path ifc:roles ],
-        [ sh:order 4 ;
-            sh:path ifc:addresses ],
-        ifc:addresses,
-        ifc:description,
-        ifc:id,
-        ifc:name,
-        ifc:roles ;
-    sh:targetClass ifc:ifcorganization .
 
 ifc:ifcperson a sh:NodeShape ;
     sh:name "ifcperson"@en ;
@@ -15547,8 +15683,7 @@ ifc:panelposition a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
     sh:name "panelposition"@en ;
-    sh:node ifc:ifcdoorpanelpositionenum,
-        ifc:ifcwindowpanelpositionenum ;
+    sh:or ( ifc:ifcdoorpanelpositionenum ifc:ifcwindowpanelpositionenum ) ;
     sh:path ifc:panelposition .
 
 ifc:refdirection a sh:PropertyShape ;
@@ -15562,9 +15697,7 @@ ifc:role a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
     sh:name "role"@en ;
-    sh:node ifc:ifcactorrole,
-        ifc:ifcdimensionextentusage,
-        ifc:ifcroleenum ;
+    sh:or ( ifc:ifcactorrole ifc:ifcdimensionextentusage ifc:ifcroleenum ) ;
     sh:path ifc:role .
 
 ifc:roles a sh:PropertyShape ;
@@ -15588,17 +15721,22 @@ ifc:shapetype a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
     sh:name "shapetype"@en ;
-    sh:node ifc:ifcramptypeenum,
-        ifc:ifcrooftypeenum,
-        ifc:ifcstairtypeenum ;
+    sh:or ( ifc:ifcramptypeenum ifc:ifcrooftypeenum ifc:ifcstairtypeenum ) ;
     sh:path ifc:shapetype .
+
+ifc:styles a sh:PropertyShape ;
+    rdf:ordered false ;
+    sh:maxCount 5 ;
+    sh:minCount 1 ;
+    sh:name "styles"@en ;
+    sh:or ( ifc:ifcpresentationstyleassignment ifc:ifcpresentationstyleselect ifc:ifcsurfacestyleelementselect ) ;
+    sh:path ifc:styles .
 
 ifc:tag a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "tag"@en ;
-    sh:node ifc:ifcidentifier,
-        ifc:ifclabel ;
+    sh:or ( ifc:ifcidentifier ifc:ifclabel ) ;
     sh:path ifc:tag .
 
 ifc:wallthickness a sh:PropertyShape ;
@@ -15676,6 +15814,25 @@ ifc:ifcmeasurewithunit a sh:NodeShape ;
         ifc:valuecomponent ;
     sh:targetClass ifc:ifcmeasurewithunit .
 
+ifc:ifcorganization a sh:NodeShape ;
+    sh:name "ifcorganization"@en ;
+    sh:property [ sh:order 0 ;
+            sh:path ifc:id ],
+        [ sh:order 1 ;
+            sh:path ifc:name ],
+        [ sh:order 2 ;
+            sh:path ifc:description ],
+        [ sh:order 3 ;
+            sh:path ifc:roles ],
+        [ sh:order 4 ;
+            sh:path ifc:addresses ],
+        ifc:addresses,
+        ifc:description,
+        ifc:id,
+        ifc:name,
+        ifc:roles ;
+    sh:targetClass ifc:ifcorganization .
+
 ifc:ifcpoint a sh:NodeShape ;
     dash:abstract true ;
     sh:and ( ifc:ifcgeometricrepresentationitem ) ;
@@ -15707,14 +15864,6 @@ ifc:ifctopologicalrepresentationitem a sh:NodeShape ;
     sh:name "ifctopologicalrepresentationitem"@en ;
     sh:targetClass ifc:ifctopologicalrepresentationitem .
 
-ifc:relatingelement a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 1 ;
-    sh:name "relatingelement"@en ;
-    sh:node ifc:ifcelement,
-        ifc:ifcstructuralactivityassignmentselect ;
-    sh:path ifc:relatingelement .
-
 ifc:basiscurve a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
@@ -15726,8 +15875,7 @@ ifc:centreofgravityinx a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "centreofgravityinx"@en ;
-    sh:node ifc:ifclengthmeasure,
-        ifc:ifcpositivelengthmeasure ;
+    sh:or ( ifc:ifclengthmeasure ifc:ifcpositivelengthmeasure ) ;
     sh:path ifc:centreofgravityinx .
 
 ifc:flangethickness a sh:PropertyShape ;
@@ -15791,18 +15939,14 @@ ifc:purpose a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "purpose"@en ;
-    sh:node ifc:ifcaddresstypeenum,
-        ifc:ifclabel,
-        ifc:ifctext ;
+    sh:or ( ifc:ifcaddresstypeenum ifc:ifclabel ifc:ifctext ) ;
     sh:path ifc:purpose .
 
 ifc:relatedobjects a sh:PropertyShape ;
     rdf:ordered false ;
     sh:minCount 1 ;
     sh:name "relatedobjects"@en ;
-    sh:node ifc:ifcobject,
-        ifc:ifcobjectdefinition,
-        ifc:ifcroot ;
+    sh:or ( ifc:ifcobject ifc:ifcobjectdefinition ifc:ifcroot ) ;
     sh:path ifc:relatedobjects .
 
 ifc:relatingconstraint a sh:PropertyShape ;
@@ -15812,12 +15956,18 @@ ifc:relatingconstraint a sh:PropertyShape ;
     sh:node ifc:ifcconstraint ;
     sh:path ifc:relatingconstraint .
 
+ifc:relatingelement a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:name "relatingelement"@en ;
+    sh:or ( ifc:ifcelement ifc:ifcstructuralactivityassignmentselect ) ;
+    sh:path ifc:relatingelement .
+
 ifc:samesense a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
     sh:name "samesense"@en ;
-    sh:node ifc:ifcboolean,
-        xsd:boolean ;
+    sh:or ( ifc:ifcboolean xsd:boolean ) ;
     sh:path ifc:samesense .
 
 ifc:selfintersect a sh:PropertyShape ;
@@ -15831,8 +15981,7 @@ ifc:status a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "status"@en ;
-    sh:node ifc:ifcdocumentstatusenum,
-        ifc:ifclabel ;
+    sh:or ( ifc:ifcdocumentstatusenum ifc:ifclabel ) ;
     sh:path ifc:status .
 
 ifc:thickness a sh:PropertyShape ;
@@ -15846,8 +15995,7 @@ ifc:width a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "width"@en ;
-    sh:node ifc:ifcinteger,
-        ifc:ifcpositivelengthmeasure ;
+    sh:or ( ifc:ifcinteger ifc:ifcpositivelengthmeasure ) ;
     sh:path ifc:width .
 
 ifc:ifccalendardate a sh:NodeShape ;
@@ -15919,8 +16067,7 @@ ifc:height a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "height"@en ;
-    sh:node ifc:ifcinteger,
-        ifc:ifcpositivelengthmeasure ;
+    sh:or ( ifc:ifcinteger ifc:ifcpositivelengthmeasure ) ;
     sh:path ifc:height .
 
 ifc:ifcdirection a sh:NodeShape ;
@@ -15971,19 +16118,14 @@ ifc:operationtype a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "operationtype"@en ;
-    sh:node ifc:ifcdoorstyleoperationenum,
-        ifc:ifcpermeablecoveringoperationenum,
-        ifc:ifctransportelementtypeenum,
-        ifc:ifcwindowpaneloperationenum,
-        ifc:ifcwindowstyleoperationenum ;
+    sh:or ( ifc:ifcdoorstyleoperationenum ifc:ifcpermeablecoveringoperationenum ifc:ifctransportelementtypeenum ifc:ifcwindowpaneloperationenum ifc:ifcwindowstyleoperationenum ) ;
     sh:path ifc:operationtype .
 
 ifc:orientation a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
     sh:name "orientation"@en ;
-    sh:node ifc:ifcdirection,
-        xsd:boolean ;
+    sh:or ( ifc:ifcdirection xsd:boolean ) ;
     sh:path ifc:orientation .
 
 ifc:shapeaspectstyle a sh:PropertyShape ;
@@ -16013,8 +16155,7 @@ ifc:centreofgravityiny a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "centreofgravityiny"@en ;
-    sh:node ifc:ifclengthmeasure,
-        ifc:ifcpositivelengthmeasure ;
+    sh:or ( ifc:ifclengthmeasure ifc:ifcpositivelengthmeasure ) ;
     sh:path ifc:centreofgravityiny .
 
 ifc:ifcactorselect a sh:NodeShape ;
@@ -16075,8 +16216,7 @@ ifc:depth a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
     sh:name "depth"@en ;
-    sh:node ifc:ifclengthmeasure,
-        ifc:ifcpositivelengthmeasure ;
+    sh:or ( ifc:ifclengthmeasure ifc:ifcpositivelengthmeasure ) ;
     sh:path ifc:depth .
 
 ifc:ifcplaneanglemeasure a sh:NodeShape ;
@@ -16130,8 +16270,7 @@ ifc:unit a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "unit"@en ;
-    sh:node ifc:ifcnamedunit,
-        ifc:ifcunit ;
+    sh:or ( ifc:ifcnamedunit ifc:ifcunit ) ;
     sh:path ifc:unit .
 
 ifc:ifccurve a sh:NodeShape ;
@@ -16184,10 +16323,7 @@ ifc:position a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 1 ;
     sh:name "position"@en ;
-    sh:node ifc:ifcaxis2placement,
-        ifc:ifcaxis2placement2d,
-        ifc:ifcaxis2placement3d,
-        ifc:ifccartesianpoint ;
+    sh:or ( ifc:ifcaxis2placement ifc:ifcaxis2placement2d ifc:ifcaxis2placement3d ifc:ifccartesianpoint ) ;
     sh:path ifc:position .
 
 ifc:radius a sh:PropertyShape ;
@@ -16247,22 +16383,19 @@ ifc:description a sh:PropertyShape ;
     sh:node ifc:ifctext ;
     sh:path ifc:description .
 
-ifc:name a sh:PropertyShape ;
-    sh:maxCount 1 ;
-    sh:minCount 0 ;
-    sh:name "name"@en ;
-    sh:node ifc:ifcidentifier,
-        ifc:ifclabel,
-        ifc:ifcsiunitname,
-        xsd:string ;
-    sh:path ifc:name .
-
 ifc:ifclabel a sh:NodeShape ;
     sh:property [ sh:datatype xsd:string ;
             sh:maxCount 1 ;
             sh:minCount 1 ;
             sh:path rdf:value ] ;
     sh:targetClass ifc:ifclabel .
+
+ifc:name a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:name "name"@en ;
+    sh:or ( ifc:ifcidentifier ifc:ifclabel ifc:ifcsiunitname xsd:string ) ;
+    sh:path ifc:name .
 
 ifc:ifcpositivelengthmeasure a sh:NodeShape ;
     sh:property [ sh:datatype xsd:decimal ;
@@ -16275,207 +16408,6 @@ ifc:predefinedtype a sh:PropertyShape ;
     sh:maxCount 1 ;
     sh:minCount 0 ;
     sh:name "predefinedtype"@en ;
-    sh:node ifc:ifcactuatortypeenum,
-        ifc:ifcairterminalboxtypeenum,
-        ifc:ifcairterminaltypeenum,
-        ifc:ifcairtoairheatrecoverytypeenum,
-        ifc:ifcalarmtypeenum,
-        ifc:ifcanalysismodeltypeenum,
-        ifc:ifcbeamtypeenum,
-        ifc:ifcboilertypeenum,
-        ifc:ifcbuildingelementproxytypeenum,
-        ifc:ifccablecarrierfittingtypeenum,
-        ifc:ifccablecarriersegmenttypeenum,
-        ifc:ifccablesegmenttypeenum,
-        ifc:ifcchillertypeenum,
-        ifc:ifccoiltypeenum,
-        ifc:ifccolumntypeenum,
-        ifc:ifccompressortypeenum,
-        ifc:ifccondensertypeenum,
-        ifc:ifccontrollertypeenum,
-        ifc:ifccooledbeamtypeenum,
-        ifc:ifccoolingtowertypeenum,
-        ifc:ifccostscheduletypeenum,
-        ifc:ifccoveringtypeenum,
-        ifc:ifccurtainwalltypeenum,
-        ifc:ifcdampertypeenum,
-        ifc:ifcdistributionchamberelementtypeenum,
-        ifc:ifcductfittingtypeenum,
-        ifc:ifcductsegmenttypeenum,
-        ifc:ifcductsilencertypeenum,
-        ifc:ifcelectricappliancetypeenum,
-        ifc:ifcelectricflowstoragedevicetypeenum,
-        ifc:ifcelectricgeneratortypeenum,
-        ifc:ifcelectricheatertypeenum,
-        ifc:ifcelectricmotortypeenum,
-        ifc:ifcelectrictimecontroltypeenum,
-        ifc:ifcelementassemblytypeenum,
-        ifc:ifcevaporativecoolertypeenum,
-        ifc:ifcevaporatortypeenum,
-        ifc:ifcfantypeenum,
-        ifc:ifcfiltertypeenum,
-        ifc:ifcfiresuppressionterminaltypeenum,
-        ifc:ifcflowinstrumenttypeenum,
-        ifc:ifcflowmetertypeenum,
-        ifc:ifcfootingtypeenum,
-        ifc:ifcgasterminaltypeenum,
-        ifc:ifcheatexchangertypeenum,
-        ifc:ifchumidifiertypeenum,
-        ifc:ifcjunctionboxtypeenum,
-        ifc:ifclamptypeenum,
-        ifc:ifclightfixturetypeenum,
-        ifc:ifcloadgrouptypeenum,
-        ifc:ifcmembertypeenum,
-        ifc:ifcmotorconnectiontypeenum,
-        ifc:ifcoccupanttypeenum,
-        ifc:ifcoutlettypeenum,
-        ifc:ifcpiletypeenum,
-        ifc:ifcpipefittingtypeenum,
-        ifc:ifcpipesegmenttypeenum,
-        ifc:ifcplatetypeenum,
-        ifc:ifcprojectorderrecordtypeenum,
-        ifc:ifcprojectordertypeenum,
-        ifc:ifcprotectivedevicetypeenum,
-        ifc:ifcpumptypeenum,
-        ifc:ifcrailingtypeenum,
-        ifc:ifcrampflighttypeenum,
-        ifc:ifcsanitaryterminaltypeenum,
-        ifc:ifcsensortypeenum,
-        ifc:ifcservicelifefactortypeenum,
-        ifc:ifcslabtypeenum,
-        ifc:ifcspaceheatertypeenum,
-        ifc:ifcspacetypeenum,
-        ifc:ifcstackterminaltypeenum,
-        ifc:ifcstairflighttypeenum,
-        ifc:ifcstructuralcurvetypeenum,
-        ifc:ifcstructuralsurfacetypeenum,
-        ifc:ifcswitchingdevicetypeenum,
-        ifc:ifctanktypeenum,
-        ifc:ifctendontypeenum,
-        ifc:ifctransformertypeenum,
-        ifc:ifctransportelementtypeenum,
-        ifc:ifctubebundletypeenum,
-        ifc:ifcunitaryequipmenttypeenum,
-        ifc:ifcvalvetypeenum,
-        ifc:ifcvibrationisolatortypeenum,
-        ifc:ifcwalltypeenum,
-        ifc:ifcwasteterminaltypeenum ;
+    sh:or ( ifc:ifcactuatortypeenum ifc:ifcairterminalboxtypeenum ifc:ifcairterminaltypeenum ifc:ifcairtoairheatrecoverytypeenum ifc:ifcalarmtypeenum ifc:ifcanalysismodeltypeenum ifc:ifcbeamtypeenum ifc:ifcboilertypeenum ifc:ifcbuildingelementproxytypeenum ifc:ifccablecarrierfittingtypeenum ifc:ifccablecarriersegmenttypeenum ifc:ifccablesegmenttypeenum ifc:ifcchillertypeenum ifc:ifccoiltypeenum ifc:ifccolumntypeenum ifc:ifccompressortypeenum ifc:ifccondensertypeenum ifc:ifccontrollertypeenum ifc:ifccooledbeamtypeenum ifc:ifccoolingtowertypeenum ifc:ifccostscheduletypeenum ifc:ifccoveringtypeenum ifc:ifccurtainwalltypeenum ifc:ifcdampertypeenum ifc:ifcdistributionchamberelementtypeenum ifc:ifcductfittingtypeenum ifc:ifcductsegmenttypeenum ifc:ifcductsilencertypeenum ifc:ifcelectricappliancetypeenum ifc:ifcelectricflowstoragedevicetypeenum ifc:ifcelectricgeneratortypeenum ifc:ifcelectricheatertypeenum ifc:ifcelectricmotortypeenum ifc:ifcelectrictimecontroltypeenum ifc:ifcelementassemblytypeenum ifc:ifcevaporativecoolertypeenum ifc:ifcevaporatortypeenum ifc:ifcfantypeenum ifc:ifcfiltertypeenum ifc:ifcfiresuppressionterminaltypeenum ifc:ifcflowinstrumenttypeenum ifc:ifcflowmetertypeenum ifc:ifcfootingtypeenum ifc:ifcgasterminaltypeenum ifc:ifcheatexchangertypeenum ifc:ifchumidifiertypeenum ifc:ifcjunctionboxtypeenum ifc:ifclamptypeenum ifc:ifclightfixturetypeenum ifc:ifcloadgrouptypeenum ifc:ifcmembertypeenum ifc:ifcmotorconnectiontypeenum ifc:ifcoccupanttypeenum ifc:ifcoutlettypeenum ifc:ifcpiletypeenum ifc:ifcpipefittingtypeenum ifc:ifcpipesegmenttypeenum ifc:ifcplatetypeenum ifc:ifcprojectorderrecordtypeenum ifc:ifcprojectordertypeenum ifc:ifcprotectivedevicetypeenum ifc:ifcpumptypeenum ifc:ifcrailingtypeenum ifc:ifcrampflighttypeenum ifc:ifcsanitaryterminaltypeenum ifc:ifcsensortypeenum ifc:ifcservicelifefactortypeenum ifc:ifcslabtypeenum ifc:ifcspaceheatertypeenum ifc:ifcspacetypeenum ifc:ifcstackterminaltypeenum ifc:ifcstairflighttypeenum ifc:ifcstructuralcurvetypeenum ifc:ifcstructuralsurfacetypeenum ifc:ifcswitchingdevicetypeenum ifc:ifctanktypeenum ifc:ifctendontypeenum ifc:ifctransformertypeenum ifc:ifctransportelementtypeenum ifc:ifctubebundletypeenum ifc:ifcunitaryequipmenttypeenum ifc:ifcvalvetypeenum ifc:ifcvibrationisolatortypeenum ifc:ifcwalltypeenum ifc:ifcwasteterminaltypeenum ) ;
     sh:path ifc:predefinedtype .
-
-[] rdf:first ifc:ifcsurfacestyleshading ;
-    rdf:rest ( ifc:ifcsurfacestylelighting ifc:ifcsurfacestylewithtextures ifc:ifcexternallydefinedsurfacestyle ifc:ifcsurfacestylerefraction ) .
-
-[] rdf:first ifc:ifcsurfacestyleshading ;
-    rdf:rest () .
-
-[] sh:order 1 ;
-    sh:path ifc:transparency .
-
-[] sh:order 2 ;
-    sh:path ifc:diffusecolour .
-
-[] sh:order 3 ;
-    sh:path ifc:transmissioncolour .
-
-[] sh:order 4 ;
-    sh:path ifc:diffusetransmissioncolour .
-
-[] sh:order 5 ;
-    sh:path ifc:reflectioncolour .
-
-[] sh:order 6 ;
-    sh:path ifc:specularcolour .
-
-[] sh:order 7 ;
-    sh:path ifc:specularhighlight .
-
-[] sh:order 8 ;
-    sh:path ifc:reflectancemethod .
-
-[] sh:order 0 ;
-    sh:path ifc:styles .
-
-[] rdf:first ifc:ifcnullstyle ;
-    rdf:rest ( ifc:ifccurvestyle ifc:ifcsymbolstyle ifc:ifcfillareastyle ifc:ifctextstyle ifc:ifcsurfacestyle ) .
-
-[] rdf:first ifc:ifcrepresentationitem ;
-    rdf:rest () .
-
-[] sh:order 0 ;
-    sh:path ifc:item .
-
-[] sh:order 1 ;
-    sh:path ifc:styles .
-
-[] sh:order 2 ;
-    sh:path ifc:name .
-
-[] rdf:first ifc:ifcpresentationstyle ;
-    rdf:rest () .
-
-[] sh:order 1 ;
-    sh:path ifc:side .
-
-[] sh:order 2 ;
-    sh:path ifc:styles .
-
-[] sh:order 0 ;
-    sh:path ifc:diffusetransmissioncolour .
-
-[] sh:order 1 ;
-    sh:path ifc:diffusereflectioncolour .
-
-[] sh:order 2 ;
-    sh:path ifc:transmissioncolour .
-
-[] sh:order 3 ;
-    sh:path ifc:reflectancecolour .
-
-[] sh:order 0 ;
-    sh:path ifc:refractionindex .
-
-[] sh:order 1 ;
-    sh:path ifc:dispersionfactor .
-
-[] sh:order 0 ;
-    sh:path ifc:textures .
-
-[] rdf:first ifc:ifcrelconnects ;
-    rdf:rest () .
-
-[] sh:order 4 ;
-    sh:path ifc:connectiongeometry .
-
-[] sh:order 5 ;
-    sh:path ifc:relatingelement .
-
-[] sh:order 6 ;
-    sh:path ifc:relatedelement .
-
-[] sh:order 0 ;
-    sh:path ifc:surfacecolour .
-
-[] rdf:first ifc:ifcproduct ;
-    rdf:rest () .
-
-[] rdf:first ifc:ifcrelconnects ;
-    rdf:rest () .
-
-[] sh:order 4 ;
-    sh:path ifc:relatingport .
-
-[] sh:order 5 ;
-    sh:path ifc:relatedport .
-
-[] sh:order 6 ;
-    sh:path ifc:realizingelement .
-
-[] rdf:first ifc:ifcrelconnects ;
-    rdf:rest () .
-
-[] sh:order 4 ;
-    sh:path ifc:relatingport .
-
-[] sh:order 5 ;
-    sh:path ifc:relatedelement .
 

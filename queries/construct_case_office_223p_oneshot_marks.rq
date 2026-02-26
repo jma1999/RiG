@@ -1,0 +1,194 @@
+PREFIX skos:  <http://www.w3.org/2004/02/skos/core#>
+PREFIX brick1: <http://brickschema.org/schema/1.1.0/Brick#>
+PREFIX brick:  <http://brickschema.org/schema/Brick#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX s223:  <http://data.ashrae.org/standard223#>
+PREFIX qudt:  <http://qudt.org/schema/qudt/>
+PREFIX quantitykind: <http://qudt.org/vocab/quantitykind/>
+
+CONSTRUCT {
+  # ----------------------------
+  # Zone
+  # ----------------------------
+  ?zone a s223:Zone ;
+        rdfs:label "Space-based system zone" .
+
+  # (optional “real 223” stub) zone-level occupancy property
+  ?zone s223:hasProperty ?zoneOccProp .
+  ?zoneOccProp a s223:QuantifiableObservableProperty ;
+               rdfs:label "Zone occupancy (stub)" ;
+               qudt:hasQuantityKind quantitykind:DimensionlessRatio .
+
+  # ----------------------------
+  # Spaces
+  # ----------------------------
+  ?s223Space a s223:PhysicalSpace ;
+             skos:exactMatch ?spaceGid ;
+             skos:exactMatch ?brickRoom ;
+             rdfs:label ?spaceLabel ;
+             s223:hasZone ?zone .
+
+  # ----------------------------
+  # Sensors
+  # ----------------------------
+  ?s223Sensor a ?sensorClass ;
+              skos:exactMatch ?sensorGid ;
+              skos:exactMatch ?pt ;
+              rdfs:label ?markLabel ;
+              s223:hasPhysicalLocation ?s223Space ;
+              s223:observes ?obsProp .
+
+  # ----------------------------
+  # Observed properties
+  # ----------------------------
+  ?obsProp a s223:QuantifiableObservableProperty ;
+           qudt:hasQuantityKind ?qk ;
+           rdfs:label ?obsLabel .
+}
+WHERE {
+  # Stable IRIs
+  BIND(IRI("https://example.com/case-office/223/zone/space-based-system-zone") AS ?zone)
+  BIND(IRI("https://example.com/case-office/223/prop/zone-occupancy") AS ?zoneOccProp)
+
+  # ============================================================
+  # (A) Room <-> Space identity alignment (overlay) [either direction]
+  # ============================================================
+  GRAPH <https://example.com/case-office/g/overlay> {
+    { ?brickRoom skos:exactMatch ?spaceGid . }
+    UNION
+    { ?spaceGid  skos:exactMatch ?brickRoom . }
+  }
+
+  # Optional: keep this if you want to ensure the thing is “a Brick room”
+  # (If this ever drops results because your Brick classes don’t include "Room",
+  # comment this entire block out.)
+  GRAPH <https://example.com/case-office/g/brick> {
+    ?brickRoom a ?roomClass .
+    FILTER(REGEX(STR(?roomClass), "Room", "i"))
+  }
+
+  # ============================================================
+  # (B) Point attached to Brick room + sensor identity (overlay)
+  # - allow Brick legacy + Brick 1.1 predicates
+  # - allow exactMatch either direction for pt <-> sensorGid
+  # ============================================================
+  GRAPH <https://example.com/case-office/g/overlay> {
+    ?pt ?isPointOf ?brickRoom .
+    VALUES ?isPointOf { brick:isPointOf brick1:isPointOf }
+
+    { ?pt skos:exactMatch ?sensorGid . }
+    UNION
+    { ?sensorGid skos:exactMatch ?pt . }
+
+    FILTER(CONTAINS(STR(?pt), "case-office"))
+    FILTER(CONTAINS(STR(?pt), "/point/"))
+  }
+
+  # ============================================================
+  # Deterministic IRIs
+  # ============================================================
+  BIND(STRAFTER(STR(?spaceGid), "#") AS ?spaceLocal)
+  BIND(IRI(CONCAT("https://example.com/case-office/223/space/", ?spaceLocal)) AS ?s223Space)
+
+  BIND(STRAFTER(STR(?sensorGid), "#") AS ?sensorLocal)
+  BIND(IRI(CONCAT("https://example.com/case-office/223/sensor/", ?sensorLocal)) AS ?s223Sensor)
+  BIND(IRI(CONCAT("https://example.com/case-office/223/prop/",  ?sensorLocal)) AS ?obsProp)
+
+  # ============================================================
+  # Space label from Brick local part (fallback-safe)
+  # ============================================================
+  BIND(
+    IF(CONTAINS(STR(?brickRoom), "#"),
+       STRAFTER(STR(?brickRoom), "#"),
+       REPLACE(STR(?brickRoom), ".*/", "")
+    ) AS ?brickRoomLocal
+  )
+  BIND(REPLACE(?brickRoomLocal, "_", " ") AS ?spaceLabel)
+
+  # ============================================================
+  # Mark mapping (FULL 31 rows)
+  # ============================================================
+  VALUES (?sensorGid ?markLabel) {
+    (<http://ifc-ld.org/ids#13w9LKJMvBR9NVulm$RjH_>  "Sensor01")
+    (<http://ifc-ld.org/ids#13w9LKJMvBR9NVulm$Rjo6>  "Sensor34")
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIWZp>  "Sensor30")
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZS1>  "Sensor31")
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZTn>  "Sensor32")
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZUb>  "Sensor33")
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZOM>  "Sensor37")
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZKz>  "Sensor42")
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZRQ>  "Sensor41")
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZR_>  "Sensor40")
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZOZ>  "Sensor36")
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZUL>  "Sensor35")
+
+    (<http://ifc-ld.org/ids#3RZ_giCmzEQBVgq$EJSGCV>  "Sensor19")
+    (<http://ifc-ld.org/ids#3RZ_giCmzEQBVgq$EJSGCu>  "Sensor21")
+    (<http://ifc-ld.org/ids#3RZ_giCmzEQBVgq$EJSGD9>  "Sensor18")
+    (<http://ifc-ld.org/ids#3RZ_giCmzEQBVgq$EJSGDA>  "Sensor20")
+    (<http://ifc-ld.org/ids#3RZ_giCmzEQBVgq$EJSGDB>  "Sensor22")
+    (<http://ifc-ld.org/ids#3RZ_giCmzEQBVgq$EJSG_5>  "Sensor16")
+    (<http://ifc-ld.org/ids#3RZ_giCmzEQBVgq$EJSG_4>  "Sensor17")
+
+    (<http://ifc-ld.org/ids#3wKgvdEoDBbxDC1XQkNob3>  "Sensor27")
+    (<http://ifc-ld.org/ids#3wKgvdEoDBbxDC1XQkNob4>  "Sensor25")
+    (<http://ifc-ld.org/ids#3aZ83wRHfFR90LcJljuYWH>  "Sensor23")
+    (<http://ifc-ld.org/ids#3wKgvdEoDBbxDC1XQkNob2>  "Sensor24")
+    (<http://ifc-ld.org/ids#3wKgvdEoDBbxDC1XQkNob1>  "Sensor26")
+
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZGL>  "Sensor43")
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZJo>  "Sensor46")
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZCh>  "Sensor47")
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZHL>  "Sensor44")
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZID>  "Sensor45")
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZPV>  "Sensor38")
+    (<http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZQC>  "Sensor39")
+  }
+
+  # ============================================================
+  # Classification
+  # - Sensor01: proximity => keep generic s223:Sensor (safer than PresenceSensor)
+  # - 30..47: humidity
+  # - desk sensors: presence
+  # ============================================================
+  BIND(
+    IF(?markLabel = "Sensor01",
+      s223:Sensor,
+      IF(?markLabel IN (
+          "Sensor30","Sensor31","Sensor32","Sensor33","Sensor34","Sensor35","Sensor36","Sensor37",
+          "Sensor38","Sensor39","Sensor40","Sensor41","Sensor42","Sensor43","Sensor44",
+          "Sensor45","Sensor46","Sensor47"
+        ),
+        s223:HumiditySensor,
+        IF(?markLabel IN (
+            "Sensor16","Sensor17","Sensor18","Sensor19","Sensor20","Sensor21","Sensor22",
+            "Sensor23","Sensor24","Sensor25","Sensor26","Sensor27"
+          ),
+          s223:OccupantPresenceSensor,
+          s223:Sensor
+        )
+      )
+    ) AS ?sensorClass
+  )
+
+  # ============================================================
+  # Observed-property QuantityKind + label
+  # ============================================================
+  BIND(
+    IF(?sensorClass = s223:HumiditySensor,
+      quantitykind:RelativeHumidity,
+      IF(?sensorClass = s223:OccupantPresenceSensor,
+        quantitykind:DimensionlessRatio,
+        quantitykind:DimensionlessRatio
+      )
+    ) AS ?qk
+  )
+
+  BIND(
+    IF(?sensorClass = s223:HumiditySensor,
+      "Relative humidity",
+      IF(?sensorClass = s223:OccupantPresenceSensor, "Presence", "Observation")
+    ) AS ?obsLabel
+  )
+}

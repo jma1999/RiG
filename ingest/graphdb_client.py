@@ -34,7 +34,7 @@ class GraphDBClient:
     def __init__(
         self,
         base_url: str = "http://localhost:7200",
-        repository: str = "rig-facility-mgmt",
+        repository: str = "rig-ifcld",
         username: Optional[str] = None,
         password: Optional[str] = None
     ):
@@ -327,7 +327,7 @@ def main():
     )
     parser.add_argument("--base-url", default="http://localhost:7200",
                        help="GraphDB base URL (default: http://localhost:7200)")
-    parser.add_argument("--repository", default="rig-facility-mgmt",
+    parser.add_argument("--repository", default="rig-ifcld",
                        help="Repository name")
     parser.add_argument("--username", default=None, help="Username for authentication")
     parser.add_argument("--password", default=None, help="Password for authentication")

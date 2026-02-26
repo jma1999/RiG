@@ -9,18 +9,19 @@ this produces IFC-LD compliant output.
 Reference: https://github.com/devonsparks/ifcld-service
 
 Usage:
-    Ensure ifcld-service is running (e.g. docker run -p 5000:5000 ifcld-instance-builder)
+    Ensure ifcld-service is running (e.g. docker run -p 5050:5000 ifcld-instance-builder)
     python ingest/ifc_to_rdf_ifcld.py input.ifc --output output.ttl
 """
+
 import os
 import sys
 import pathlib
 import argparse
 from typing import Optional, Dict, Any
+
 import requests
 
-# Default ifcld-service URL (run via Docker or locally)
-DEFAULT_IFCLD_URL = os.getenv("IFCLD_SERVICE_URL", "http://localhost:5000")
+DEFAULT_IFCLD_URL = os.getenv("IFCLD_SERVICE_URL", "http://localhost:5050")
 
 
 def convert_ifc_to_turtle(
@@ -29,22 +30,8 @@ def convert_ifc_to_turtle(
     base_uri: Optional[str] = None,
     service_url: Optional[str] = None,
     add_bot_profile: bool = False,
-    timeout: int = 3600
+    timeout: int = 3600,
 ) -> Dict[str, Any]:
-    """
-    Convert IFC-SPF file to RDF Turtle using IFC-LD Instance Builder service.
-
-    Args:
-        ifc_path: Path to input IFC-SPF file
-        turtle_path: Path to output Turtle (.ttl) file
-        base_uri: Base URI for RDF resources (e.g., https://example.com/ifc/)
-        service_url: IFC-LD service URL (default: http://localhost:5000)
-        add_bot_profile: If True, request BOT enrichment via Accept-Profile
-        timeout: Request timeout in seconds (default: 3600 for large models)
-
-    Returns:
-        Dictionary with conversion statistics
-    """
     ifc_path = pathlib.Path(ifc_path)
     turtle_path = pathlib.Path(turtle_path)
 
@@ -54,15 +41,16 @@ def convert_ifc_to_turtle(
     url = (service_url or DEFAULT_IFCLD_URL).rstrip("/")
     instances_url = f"{url}/instances"
 
-    # Read IFC file (ISO 10303-21 format)
-    with open(ifc_path, "r", encoding="utf-8", errors="replace") as f:
-        ifc_content = f.read()
+    # Send raw bytes (avoid encoding surprises)
+    ifc_bytes = ifc_path.read_bytes()
 
     headers = {
-        "Content-Type": "model/step",
+        "Content-Type": "model/step",     # IFC-SPF / STEP
         "Accept": "text/turtle",
     }
 
+    # NOTE: This may or may not be honored by the service.
+    # Keep it as a hint, but don’t assume it changes output IRIs unless verified.
     if base_uri:
         headers["Content-Location"] = base_uri.rstrip("#") + "#"
 
@@ -73,25 +61,28 @@ def convert_ifc_to_turtle(
     print(f"   Input:  {ifc_path}")
     print(f"   Output: {turtle_path}")
     if base_uri:
-        print(f"   Base URI: {base_uri}")
+        print(f"   Base URI hint: {base_uri}")
 
     try:
         response = requests.post(
             instances_url,
-            data=ifc_content.encode("utf-8"),
+            data=ifc_bytes,
             headers=headers,
             timeout=timeout,
         )
 
-        if response.status_code != 200:
+        # Accept any 2xx
+        if not (200 <= response.status_code < 300):
+            ct = response.headers.get("Content-Type", "")
+            body_preview = (response.text or "")[:1000]
             raise RuntimeError(
-                f"IFC-LD service returned {response.status_code}: {response.text[:500]}"
+                f"IFC-LD service returned HTTP {response.status_code} (Content-Type: {ct}).\n"
+                f"Response preview:\n{body_preview}"
             )
 
-        # Write Turtle output
+        # Write Turtle output (use response.text, but could also use response.content)
         turtle_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(turtle_path, "w", encoding="utf-8") as f:
-            f.write(response.text)
+        turtle_path.write_text(response.text, encoding="utf-8")
 
         ifc_size = ifc_path.stat().st_size
         turtle_size = turtle_path.stat().st_size
@@ -104,22 +95,26 @@ def convert_ifc_to_turtle(
             "output_size_mb": round(turtle_size / (1024 * 1024), 2),
             "base_uri": base_uri,
             "converter": "ifcld-service",
+            "service_url": url,
+            "http_status": response.status_code,
         }
 
-        print(f"✅ IFC-LD conversion successful!")
+        print("✅ IFC-LD conversion successful!")
         print(f"   Input size:  {stats['input_size_mb']} MB")
         print(f"   Output size: {stats['output_size_mb']} MB")
 
         return stats
 
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as e:
         raise RuntimeError(
-            f"Cannot connect to IFC-LD service at {url}. "
-            "Ensure the service is running: docker run -d -p 5000:5000 ifcld-instance-builder"
+            f"Cannot connect to IFC-LD service at {url}.\n"
+            f"Details: {e}\n"
+            "If you’re using docker compose, confirm the mapped port matches your URL.\n"
+            "Example: docker compose ps  (look at HOST_PORT->5000)\n"
         )
     except requests.exceptions.Timeout:
         raise RuntimeError(
-            f"IFC-LD conversion timed out after {timeout}s. "
+            f"IFC-LD conversion timed out after {timeout}s.\n"
             "Try increasing --timeout for large models."
         )
 
@@ -130,19 +125,17 @@ def main():
     )
     parser.add_argument("input", help="Path to input IFC file")
     parser.add_argument("output", nargs="?", help="Path to output Turtle file")
-    parser.add_argument("--base-uri", default=None,
-                        help="Base URI for RDF resources")
+    parser.add_argument("--base-uri", default=None, help="Base URI for RDF resources (hint)")
     parser.add_argument("--service-url", default=None,
                         help=f"IFC-LD service URL (default: {DEFAULT_IFCLD_URL})")
-    parser.add_argument("--bot-profile", action="store_true",
-                        help="Add BOT ontology enrichment")
+    parser.add_argument("--bot-profile", action="store_true", help="Add BOT ontology enrichment")
     parser.add_argument("--timeout", type=int, default=3600,
                         help="Request timeout in seconds (default: 3600)")
 
     args = parser.parse_args()
 
     input_path = pathlib.Path(args.input)
-    output_path = pathlib.Path(args.output) if args.output else input_path.parent / (input_path.stem + ".ttl")
+    output_path = pathlib.Path(args.output) if args.output else input_path.with_suffix(".ttl")
 
     try:
         stats = convert_ifc_to_turtle(

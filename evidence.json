@@ -1,0 +1,1140 @@
+{
+  "question": "How many doors are in the building?",
+  "sparql_query": "PREFIX ifc: <http://ifc-ld.org/schemas/ifc2x3#>\nSELECT (COUNT(DISTINCT ?x) as ?count)\nWHERE {\n  { ?x a ifc:ifcdoor . }\n  UNION\n  { ?x a ifc:ifcdoorstandardcase . }\n}",
+  "focus_seeds": [
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212602",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212695",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212738",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#213007",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212481",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212596",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212625",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212900",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212481",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212596",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212625",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212900",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212481",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212596",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212625",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212900",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212481",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212596",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212625",
+      "score": 1.0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212900",
+      "score": 1.0
+    }
+  ],
+  "nodes": [
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212602",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212695",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212738",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#213007",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212481",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212596",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212625",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212900",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212481",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212596",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212625",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212900",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212481",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212596",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212625",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212900",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212481",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212596",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212625",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212900",
+      "name": "",
+      "type": "",
+      "hop": 0
+    },
+    {
+      "id": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "name": "",
+      "type": "http://www.w3.org/ns/shacl#NodeShape",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#18",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcownerhistory",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#18",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcownerhistory",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#215124",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifclocalplacement",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/ids#3$hO38UED11P8Xm_HXYnPU",
+      "name": "",
+      "type": "",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/ids#0tAYImIA91qRdmPHNFSs_b",
+      "name": "",
+      "type": "",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/ids#0yUcD13yz7gg$mdwezS_I0",
+      "name": "",
+      "type": "",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/ids#06pNrlm2TER8WmhqJQ31kt",
+      "name": "",
+      "type": "",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#215150",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifclocalplacement",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#215176",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifclocalplacement",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#215196",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifclocalplacement",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212480",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifclocalplacement",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212595",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifclocalplacement",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212624",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifclocalplacement",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#18",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcownerhistory",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#18",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcownerhistory",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#18",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcownerhistory",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#214786",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcrelcontainedinspatialstructure",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#214639",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcrelcontainedinspatialstructure",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#214639",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcrelcontainedinspatialstructure",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#214639",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcrelcontainedinspatialstructure",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#214639",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcrelcontainedinspatialstructure",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212598",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcproductdefinitionshape",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212691",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcproductdefinitionshape",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212734",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcproductdefinitionshape",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#213003",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcproductdefinitionshape",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212473",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcproductdefinitionshape",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212587",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcproductdefinitionshape",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#214854",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcrelassociatesmaterial",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#214916",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcreldefinesbytype",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#214707",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcrelassociatesmaterial",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#214769",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcreldefinesbytype",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#214707",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcrelassociatesmaterial",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#214769",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcreldefinesbytype",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#214707",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcrelassociatesmaterial",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#214769",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcreldefinesbytype",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#214707",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcrelassociatesmaterial",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#214769",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcreldefinesbytype",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212616",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifcproductdefinitionshape",
+      "hop": 1
+    },
+    {
+      "id": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212899",
+      "name": "",
+      "type": "http://ifc-ld.org/schemas/ifc2x3#ifclocalplacement",
+      "hop": 1
+    }
+  ],
+  "edges": [
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212602",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212602",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#215124",
+      "type": "objectplacement"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212602",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212598",
+      "type": "representation"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212602",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212602",
+      "dst": "http://ifc-ld.org/ids#3$hO38UED11P8Xm_HXYnPU",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212695",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212695",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#215150",
+      "type": "objectplacement"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212695",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212691",
+      "type": "representation"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212695",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212695",
+      "dst": "http://ifc-ld.org/ids#0tAYImIA91qRdmPHNFSs_b",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212738",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212738",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#215176",
+      "type": "objectplacement"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212738",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212734",
+      "type": "representation"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212738",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212738",
+      "dst": "http://ifc-ld.org/ids#0yUcD13yz7gg$mdwezS_I0",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#213007",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#213007",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#215196",
+      "type": "objectplacement"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#213007",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#213003",
+      "type": "representation"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#213007",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#213007",
+      "dst": "http://ifc-ld.org/ids#06pNrlm2TER8WmhqJQ31kt",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212481",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212481",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212480",
+      "type": "objectplacement"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212481",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212473",
+      "type": "representation"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212481",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212481",
+      "dst": "http://ifc-ld.org/ids#3$hO38UED11P8Xm_HXYnPU",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212596",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212596",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212595",
+      "type": "objectplacement"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212596",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212587",
+      "type": "representation"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212596",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212596",
+      "dst": "http://ifc-ld.org/ids#0tAYImIA91qRdmPHNFSs_b",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212625",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212625",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212624",
+      "type": "objectplacement"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212625",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212616",
+      "type": "representation"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212625",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212625",
+      "dst": "http://ifc-ld.org/ids#0yUcD13yz7gg$mdwezS_I0",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212900",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212900",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212899",
+      "type": "objectplacement"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212900",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212900",
+      "dst": "http://ifc-ld.org/ids#06pNrlm2TER8WmhqJQ31kt",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212481",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212481",
+      "dst": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212481",
+      "dst": "http://ifc-ld.org/ids#3$hO38UED11P8Xm_HXYnPU",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212596",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212596",
+      "dst": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212596",
+      "dst": "http://ifc-ld.org/ids#0tAYImIA91qRdmPHNFSs_b",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212625",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212625",
+      "dst": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212625",
+      "dst": "http://ifc-ld.org/ids#0yUcD13yz7gg$mdwezS_I0",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212900",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212900",
+      "dst": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212900",
+      "dst": "http://ifc-ld.org/ids#06pNrlm2TER8WmhqJQ31kt",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212481",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212481",
+      "dst": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212481",
+      "dst": "http://ifc-ld.org/ids#3$hO38UED11P8Xm_HXYnPU",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212596",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212596",
+      "dst": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212596",
+      "dst": "http://ifc-ld.org/ids#0tAYImIA91qRdmPHNFSs_b",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212625",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212625",
+      "dst": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212625",
+      "dst": "http://ifc-ld.org/ids#0yUcD13yz7gg$mdwezS_I0",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212900",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212900",
+      "dst": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212900",
+      "dst": "http://ifc-ld.org/ids#06pNrlm2TER8WmhqJQ31kt",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212481",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212481",
+      "dst": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212481",
+      "dst": "http://ifc-ld.org/ids#3$hO38UED11P8Xm_HXYnPU",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212596",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212596",
+      "dst": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212596",
+      "dst": "http://ifc-ld.org/ids#0tAYImIA91qRdmPHNFSs_b",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212625",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212625",
+      "dst": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212625",
+      "dst": "http://ifc-ld.org/ids#0yUcD13yz7gg$mdwezS_I0",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212900",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212900",
+      "dst": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#18",
+      "type": "ownerhistory"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212900",
+      "dst": "http://ifc-ld.org/ids#06pNrlm2TER8WmhqJQ31kt",
+      "type": "subject"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#214786",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212602",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#214854",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212695",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#214916",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212695",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#214786",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212695",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#214854",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212738",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#214916",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212738",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#214786",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212738",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#214786",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#213007",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#214639",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212481",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#214707",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212596",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#214769",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212596",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#214639",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212596",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#214707",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212625",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#214769",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212625",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#214639",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212625",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#214639",
+      "dst": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212900",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#214639",
+      "dst": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212481",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#214707",
+      "dst": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212596",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#214769",
+      "dst": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212596",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#214639",
+      "dst": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212596",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#214707",
+      "dst": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212625",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#214769",
+      "dst": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212625",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#214639",
+      "dst": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212625",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#214639",
+      "dst": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212900",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#214639",
+      "dst": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212481",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#214707",
+      "dst": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212596",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#214769",
+      "dst": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212596",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#214639",
+      "dst": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212596",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#214707",
+      "dst": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212625",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#214769",
+      "dst": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212625",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#214639",
+      "dst": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212625",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#214639",
+      "dst": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212900",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#214639",
+      "dst": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212481",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#214707",
+      "dst": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212596",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#214769",
+      "dst": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212596",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#214639",
+      "dst": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212596",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#214707",
+      "dst": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212625",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#214769",
+      "dst": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212625",
+      "type": "relatedobjects"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#214639",
+      "dst": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212625",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#214639",
+      "dst": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212900",
+      "type": "relatedelements"
+    },
+    {
+      "src": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "targetClass"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212602",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212695",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212738",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#213007",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212481",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212596",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212625",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/879ddd40-7aab-4df4-85de-229b4dcc8bd4#212900",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212481",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212596",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212625",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/cfe70586-d9d7-43cb-b91f-5418dab10741#212900",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212481",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212596",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212625",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/de207d7e-8589-49d6-9f20-06a7c5b66c2c#212900",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212481",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212596",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212625",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/8d7b12df-ad81-444c-b756-f2c826b37b07#212900",
+      "dst": "http://ifc-ld.org/schemas/ifc2x3#ifcdoor",
+      "type": "type"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212602",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#215124",
+      "type": "objectplacement"
+    },
+    {
+      "src": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212602",
+      "dst": "http://ifc-ld.org/graphs/3b4c664d-9f81-4a1f-b7c4-951fc7932232#212598",
+      "type": "representation"
+    }
+  ]
+}

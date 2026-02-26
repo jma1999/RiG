@@ -2,9 +2,9 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Send, Sparkles, Terminal, ArrowRight, Zap, Activity, AlertCircle } from 'lucide-react';
 
 const SUGGESTIONS = [
-  { label: "Analyze East Zone faults", icon: AlertCircle },
-  { label: "Optimize building energy", icon: Zap },
-  { label: "Show AHU-01 telemetry", icon: Activity },
+  { label: "What sensors are in Office1?", icon: Activity },
+  { label: "Show the overlay knowledge graph", icon: AlertCircle },
+  { label: "How many spaces are on Level 1?", icon: Zap },
 ];
 
 const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
@@ -88,13 +88,20 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
                    ) : (
                      <div className="text-slate-300 text-sm leading-relaxed pl-1">
                         {msg.content}
-                        {/* Tool Indicator */}
-                        {msg.toolInvocation && (
-                            <div className="mt-3 flex items-center gap-2 text-xs font-mono text-slate-500 bg-nexus-800/50 py-1.5 px-3 rounded-lg border border-nexus-700/50 w-fit">
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {msg.toolInvocation && (
+                            <div className="flex items-center gap-2 text-xs font-mono text-slate-500 bg-nexus-800/50 py-1.5 px-3 rounded-lg border border-nexus-700/50 w-fit">
                                 <Terminal size={12} />
                                 <span>Action: {msg.toolInvocation}</span>
                             </div>
-                        )}
+                          )}
+                          {msg.evidenceSummary && (
+                            <div className="flex items-center gap-2 text-xs font-mono text-nexus-accent/70 bg-nexus-accent/5 py-1.5 px-3 rounded-lg border border-nexus-accent/20 w-fit">
+                                <Sparkles size={12} />
+                                <span>GraphRAG: {msg.evidenceSummary}</span>
+                            </div>
+                          )}
+                        </div>
                      </div>
                    )}
                 </div>

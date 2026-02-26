@@ -35,16 +35,29 @@ const AssetsView = ({ assets, spaces, onNodeClick }) => {
   };
 
   const getTypeIcon = (type) => {
-    if (type.includes('Space') || type === 'Space') return MapPin;
-    if (type.includes('AHU') || type.includes('Equipment')) return Activity;
+    if (type.includes('Space') || type.includes('Room')) return MapPin;
+    if (type.includes('Sensor')) return Activity;
+    if (type.includes('AHU') || type.includes('Equipment') || type.includes('Terminal')) return Activity;
+    if (type.includes('Floor') || type.includes('Zone')) return Building2;
     return Box;
   };
 
   const getTypeColor = (type) => {
-    if (type.includes('Space') || type === 'Space') return 'text-nexus-accent';
-    if (type.includes('AHU')) return 'text-nexus-success';
-    if (type.includes('VAV')) return 'text-nexus-warning';
+    if (type.includes('Space') || type.includes('Room')) return 'text-nexus-accent';
+    if (type.includes('Sensor') || type.includes('Presence')) return 'text-amber-400';
+    if (type.includes('AHU') || type.includes('Equipment')) return 'text-nexus-success';
+    if (type.includes('VAV') || type.includes('Terminal')) return 'text-nexus-warning';
+    if (type.includes('Zone') || type.includes('Floor')) return 'text-purple-400';
     return 'text-slate-400';
+  };
+
+  const getSourceBadge = (source) => {
+    const colors = {
+      ifcld: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+      '223p': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+      brick: 'bg-green-500/20 text-green-400 border-green-500/30',
+    };
+    return colors[source] || 'bg-slate-700 text-slate-400 border-slate-600';
   };
 
   return (
@@ -90,8 +103,10 @@ const AssetsView = ({ assets, spaces, onNodeClick }) => {
         >
           <option value="all">All Types</option>
           <option value="equipment">Equipment</option>
-          <option value="ahu">AHU</option>
-          <option value="vav">VAV</option>
+          <option value="sensor">Sensors</option>
+          <option value="terminal">Terminals</option>
+          <option value="zone">Zones</option>
+          <option value="floor">Floors</option>
         </select>
       </div>
 
@@ -133,7 +148,14 @@ const AssetsView = ({ assets, spaces, onNodeClick }) => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-white truncate">{asset.name}</p>
-                          <p className="text-xs text-slate-400 mt-1">{asset.type}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className="text-xs text-slate-400">{asset.type}</p>
+                            {asset.source && (
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded border font-mono ${getSourceBadge(asset.source)}`}>
+                                {asset.source.toUpperCase()}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-slate-500 font-mono mt-1 truncate">{asset.id}</p>
                         </div>
                       </div>
@@ -178,12 +200,19 @@ const AssetsView = ({ assets, spaces, onNodeClick }) => {
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-nexus-800 text-nexus-accent">
+                    <div className={`p-2 rounded-lg bg-nexus-800 ${getTypeColor(space.type || 'Space')}`}>
                       <MapPin size={18} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white truncate">{space.name}</p>
-                      <p className="text-xs text-slate-400 mt-1">IFC Space</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs text-slate-400">{space.type || 'Space'}</p>
+                        {space.source && (
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded border font-mono ${getSourceBadge(space.source)}`}>
+                            {space.source.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-slate-500 font-mono mt-1 truncate">{space.id}</p>
                     </div>
                   </div>

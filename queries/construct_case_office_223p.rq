@@ -1,0 +1,91 @@
+PREFIX skos:  <http://www.w3.org/2004/02/skos/core#>
+PREFIX brick: <http://brickschema.org/schema/1.1.0/Brick#>
+PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX s223:  <http://data.ashrae.org/standard223#>
+
+CONSTRUCT {
+  # --- 223 Spaces ---
+  ?s223Space a s223:PhysicalSpace ;
+             skos:exactMatch ?spaceGid ;
+             skos:exactMatch ?brickRoom ;
+             rdfs:label ?spaceLabel .
+
+  # --- 223 Sensors/Points ---
+  ?s223Sensor a s223:Sensor ;
+              skos:exactMatch ?sensorGid ;
+              skos:exactMatch ?pt ;
+              rdfs:label ?sensorLabel ;
+              s223:hasPhysicalLocation ?s223Space .
+
+  # --- 223 Zones (optional) ---
+  ?s223Zone a s223:Zone ;
+            skos:exactMatch ?brickZone ;
+            rdfs:label ?zoneLabel .
+
+  ?s223Space s223:hasZone ?s223Zone .
+}
+WHERE {
+  # ------------------------------------------------------------
+  # 1) Build 223 spaces from Brick rooms you already aligned
+  #    BrickRoom --skos:exactMatch--> Space GlobalId
+  # ------------------------------------------------------------
+  GRAPH <https://example.com/case-office/g/overlay> {
+    ?brickRoom skos:exactMatch ?spaceGid .
+  }
+  GRAPH <https://example.com/case-office/g/brick> {
+    ?brickRoom a ?roomClass .
+    FILTER(CONTAINS(STR(?roomClass), "Room")) .
+  }
+
+  BIND(STRAFTER(STR(?spaceGid), "#") AS ?spaceLocal)
+  BIND(IRI(CONCAT("https://example.com/case-office/223/space/", ?spaceLocal)) AS ?s223Space)
+
+  # label from Brick local name
+  BIND(
+    IF(CONTAINS(STR(?brickRoom), "#"),
+       STRAFTER(STR(?brickRoom), "#"),
+       REPLACE(STR(?brickRoom), ".*/", "")
+    ) AS ?brickRoomLocal
+  )
+  BIND(REPLACE(?brickRoomLocal, "_", " ") AS ?spaceLabel)
+
+  # ------------------------------------------------------------
+  # 2) Build 223 sensors from minted points + attach to space
+  #    Point --brick:isPointOf--> BrickRoom
+  #    Point --skos:exactMatch--> Sensor GlobalId
+  # ------------------------------------------------------------
+  GRAPH <https://example.com/case-office/g/overlay> {
+    ?pt skos:exactMatch ?sensorGid ;
+        brick:isPointOf ?brickRoom .
+    FILTER(CONTAINS(STR(?pt), "https://example.com/case-office/point/")) .
+  }
+
+  BIND(STRAFTER(STR(?sensorGid), "#") AS ?sensorLocal)
+  BIND(IRI(CONCAT("https://example.com/case-office/223/sensor/", ?sensorLocal)) AS ?s223Sensor)
+
+  # sensor label from point local
+  BIND(REPLACE(STR(?pt), "^.*/", "") AS ?ptLocalFallback)
+  BIND(CONCAT("Sensor ", ?ptLocalFallback) AS ?sensorLabel)
+
+  # ------------------------------------------------------------
+  # 3) Optional: Zones from Brick HVAC zones and membership
+  #    BrickRoom --brick:isPartOf--> BrickZone
+  # ------------------------------------------------------------
+  OPTIONAL {
+    GRAPH <https://example.com/case-office/g/brick> {
+      ?brickRoom brick:isPartOf ?brickZone .
+      ?brickZone a ?zoneClass .
+      FILTER(CONTAINS(STR(?zoneClass), "HVAC_ZONE")) .
+    }
+
+    BIND(
+      IF(CONTAINS(STR(?brickZone), "#"),
+         STRAFTER(STR(?brickZone), "#"),
+         REPLACE(STR(?brickZone), ".*/", "")
+      ) AS ?brickZoneLocal
+    )
+    BIND(IRI(CONCAT("https://example.com/case-office/223/zone/", ?brickZoneLocal)) AS ?s223Zone)
+    BIND(REPLACE(?brickZoneLocal, "_", " ") AS ?zoneLabel)
+  }
+}

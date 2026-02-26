@@ -1,229 +1,233 @@
+"""
+GraphRAG Chat endpoint — the brain of Gemino.
+
+Flow:
+1. User sends a natural-language message.
+2. SPARQLGraphRAG converts it to SPARQL (via OpenAI LLM), executes against GraphDB,
+   extracts seed URIs, expands the neighborhood graph with decay-ranked scoring.
+3. The evidence subgraph is serialised into a compact text context block.
+4. The LLM generates a grounded, citation-rich answer using the evidence.
+5. The response includes the SPARQL query used, the graph evidence, and tool actions
+   so the frontend can update the Knowledge Graph Explorer and telemetry panels.
+"""
 import os
+import sys
+import pathlib
+import json
+import logging
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter
-from groq import Groq
 from pydantic import BaseModel
 
-from api.main import (
-    app,
-    pick_count_types,
-    count as count_endpoint,
-    semantic_search,
-)
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
+from ingest.graphdb_client import GraphDBClient
+from rag.sparql_rag import SPARQLGraphRAG
 
 router = APIRouter()
+logger = logging.getLogger("chat")
 
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
-client = None
-if GROQ_API_KEY:
-    try:
-        client = Groq(api_key=GROQ_API_KEY)
-    except Exception:
-        client = None
+GRAPHDB_URL = os.getenv("GRAPHDB_URL", "http://localhost:7200")
+GRAPHDB_REPOSITORY = os.getenv("GRAPHDB_REPOSITORY", "rig-facility-mgmt")
 
-# Model selection: allow overriding via env (GROQ_MODEL) and optional fallbacks
-# GROQ_MODEL_FALLBACKS may be a comma-separated list of alternative model names
-DEFAULT_GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama3-70b-8192")
-GROQ_MODEL_FALLBACKS = [m.strip() for m in (os.environ.get("GROQ_MODEL_FALLBACKS", "").split(",") if os.environ.get("GROQ_MODEL_FALLBACKS") else []) if m.strip()]
-PREFERRED_MODELS = [DEFAULT_GROQ_MODEL] + GROQ_MODEL_FALLBACKS
-SYSTEM_PROMPT = (
-    "You are Gemino's AI facility manager for a sample house. "
-    "You can access graph tools (count/search/asset) to explore the house structure, "
-    "rooms, walls, doors, windows, and other building components. "
-    "Always translate technical findings into friendly, conversational language about the house. "
-    "Focus on helping users understand the house layout, find specific elements, "
-    "and manage maintenance tasks. Always cite factual findings from the data."
-)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", os.getenv("OPENAI_NL2SPARQL_MODEL", "gpt-4o-mini"))
+
+SYSTEM_PROMPT = """\
+You are Gemino, an AI facility management agent for the CASE Office building.
+You have access to a semantic knowledge graph with four layers:
+  - IFC-LD (building geometry: walls, doors, spaces, terminals)
+  - Brick (room/floor/zone hierarchy, points)
+  - ASHRAE 223P (sensors, observable properties, equipment)
+  - Overlay (cross-ontology links via skos:exactMatch)
+
+You also have access to live Disruptive Technologies sensor readings (humidity, \
+presence, temperature) stored in TimescaleDB.
+
+When answering:
+- Always ground answers in the graph evidence provided.
+- Cite specific entity labels or URIs when referencing building elements.
+- If the evidence contains sensors, mention their mark labels (e.g. Sensor01).
+- Be concise, technical, and helpful. Use bullet points for lists.
+- If a question can't be answered from the evidence, say so honestly.
+- When the user asks about telemetry/readings, mention the sensor mark and \
+  its type (humidity, presence, temperature).
+"""
 
 
 class ChatTurn(BaseModel):
-    role: str  # "user" | "assistant"
+    role: str
     content: str
 
 
 class ChatRequest(BaseModel):
     message: str
     history: List[ChatTurn] = []
-    asset_context: Optional[str] = None  # optional current asset id
+    asset_context: Optional[str] = None
 
 
-def run_graph_tools(message: str) -> Dict[str, Any]:
-    """Run graph tools based on the user's message and return structured results."""
-    message_lower = message.lower()
-    
-    # Count operations
-    if any(word in message_lower for word in ["how many", "count", "total"]):
-        types = pick_count_types(message)
-        if types:
-            try:
-                result = count_endpoint(q=message)
-                return {"action": "count", "data": result}
-            except Exception:
-                pass
+_rag: Optional[SPARQLGraphRAG] = None
+_openai_client = None
 
-    # Search operations
-    elif any(word in message_lower for word in ["find", "show", "search", "list", "where", "which"]):
-        hits, subgraphs = semantic_search(message)
-        return {
-            "action": "search",
-            "hits": [h.model_dump() for h in hits],
-            "subgraphs": [s.model_dump() for s in subgraphs],
-        }
-    
-    # Work order creation
-    elif any(word in message_lower for word in ["create work order", "new work order", "schedule maintenance", "create task"]):
+
+def _get_rag() -> SPARQLGraphRAG:
+    global _rag
+    if _rag is None:
+        client = GraphDBClient(
+            base_url=GRAPHDB_URL,
+            repository=GRAPHDB_REPOSITORY,
+        )
+        _rag = SPARQLGraphRAG(
+            graphdb_client=client,
+            max_hops=2,
+            top_k=15,
+            use_llm=True,
+        )
+    return _rag
+
+
+def _get_openai():
+    global _openai_client
+    if _openai_client is None and OPENAI_API_KEY:
         try:
-            # Extract work order details from message
-            priority = "Medium"
-            if any(word in message_lower for word in ["urgent", "critical", "emergency"]):
-                priority = "Critical"
-            elif any(word in message_lower for word in ["high", "important"]):
-                priority = "High"
-            elif any(word in message_lower for word in ["low", "minor"]):
-                priority = "Low"
-            
-            # Extract title from message (simple extraction)
-            title = message
-            if "for" in message_lower:
-                title = message.split("for")[0].strip()
-            elif "about" in message_lower:
-                title = message.split("about")[0].strip()
-            
-            # Create work order data
-            wo_data = {
-                "title": title[:100],  # Limit title length
-                "priority": priority
-            }
-            
-            # Try to find asset ID if mentioned
-            if any(word in message_lower for word in ["hvac", "elevator", "fire", "lighting"]):
-                # Simple asset ID mapping for demo
-                asset_map = {
-                    "hvac": "HVAC-3A-02",
-                    "elevator": "ELEV-01", 
-                    "fire": "FIRE-2B",
-                    "lighting": "LIGHT-5A"
-                }
-                for keyword, asset_id in asset_map.items():
-                    if keyword in message_lower:
-                        wo_data["assetId"] = asset_id
-                        break
-            
-            return {
-                "action": "work-order",
-                "data": wo_data,
-                "summary": f"Created work order: {wo_data['title']} (Priority: {wo_data['priority']})"
-            }
-        except Exception as e:
-            return {"action": "work-order", "error": str(e)}
-    
-    # Asset operations
-    elif any(word in message_lower for word in ["asset", "equipment", "system"]):
-        hits, subgraphs = semantic_search(message)
-        return {
-            "action": "asset",
-            "hits": [h.model_dump() for h in hits],
-            "subgraphs": [s.model_dump() for s in subgraphs],
-        }
-    
-    # Default to search if no specific action identified
-    hits, subgraphs = semantic_search(message)
-    return {
-        "action": "search",
-        "hits": [h.model_dump() for h in hits],
-        "subgraphs": [s.model_dump() for s in subgraphs],
-    }
+            from openai import OpenAI
+            _openai_client = OpenAI(api_key=OPENAI_API_KEY)
+        except ImportError:
+            pass
+    return _openai_client
 
 
-def render_tool_summary(payload: Dict[str, Any]) -> str:
-    action = payload.get("action")
-    if action == "count":
-        data = payload.get("data", {})
-        parts = data.get("types", [])
-        if not parts:
-            return "Count tool did not return any results."
-        lines = [f"{p['type']}: {p['count']}" for p in parts]
-        return "Count results:\n" + "\n".join(lines)
+def _evidence_to_context(evidence: Dict[str, Any], max_nodes: int = 30) -> str:
+    """Serialize the graph evidence into a compact text block for the LLM."""
+    lines = []
+    sparql = evidence.get("sparql_query", "")
+    if sparql:
+        lines.append(f"SPARQL query used:\n{sparql}\n")
 
-    if action == "search":
-        hits = payload.get("hits", [])[:5]
-        if not hits:
-            return "No matching graph entities were found."
-        lines = []
-        for h in hits:
-            label = h.get("name") or h.get("id")
-            lines.append(f"- {label} ({h.get('type','unknown')}) score={h.get('score',0):.2f}")
-        return "Top graph hits:\n" + "\n".join(lines)
+    seeds = evidence.get("focus_seeds", [])
+    if seeds:
+        seed_ids = [s["id"].split("/")[-1].split("#")[-1] for s in seeds[:10]]
+        lines.append(f"Focus entities: {', '.join(seed_ids)}")
 
-    if action == "work-order":
-        data = payload.get("data", {})
-        if data:
-            return f"Work order created: {data.get('title', 'Untitled')} (Priority: {data.get('priority', 'Medium')})"
-        else:
-            return "Work order creation failed."
+    nodes = evidence.get("nodes", [])[:max_nodes]
+    if nodes:
+        lines.append(f"\nGraph neighborhood ({len(nodes)} nodes):")
+        for n in nodes:
+            name = n.get("name") or n.get("id", "").split("/")[-1].split("#")[-1]
+            ntype = (n.get("type") or "").split("#")[-1].split("/")[-1]
+            hop = n.get("hop", "?")
+            lines.append(f"  [{ntype}] {name} (hop={hop})")
 
-    if action == "asset":
-        hits = payload.get("hits", [])[:5]
-        if not hits:
-            return "No matching assets were found."
-        lines = []
-        for h in hits:
-            label = h.get("name") or h.get("id")
-            lines.append(f"- {label} ({h.get('type','unknown')}) score={h.get('score',0):.2f}")
-        return "Asset search results:\n" + "\n".join(lines)
+    edges = evidence.get("edges", [])
+    if edges:
+        lines.append(f"\nRelationships ({len(edges)} edges):")
+        for e in edges[:40]:
+            src = e["src"].split("/")[-1].split("#")[-1]
+            dst = e["dst"].split("/")[-1].split("#")[-1]
+            rel = e.get("type", "related")
+            lines.append(f"  {src} --{rel}--> {dst}")
 
-    return "No tool context available."
+    return "\n".join(lines)
+
+
+def _detect_tool_action(message: str, evidence: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Detect if the chat should trigger a frontend tool action."""
+    ml = message.lower()
+    nodes = evidence.get("nodes", [])
+
+    if any(w in ml for w in ("show graph", "visualize", "knowledge graph", "show me", "graph of")):
+        graph_nodes = []
+        graph_links = []
+        node_ids = set()
+        for n in nodes[:50]:
+            nid = n.get("id", "")
+            name = n.get("name") or nid.split("/")[-1].split("#")[-1]
+            ntype = (n.get("type") or "").split("#")[-1]
+            graph_nodes.append({"id": nid, "label": name, "name": name, "type": ntype, "status": "nominal"})
+            node_ids.add(nid)
+        for e in evidence.get("edges", []):
+            if e["src"] in node_ids and e["dst"] in node_ids:
+                graph_links.append({"source": e["src"], "target": e["dst"], "relationship": e.get("type", "related")})
+        return {"action": "graph", "graphData": {"nodes": graph_nodes, "links": graph_links}}
+
+    if any(w in ml for w in ("telemetry", "readings", "sensor data", "time series", "live data")):
+        for n in nodes:
+            name = (n.get("name") or "").lower()
+            ntype = (n.get("type") or "").lower()
+            if "sensor" in name or "sensor" in ntype:
+                return {"action": "telemetry", "asset_id": n.get("id", ""), "query": message}
+        return {"action": "telemetry", "query": message}
+
+    if any(w in ml for w in ("search", "find", "where", "which", "list")):
+        return {"action": "search", "query": message}
+
+    return None
 
 
 @router.post("/chat")
 async def chat_endpoint(request: ChatRequest):
-    tool_payload = run_graph_tools(request.message)
-    tool_summary = render_tool_summary(tool_payload)
+    rag = _get_rag()
+    oai = _get_openai()
 
-    history: List[Dict[str, str]] = [{"role": "system", "content": SYSTEM_PROMPT}]
-    for turn in request.history[-6:]:
-        history.append({"role": turn.role, "content": turn.content})
+    try:
+        evidence = rag.build_evidence(request.message, top_k=15)
+    except Exception as exc:
+        logger.error("GraphRAG evidence build failed: %s", exc)
+        evidence = {"question": request.message, "sparql_query": "", "focus_seeds": [], "nodes": [], "edges": []}
 
-    history.append(
-        {
-            "role": "user",
-            "content": f"{request.message}\n\nContext:\n{tool_summary}",
-        }
-    )
+    context_block = _evidence_to_context(evidence)
+    tool_action = _detect_tool_action(request.message, evidence)
 
-    # If the Groq client or API key isn't configured, return a graceful
-    # fallback that includes the tool summary so the UI still gets useful
-    # information.
-    if not client:
-        reply = tool_summary + "\n\n[LLM not configured: set GROQ_API_KEY to enable natural language replies.]"
-        return {"reply": reply, "tool": tool_payload}
+    if not oai:
+        reply = (
+            f"[GraphRAG evidence collected — {len(evidence.get('nodes', []))} nodes, "
+            f"{len(evidence.get('edges', []))} edges]\n\n{context_block}\n\n"
+            "[Set OPENAI_API_KEY for natural language answers.]"
+        )
+        return {"reply": reply, "tool": tool_action, "evidence": _slim_evidence(evidence)}
 
-    # Try preferred models in order; surface a clear error if all fail.
-    last_err = None
-    if not client:
-        reply = tool_summary + "\n\n[LLM not configured: set GROQ_API_KEY to enable natural language replies.]"
-        return {"reply": reply, "tool": tool_payload}
+    history = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for turn in request.history[-8:]:
+        history.append({"role": turn.role if turn.role != "model" else "assistant", "content": turn.content})
 
-    for model_name in PREFERRED_MODELS:
-        try:
-            completion = client.chat.completions.create(
-                model=model_name,
-                messages=history,
-                temperature=0.4,
-                max_tokens=600,
-            )
-            reply = completion.choices[0].message.content
-            return {"reply": reply, "tool": tool_payload}
-        except Exception as e:
-            # capture and try next fallback
-            last_err = e
+    history.append({
+        "role": "user",
+        "content": (
+            f"{request.message}\n\n"
+            f"--- Graph Evidence ---\n{context_block}"
+        ),
+    })
 
-    # all attempts failed
-    err_msg = str(last_err) if last_err else "Unknown error"
-    reply = tool_summary + f"\n\n[LLM request failed after trying models {PREFERRED_MODELS}: {err_msg}]"
-    return {"reply": reply, "tool": tool_payload}
+    try:
+        completion = oai.chat.completions.create(
+            model=CHAT_MODEL,
+            messages=history,
+            temperature=0.3,
+            max_tokens=800,
+        )
+        reply = completion.choices[0].message.content
+    except Exception as exc:
+        logger.error("OpenAI chat completion failed: %s", exc)
+        reply = f"Graph evidence collected ({len(evidence.get('nodes', []))} nodes) but LLM call failed: {exc}"
+
+    return {
+        "reply": reply,
+        "tool": tool_action,
+        "evidence": _slim_evidence(evidence),
+    }
 
 
+def _slim_evidence(evidence: Dict[str, Any]) -> Dict[str, Any]:
+    """Return a lightweight evidence summary for the frontend."""
+    return {
+        "sparql_query": evidence.get("sparql_query", ""),
+        "seed_count": len(evidence.get("focus_seeds", [])),
+        "node_count": len(evidence.get("nodes", [])),
+        "edge_count": len(evidence.get("edges", [])),
+        "seeds": [s["id"] for s in evidence.get("focus_seeds", [])[:5]],
+    }
+
+
+from api.main import app  # noqa: E402
 app.include_router(router)

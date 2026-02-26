@@ -18,12 +18,15 @@ const KnowledgeGraph = ({ data, onNodeClick }) => {
   const getNodeColor = (node) => {
     if (node.status === 'warning') return '#ffb020';
     if (node.status === 'critical') return '#ff4d4d';
-    // Color by type
+    if (node.ontology === 'ifcld') return '#3b82f6';
+    if (node.ontology === 'brick') return '#22c55e';
+    if (node.ontology === '223p') return '#a855f7';
     if (node.type && node.type.includes('Equipment')) return '#00f0ff';
+    if (node.type && node.type.includes('Sensor')) return '#f59e0b';
     if (node.type && node.type.includes('Point')) return '#00ff9d';
     if (node.type && node.type.includes('Zone')) return '#6366f1';
     if (node.type && node.type.includes('Space')) return '#8b5cf6';
-    return '#00f0ff'; // Default accent color
+    return '#00f0ff';
   };
 
   const getNodeSize = (node) => {
@@ -47,14 +50,20 @@ const KnowledgeGraph = ({ data, onNodeClick }) => {
     <div className="relative w-full h-full bg-nexus-800 rounded-lg overflow-hidden border border-nexus-600 shadow-inner">
       <div className="absolute top-2 left-3 z-10">
         <h3 className="text-xs font-mono text-nexus-accent uppercase tracking-widest">
-          Semantic Knowledge Graph (RDF/IFC)
+          Overlay Knowledge Graph
         </h3>
-        <div className="flex gap-2 mt-1">
+        <div className="flex gap-2 mt-1 flex-wrap">
            <span className="flex items-center text-[10px] text-slate-400">
-             <span className="w-2 h-2 rounded-full bg-nexus-accent mr-1"></span>Asset
+             <span className="w-2 h-2 rounded-full mr-1" style={{background:'#3b82f6'}}></span>IFC-LD
            </span>
            <span className="flex items-center text-[10px] text-slate-400">
-             <span className="w-2 h-2 rounded-full bg-nexus-success mr-1"></span>Sensor/Point
+             <span className="w-2 h-2 rounded-full mr-1" style={{background:'#22c55e'}}></span>Brick
+           </span>
+           <span className="flex items-center text-[10px] text-slate-400">
+             <span className="w-2 h-2 rounded-full mr-1" style={{background:'#a855f7'}}></span>223P
+           </span>
+           <span className="flex items-center text-[10px] text-slate-400">
+             <span className="w-2 h-2 rounded-full mr-1" style={{background:'#f59e0b'}}></span>Sensor
            </span>
            <span className="flex items-center text-[10px] text-slate-400">
              <span className="w-2 h-2 rounded-full bg-nexus-warning mr-1"></span>Warning
