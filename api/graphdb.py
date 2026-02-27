@@ -1,5 +1,9 @@
 """
 GraphDB API endpoints for SPARQL queries and RDF graph operations.
+
+The /graph endpoint returns an *RDF-faithful* representation: every SPARQL
+binding becomes an edge, rdf:type triples produce class nodes, literal
+objects become literal leaf-nodes, and all URIs are shown in prefixed form.
 """
 import os
 from typing import Dict, Any, List, Optional
@@ -8,33 +12,75 @@ from pydantic import BaseModel
 import sys
 import pathlib
 
-# Add parent directory to path for imports
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from ingest.graphdb_client import GraphDBClient
 
 router = APIRouter()
 
-# GraphDB configuration from environment
 GRAPHDB_URL = os.getenv("GRAPHDB_URL", "http://localhost:7200")
 GRAPHDB_REPOSITORY = os.getenv("GRAPHDB_REPOSITORY", "rig-facility-mgmt")
 GRAPHDB_USERNAME = os.getenv("GRAPHDB_USERNAME")
 GRAPHDB_PASSWORD = os.getenv("GRAPHDB_PASSWORD")
 
-# Initialize GraphDB client
 _graphdb_client = None
 
+
 def get_graphdb_client() -> GraphDBClient:
-    """Get or create GraphDB client instance."""
     global _graphdb_client
     if _graphdb_client is None:
         _graphdb_client = GraphDBClient(
             base_url=GRAPHDB_URL,
             repository=GRAPHDB_REPOSITORY,
             username=GRAPHDB_USERNAME,
-            password=GRAPHDB_PASSWORD
+            password=GRAPHDB_PASSWORD,
         )
     return _graphdb_client
 
+
+# ── Prefix helpers ────────────────────────────────────────────────────────────
+
+PREFIX_MAP = {
+    "http://data.ashrae.org/standard223#":         "s223:",
+    "http://brickschema.org/schema/1.1.0/Brick#":  "brick:",
+    "http://brickschema.org/schema/Brick#":         "brick:",
+    "http://ifc-ld.org/schemas/ifc2x3#":            "ifc:",
+    "http://www.w3.org/2004/02/skos/core#":         "skos:",
+    "http://www.w3.org/2000/01/rdf-schema#":        "rdfs:",
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#":  "rdf:",
+    "http://qudt.org/schema/qudt/":                  "qudt:",
+    "http://qudt.org/vocab/quantitykind/":           "qk:",
+    "https://example.com/case-office/":              "co:",
+    "http://example.com/mybuilding#":                "bldg:",
+    "http://ifc-ld.org/ids#":                        "ifcid:",
+    "https://example.com/rig#":                      "rig:",
+}
+
+ONTOLOGY_NAMESPACES = {
+    "s223:",  "brick:",  "ifc:",
+}
+
+RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+
+
+def prefixed(uri: str) -> str:
+    """Convert a full URI to its shortest prefixed form."""
+    for ns, px in PREFIX_MAP.items():
+        if uri.startswith(ns):
+            return px + uri[len(ns):]
+    if "#" in uri:
+        return uri.split("#")[-1]
+    return uri.split("/")[-1]
+
+
+def namespace_of(uri: str) -> str:
+    """Return the prefix portion (e.g. 's223') for a URI."""
+    for ns, px in PREFIX_MAP.items():
+        if uri.startswith(ns):
+            return px.rstrip(":")
+    return "other"
+
+
+# ── Models ────────────────────────────────────────────────────────────────────
 
 class SPARQLQueryRequest(BaseModel):
     query: str
@@ -44,15 +90,15 @@ class SPARQLQueryRequest(BaseModel):
 class GraphNode(BaseModel):
     id: str
     name: Optional[str] = None
-    type: Optional[str] = None
-    labels: Optional[List[str]] = []
+    type: Optional[str] = None          # "resource" | "literal" | "class"
+    labels: Optional[List[str]] = []    # rdf:types in prefixed form
     properties: Optional[Dict[str, Any]] = {}
 
 
 class GraphEdge(BaseModel):
     source: str
     target: str
-    type: str
+    type: str                            # prefixed predicate
     properties: Optional[Dict[str, Any]] = {}
 
 
@@ -61,6 +107,8 @@ class GraphResponse(BaseModel):
     edges: List[GraphEdge]
 
 
+# ── Endpoints ─────────────────────────────────────────────────────────────────
+
 @router.post("/sparql", response_model=Dict[str, Any])
 async def execute_sparql(query_request: SPARQLQueryRequest):
     """Execute a SPARQL query against GraphDB."""
@@ -68,11 +116,8 @@ async def execute_sparql(query_request: SPARQLQueryRequest):
         client = get_graphdb_client()
         raw = client.execute_sparql_query(
             query_request.query,
-            output_format=query_request.format
+            output_format=query_request.format,
         )
-        # SPARQLWrapper returns {"head": ..., "results": {"bindings": [...]}}.
-        # Flatten so the API always returns {"results": {"bindings": [...]}}
-        # instead of double-nesting {"results": {"head": ..., "results": {...}}}.
         if isinstance(raw, dict) and "results" in raw:
             return {"results": raw["results"]}
         return {"results": raw}
@@ -82,161 +127,149 @@ async def execute_sparql(query_request: SPARQLQueryRequest):
 
 @router.get("/graph", response_model=GraphResponse)
 async def get_graph(
-    limit: int = Query(100, ge=1, le=1000),
-    entity_type: Optional[str] = None,
-    hops: int = Query(2, ge=1, le=5)
+    limit: int = Query(500, ge=1, le=2000),
 ):
-    """Get graph structure from GraphDB for visualization."""
+    """Return an RDF-faithful graph for visualisation.
+
+    Every triple becomes an edge.  ``rdf:type`` triples produce *class*
+    target-nodes (hexagons on the frontend), literal objects produce
+    *literal* leaf-nodes (rectangles), and everything else is a *resource*
+    node (circles).  All URIs are returned in prefixed notation.
+    """
     try:
         client = get_graphdb_client()
-        
-        # Build SPARQL query based on parameters
-        if entity_type:
-            # Query specific entity type
-            query = f"""
-            PREFIX ifc: <http://ifc-ld.org/schemas/ifc2x3#>
-            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-            PREFIX ex: <https://example.com/rig#>
-            PREFIX s223: <http://data.ashrae.org/standard223#>
-            PREFIX brick: <https://brickschema.org/schema/Brick#>
-            
-            SELECT DISTINCT ?entity ?name ?type ?predicate ?object
-            WHERE {{
-                ?entity a ?type .
-                FILTER (STRSTARTS(STR(?type), "{entity_type}"))
-                OPTIONAL {{ ?entity rdfs:label ?name }}
-                OPTIONAL {{ ?entity ifc:name ?name }}
-                OPTIONAL {{ ?entity ?predicate ?object }}
-                FILTER (isURI(?object))
+
+        query = f"""
+            PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            PREFIX owl:    <http://www.w3.org/2002/07/owl#>
+            PREFIX s223:   <http://data.ashrae.org/standard223#>
+            PREFIX brick1: <http://brickschema.org/schema/1.1.0/Brick#>
+            PREFIX ifc:    <http://ifc-ld.org/schemas/ifc2x3#>
+            PREFIX skos:   <http://www.w3.org/2004/02/skos/core#>
+            PREFIX qudt:   <http://qudt.org/schema/qudt/>
+
+            SELECT ?s ?p ?o WHERE {{
+              VALUES ?p {{
+                rdf:type  rdfs:label
+                skos:exactMatch
+                brick1:isPointOf  brick1:hasPart  brick1:isPartOf  brick1:hasPoint
+                s223:hasPhysicalLocation  s223:observes  s223:hasZone
+                s223:hasProperty  s223:connected  s223:cnx
+                qudt:hasQuantityKind
+              }}
+              ?s ?p ?o .
+              FILTER(!STRSTARTS(STR(?s), "http://www.w3.org/"))
+              FILTER(!STRSTARTS(STR(?s), "http://www.openrdf.org/"))
+              FILTER(!STRSTARTS(STR(?s), "http://rdf4j.org/"))
             }}
             LIMIT {limit}
-            """
-        else:
-            # Query all relevant entities (IFC-LD, 223P, Brick)
-            query = f"""
-            PREFIX ex: <https://example.com/rig#>
-            PREFIX s223: <http://data.ashrae.org/standard223#>
-            PREFIX brick: <https://brickschema.org/schema/Brick#>
-            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-            PREFIX ifc: <http://ifc-ld.org/schemas/ifc2x3#>
-            
-            SELECT DISTINCT ?entity ?name ?type ?predicate ?object
-            WHERE {{
-                {{
-                    ?entity a s223:Equipment .
-                    OPTIONAL {{ ?entity rdfs:label ?name }}
-                    OPTIONAL {{ ?entity ifc:name ?name }}
-                    OPTIONAL {{ ?entity ?predicate ?object }}
-                    FILTER (isURI(?object))
-                }}
-                UNION
-                {{
-                    ?entity a brick:Point .
-                    OPTIONAL {{ ?entity rdfs:label ?name }}
-                    OPTIONAL {{ ?entity ifc:name ?name }}
-                    OPTIONAL {{ ?entity ?predicate ?object }}
-                    FILTER (isURI(?object))
-                }}
-                UNION
-                {{
-                    ?entity a s223:Property .
-                    OPTIONAL {{ ?entity rdfs:label ?name }}
-                    OPTIONAL {{ ?entity ifc:name ?name }}
-                    OPTIONAL {{ ?entity ?predicate ?object }}
-                    FILTER (isURI(?object))
-                }}
-                UNION
-                {{
-                    ?entity a ifc:IfcSpace .
-                    OPTIONAL {{ ?entity rdfs:label ?name }}
-                    OPTIONAL {{ ?entity ifc:name ?name }}
-                    OPTIONAL {{ ?entity ?predicate ?object }}
-                    FILTER (isURI(?object))
-                }}
-                UNION
-                {{
-                    ?entity a ifc:IfcBuilding .
-                    OPTIONAL {{ ?entity rdfs:label ?name }}
-                    OPTIONAL {{ ?entity ifc:name ?name }}
-                    OPTIONAL {{ ?entity ?predicate ?object }}
-                    FILTER (isURI(?object))
-                }}
-                UNION
-                {{
-                    ?entity a ifc:IfcBuildingStorey .
-                    OPTIONAL {{ ?entity rdfs:label ?name }}
-                    OPTIONAL {{ ?entity ifc:name ?name }}
-                    OPTIONAL {{ ?entity ?predicate ?object }}
-                    FILTER (isURI(?object))
-                }}
-                UNION
-                {{
-                    ?entity a brick:AHU .
-                    OPTIONAL {{ ?entity rdfs:label ?name }}
-                    OPTIONAL {{ ?entity ifc:name ?name }}
-                    OPTIONAL {{ ?entity ?predicate ?object }}
-                    FILTER (isURI(?object))
-                }}
-                UNION
-                {{
-                    ?entity a brick:VAV .
-                    OPTIONAL {{ ?entity rdfs:label ?name }}
-                    OPTIONAL {{ ?entity ifc:name ?name }}
-                    OPTIONAL {{ ?entity ?predicate ?object }}
-                    FILTER (isURI(?object))
-                }}
-            }}
-            LIMIT {limit}
-            """
-        
+        """
+
         results = client.execute_sparql_query(query, output_format="json")
-        
-        print(f"[GraphDB API] Query returned {len(results.get('results', {}).get('bindings', []))} bindings")
-        
-        # Parse results into nodes and edges
-        nodes = {}
-        edges = []
-        
-        if "results" in results and "bindings" in results["results"]:
-            for binding in results["results"]["bindings"]:
-                entity_uri = binding.get("entity", {}).get("value", "")
-                if not entity_uri:
-                    continue
-                
-                # Extract node info
-                if entity_uri not in nodes:
-                    node_name = binding.get("name", {}).get("value", "")
-                    node_type = binding.get("type", {}).get("value", "")
-                    # Extract short name from URI
-                    if not node_name:
-                        node_name = entity_uri.split("/")[-1].split("#")[-1]
-                    
-                    nodes[entity_uri] = {
-                        "id": entity_uri,
-                        "name": node_name,
-                        "type": node_type.split("#")[-1] if "#" in node_type else node_type.split("/")[-1],
-                        "labels": [],
-                        "properties": {}
-                    }
-                
-                # Extract edge
-                predicate = binding.get("predicate", {}).get("value", "")
-                object_uri = binding.get("object", {}).get("value", "")
-                
-                if predicate and object_uri and object_uri.startswith("http"):
-                    edge_type = predicate.split("#")[-1] if "#" in predicate else predicate.split("/")[-1]
+        bindings = results.get("results", {}).get("bindings", [])
+        print(f"[GraphDB /graph] {len(bindings)} raw bindings")
+
+        nodes: Dict[str, dict] = {}
+        edges: list = []
+        edges_seen: set = set()
+        lit_counter = 0
+
+        def _ensure_resource(uri: str):
+            if uri not in nodes:
+                nodes[uri] = {
+                    "id": uri,
+                    "name": prefixed(uri),
+                    "type": "resource",
+                    "labels": [],
+                    "properties": {"ns": namespace_of(uri)},
+                }
+
+        for b in bindings:
+            s_uri = b.get("s", {}).get("value", "")
+            p_uri = b.get("p", {}).get("value", "")
+            o = b.get("o", {})
+            if not s_uri or not p_uri:
+                continue
+
+            _ensure_resource(s_uri)
+
+            o_type = o.get("type", "")   # "uri" or "literal" / "typed-literal"
+            o_val  = o.get("value", "")
+
+            if o_type == "uri":
+                if p_uri == RDF_TYPE:
+                    # Skip generic W3C types (owl:NamedIndividual, etc.)
+                    if o_val.startswith("http://www.w3.org/"):
+                        continue
+                    # Class node
+                    if o_val not in nodes:
+                        nodes[o_val] = {
+                            "id": o_val,
+                            "name": prefixed(o_val),
+                            "type": "class",
+                            "labels": [],
+                            "properties": {"ns": namespace_of(o_val)},
+                        }
+                    elif nodes[o_val]["type"] == "resource":
+                        nodes[o_val]["type"] = "class"
+                    nodes[s_uri]["labels"].append(prefixed(o_val))
+                else:
+                    _ensure_resource(o_val)
+
+                key = (s_uri, o_val, p_uri)
+                if key not in edges_seen:
+                    edges_seen.add(key)
                     edges.append({
-                        "source": entity_uri,
-                        "target": object_uri,
-                        "type": edge_type,
-                        "properties": {}
+                        "source": s_uri,
+                        "target": o_val,
+                        "type": prefixed(p_uri),
+                        "properties": {},
                     })
-        
+
+            else:
+                # Literal object → leaf node
+                lit_counter += 1
+                lit_id = f"_:lit{lit_counter}"
+                display = o_val if len(o_val) <= 50 else o_val[:47] + "..."
+                nodes[lit_id] = {
+                    "id": lit_id,
+                    "name": f'"{display}"',
+                    "type": "literal",
+                    "labels": [],
+                    "properties": {
+                        "value": o_val,
+                        "datatype": o.get("datatype", ""),
+                    },
+                }
+                key = (s_uri, lit_id, p_uri)
+                if key not in edges_seen:
+                    edges_seen.add(key)
+                    edges.append({
+                        "source": s_uri,
+                        "target": lit_id,
+                        "type": prefixed(p_uri),
+                        "properties": {},
+                    })
+
+        # Attach rdfs:label text to the resource node name when available
+        label_pred = "http://www.w3.org/2000/01/rdf-schema#label"
+        for b in bindings:
+            p_uri = b.get("p", {}).get("value", "")
+            if p_uri != label_pred:
+                continue
+            s_uri = b["s"]["value"]
+            lbl = b["o"]["value"]
+            if s_uri in nodes and nodes[s_uri]["type"] == "resource":
+                nodes[s_uri]["name"] = lbl
+
+        print(f"[GraphDB /graph] {len(nodes)} nodes  {len(edges)} edges")
+
         return GraphResponse(
-            nodes=[GraphNode(**node) for node in nodes.values()],
-            edges=[GraphEdge(**edge) for edge in edges]
+            nodes=[GraphNode(**n) for n in nodes.values()],
+            edges=[GraphEdge(**e) for e in edges],
         )
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get graph: {str(e)}")
 
@@ -248,25 +281,28 @@ async def get_semantic_layers():
         client = get_graphdb_client()
         
         query = """
-        PREFIX s223: <http://data.ashrae.org/standard223#>
-        PREFIX brick: <https://brickschema.org/schema/Brick#>
-        PREFIX ifc: <http://ifc-ld.org/schemas/ifc2x3#>
-        
+        PREFIX s223:  <http://data.ashrae.org/standard223#>
+        PREFIX brick1: <http://brickschema.org/schema/1.1.0/Brick#>
+        PREFIX ifc:   <http://ifc-ld.org/schemas/ifc2x3#>
+
         SELECT ?layer (COUNT(DISTINCT ?entity) as ?count)
         WHERE {
             {
-                ?entity a s223:Equipment .
-                BIND ("223P Equipment" as ?layer)
+                ?entity a ?t .
+                FILTER(STRSTARTS(STR(?t), STR(s223:)))
+                BIND ("223P" as ?layer)
             }
             UNION
             {
-                ?entity a brick:Point .
-                BIND ("Brick Points" as ?layer)
+                ?entity a ?t .
+                FILTER(STRSTARTS(STR(?t), STR(brick1:)))
+                BIND ("Brick" as ?layer)
             }
             UNION
             {
-                ?entity a ifc:IfcFlowTerminal .
-                BIND ("IFC-LD Flow Terminal" as ?layer)
+                ?entity a ?t .
+                FILTER(STRSTARTS(STR(?t), STR(ifc:)))
+                BIND ("IFC-LD" as ?layer)
             }
         }
         GROUP BY ?layer

@@ -204,104 +204,34 @@ function FacilityOS() {
 
   const loadGraphData = async () => {
     try {
-      console.log("Loading overlay graph data from GraphDB...");
-      
-      const sparqlQuery = `
-        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        PREFIX s223: <http://data.ashrae.org/standard223#>
-        PREFIX brick1: <http://brickschema.org/schema/1.1.0/Brick#>
+      console.log("Loading RDF graph from /graphdb/graph...");
 
-        SELECT ?s ?sLabel ?p ?o ?oLabel
-        WHERE {
-          {
-            SELECT ?s ?p ?o WHERE {
-              ?s ?p ?o .
-              FILTER(isIRI(?s) && isIRI(?o))
-              FILTER(?p IN (
-                skos:exactMatch,
-                brick1:isPointOf, brick1:hasPart, brick1:isPartOf,
-                s223:hasPhysicalLocation, s223:observes, s223:hasZone,
-                s223:hasProperty, s223:connected
-              ))
-            }
-            LIMIT 500
-          }
-          OPTIONAL { ?s rdfs:label ?sLabel }
-          OPTIONAL { ?o rdfs:label ?oLabel }
-        }
-      `;
-      
-      const res = await fetch(`${API_BASE}/graphdb/sparql`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: sparqlQuery, format: "json" })
-      });
-      
+      const res = await fetch(`${API_BASE}/graphdb/graph?limit=600`);
+
       if (res.ok) {
         const result = await res.json();
-        const bindings = result.results?.bindings || [];
-        console.log(`GraphDB overlay query returned ${bindings.length} bindings`);
-        
-        const nodesMap = new Map();
-        const links = [];
 
-        const shortName = (uri) => {
-          if (!uri) return '';
-          const afterHash = uri.split('#').pop();
-          const afterSlash = afterHash?.split('/').pop();
-          return afterSlash?.replace(/_/g, ' ') || uri;
-        };
+        const nodes = (result.nodes || []).map(n => ({
+          id: n.id,
+          label: n.name || n.id,
+          name: n.name || n.id,
+          kind: n.type || 'resource',       // "resource" | "literal" | "class"
+          rdfTypes: n.labels || [],          // prefixed rdf:types
+          ns: n.properties?.ns || 'other',   // namespace key
+          status: 'nominal',
+        }));
 
-        const classifyOntology = (uri) => {
-          if (!uri) return 'overlay';
-          if (uri.includes('ifc-ld.org')) return 'ifcld';
-          if (uri.includes('ashrae.org') || uri.includes('standard223')) return '223p';
-          if (uri.includes('brickschema.org') || uri.includes('mybuilding')) return 'brick';
-          return 'overlay';
-        };
-        
-        for (const b of bindings) {
-          const sUri = b.s?.value;
-          const oUri = b.o?.value;
-          const pred = b.p?.value;
-          if (!sUri || !oUri) continue;
-          
-          if (!nodesMap.has(sUri)) {
-            const ont = classifyOntology(sUri);
-            nodesMap.set(sUri, {
-              id: sUri,
-              label: b.sLabel?.value || shortName(sUri),
-              name: b.sLabel?.value || shortName(sUri),
-              type: 'Entity',
-              ontology: ont,
-              status: 'nominal'
-            });
-          }
-          
-          if (!nodesMap.has(oUri)) {
-            const ont = classifyOntology(oUri);
-            nodesMap.set(oUri, {
-              id: oUri,
-              label: b.oLabel?.value || shortName(oUri),
-              name: b.oLabel?.value || shortName(oUri),
-              type: 'Entity',
-              ontology: ont,
-              status: 'nominal'
-            });
-          }
-          
-          const predShort = pred?.includes('#') ? pred.split('#').pop() : pred?.split('/').pop();
-          links.push({
-            source: sUri,
-            target: oUri,
-            relationship: predShort || 'related'
-          });
-        }
-        
-        const nodes = Array.from(nodesMap.values());
+        const nodeIds = new Set(nodes.map(n => n.id));
+        const links = (result.edges || [])
+          .filter(e => nodeIds.has(e.source) && nodeIds.has(e.target))
+          .map(e => ({
+            source: e.source,
+            target: e.target,
+            predicate: e.type || 'related',
+          }));
+
         setGraphData({ nodes, links });
-        console.log(`Loaded ${nodes.length} nodes and ${links.length} links from overlay graph`);
+        console.log(`RDF graph: ${nodes.length} nodes, ${links.length} edges`);
       } else {
         const errorText = await res.text();
         console.error("GraphDB request failed:", res.status, errorText);
@@ -674,7 +604,8 @@ function FacilityOS() {
 
   const handleNodeClick = (node) => {
     setSelectedNodeId(node.id);
-    if (node.type === 'Sensor' || node.type === 'Point') {
+    const types = (node.rdfTypes || []).join(' ');
+    if (types.includes('Sensor') || types.includes('Point')) {
       toolHandlers.onGetTelemetry({ assetId: node.id, metric: 'Value' });
     }
   };
