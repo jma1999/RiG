@@ -59,28 +59,24 @@ const TelemetryPanel = ({ data, graphSensors = [] }) => {
     setLoading(true);
     try {
       console.log(`Loading data for point: ${pointId}`);
-      
-      // First seed data to ensure we have data
-      await fetch(`${API_BASE}/telemetry/seed/${pointId}?count=60`, { method: "POST" });
-      
-      // Wait for data to commit
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Then fetch the data
-      const res = await fetch(`${API_BASE}/telemetry/points/${pointId}?hours=24&limit=100`);
+
+      const res = await fetch(`${API_BASE}/telemetry/points/${pointId}?hours=24&limit=200`);
       if (res.ok) {
         const data = await res.json();
-        const telemetry = {
+        const rows = (data.data || []).map(d => ({
+          timestamp: new Date(d.time || d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          value: parseFloat(d.value) || 0,
+        }));
+
+        const sensorInfo = telemetryPoints.find(p => p.point_id === pointId);
+
+        setSelectedPoint({
           id: pointId,
-          name: `${pointId}`,
-          unit: data.unit || '°C',
-          data: (data.data || []).map(d => ({
-            timestamp: new Date(d.time || d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            value: parseFloat(d.value) || 0
-          }))
-        };
-        setSelectedPoint(telemetry);
-        console.log(`✅ Loaded ${telemetry.data.length} data points for ${pointId}`);
+          name: sensorInfo?.label || pointId,
+          unit: data.unit || sensorInfo?.unit || '',
+          data: rows,
+        });
+        console.log(`Loaded ${rows.length} data points for ${pointId}`);
       }
     } catch (error) {
       console.error("Failed to load point data:", error);
@@ -125,19 +121,27 @@ const TelemetryPanel = ({ data, graphSensors = [] }) => {
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-white">{point.label || point.point_id}</p>
-                      <p className="text-xs text-slate-400">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-white truncate">{point.label || point.point_id}</p>
+                      <p className="text-xs text-slate-400 truncate">
                         {point.sensor_type || point.quantity_kind || 'Sensor'}
-                        {point.data_points ? ` • ${point.data_points} readings` : ''}
-                        {point.last_reading ? ` • Last: ${new Date(point.last_reading).toLocaleString()}` : ''}
+                        {point.data_points ? ` · ${point.data_points} readings` : ''}
+                        {point.last_reading ? ` · ${new Date(point.last_reading).toLocaleString()}` : ''}
                       </p>
                     </div>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono ${
-                      isLive ? 'bg-green-900/50 text-green-400' : 'bg-slate-800 text-slate-500'
-                    }`}>
-                      {isLive ? 'LIVE' : 'OFFLINE'}
-                    </span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {isLive && point.latest_value != null && (
+                        <span className="text-sm font-mono text-white">
+                          {typeof point.latest_value === 'number' ? point.latest_value.toFixed(1) : point.latest_value}
+                          {point.unit ? <span className="text-[10px] text-slate-500 ml-0.5">{point.unit}</span> : null}
+                        </span>
+                      )}
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono ${
+                        isLive ? 'bg-green-900/50 text-green-400' : 'bg-slate-800 text-slate-500'
+                      }`}>
+                        {isLive ? 'LIVE' : 'OFFLINE'}
+                      </span>
+                    </div>
                   </div>
                 </button>
               );

@@ -375,37 +375,30 @@ function FacilityOS() {
     onGetTelemetry: async (args) => {
       console.log("Tool Called: getTelemetry", args);
       const pointId = args.assetId || args.point_id;
-      
+
       try {
-        // First, ensure data is seeded for this point
-        await fetch(`${API_BASE}/telemetry/seed/${pointId}?count=60`, { method: "POST" });
-        
-        // Wait a moment for data to be committed
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Fetch telemetry data from TimescaleDB
-        const res = await fetch(`${API_BASE}/telemetry/points/${pointId}?hours=24&limit=100`);
+        const res = await fetch(`${API_BASE}/telemetry/points/${pointId}?hours=24&limit=200`);
         if (res.ok) {
           const data = await res.json();
           const telemetry = {
             id: pointId,
             name: `${pointId} - ${args.metric || 'Value'}`,
-            unit: data.unit || '°C',
+            unit: data.unit || '',
             data: (data.data || []).map(d => ({
               timestamp: new Date(d.time || d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              value: parseFloat(d.value) || 0
-            }))
+              value: parseFloat(d.value) || 0,
+            })),
           };
-          
+
           setTelemetryData(telemetry);
           setCurrentView('telemetry');
-          
+
           return {
             asset: pointId,
             metric: args.metric || 'Value',
             current_value: telemetry.data[telemetry.data.length - 1]?.value || 0,
             trend: "Stable",
-            description: `Visualizing ${args.metric || 'data'} for ${pointId} from TimescaleDB.`
+            description: `Visualizing ${args.metric || 'data'} for ${pointId}.`,
           };
         }
       } catch (error) {
