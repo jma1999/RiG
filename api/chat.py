@@ -15,6 +15,7 @@ import sys
 import pathlib
 import json
 import logging
+import time
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter
@@ -167,52 +168,143 @@ def _detect_tool_action(message: str, evidence: Dict[str, Any]) -> Optional[Dict
 
 @router.post("/chat")
 async def chat_endpoint(request: ChatRequest):
+    thinking_steps = []
+    t0 = time.time()
+
+    # Step 1: Build graph evidence via SPARQL RAG
+    thinking_steps.append({
+        "step": "understanding",
+        "title": "Understanding your question",
+        "content": f"Analyzing: \"{request.message}\"",
+    })
+
     rag = _get_rag()
     oai = _get_openai()
 
+    sparql_query = ""
+    evidence = {"question": request.message, "sparql_query": "", "focus_seeds": [], "nodes": [], "edges": []}
+
     try:
-        evidence = rag.build_evidence(request.message, top_k=15)
+        sparql_query = rag.natural_language_to_sparql(request.message)
+        thinking_steps.append({
+            "step": "sparql",
+            "title": "Generated SPARQL query",
+            "content": sparql_query,
+        })
+
+        results = rag.execute_sparql_query(sparql_query)
+        bindings = results.get("results", {}).get("bindings", [])
+        thinking_steps.append({
+            "step": "query_results",
+            "title": "Query executed",
+            "content": f"GraphDB returned {len(bindings)} bindings",
+        })
+
+        seed_uris = rag._extract_seed_uris_from_results(results, top_k=15)
+        if not seed_uris:
+            seed_uris = rag._recover_seeds_if_count_query(request.message, top_k=15)
+
+        if seed_uris:
+            neighborhood = rag.expand_neighborhood_with_ranking(
+                seed_uris[:15],
+                max_hops=2,
+                top_k_nodes=45,
+                question_keywords=[w for w in request.message.split() if len(w) > 3],
+            )
+            evidence = {
+                "question": request.message,
+                "sparql_query": sparql_query,
+                "focus_seeds": [{"id": u, "score": 1.0} for u in seed_uris[:15]],
+                "nodes": neighborhood["nodes"],
+                "edges": neighborhood["edges"],
+            }
+            thinking_steps.append({
+                "step": "evidence",
+                "title": "Graph evidence collected",
+                "content": f"Found {len(evidence['nodes'])} nodes and {len(evidence['edges'])} edges in neighborhood",
+            })
+        else:
+            thinking_steps.append({
+                "step": "evidence",
+                "title": "No graph entities found",
+                "content": "The query returned aggregate results or no matching entities",
+            })
+
     except Exception as exc:
         logger.error("GraphRAG evidence build failed: %s", exc)
-        evidence = {"question": request.message, "sparql_query": "", "focus_seeds": [], "nodes": [], "edges": []}
+        thinking_steps.append({
+            "step": "error",
+            "title": "Graph query issue",
+            "content": f"Could not query graph: {str(exc)[:200]}",
+        })
 
     context_block = _evidence_to_context(evidence)
     tool_action = _detect_tool_action(request.message, evidence)
 
+    # Step 2: Generate natural language answer
     if not oai:
+        thinking_steps.append({
+            "step": "llm",
+            "title": "LLM not available",
+            "content": "OPENAI_API_KEY is not configured. Returning raw evidence.",
+        })
         reply = (
-            f"[GraphRAG evidence collected — {len(evidence.get('nodes', []))} nodes, "
-            f"{len(evidence.get('edges', []))} edges]\n\n{context_block}\n\n"
-            "[Set OPENAI_API_KEY for natural language answers.]"
+            f"I found {len(evidence.get('nodes', []))} related entities in the knowledge graph.\n\n"
         )
-        return {"reply": reply, "tool": tool_action, "evidence": _slim_evidence(evidence)}
+        if evidence.get("nodes"):
+            for n in evidence["nodes"][:8]:
+                name = n.get("name") or n.get("id", "").split("/")[-1].split("#")[-1]
+                ntype = (n.get("type") or "").split("#")[-1]
+                reply += f"• **{name}** ({ntype})\n"
+        if not evidence.get("nodes"):
+            reply += "No matching entities found. Try rephrasing your question."
+        reply += "\n\n*Set OPENAI_API_KEY for full natural language answers.*"
+    else:
+        thinking_steps.append({
+            "step": "generating",
+            "title": "Generating answer",
+            "content": f"Using {CHAT_MODEL} with graph evidence context",
+        })
 
-    history = [{"role": "system", "content": SYSTEM_PROMPT}]
-    for turn in request.history[-8:]:
-        history.append({"role": turn.role if turn.role != "model" else "assistant", "content": turn.content})
+        history = [{"role": "system", "content": SYSTEM_PROMPT}]
+        for turn in request.history[-8:]:
+            history.append({"role": turn.role if turn.role != "model" else "assistant", "content": turn.content})
 
-    history.append({
-        "role": "user",
-        "content": (
-            f"{request.message}\n\n"
-            f"--- Graph Evidence ---\n{context_block}"
-        ),
+        history.append({
+            "role": "user",
+            "content": (
+                f"{request.message}\n\n"
+                f"--- Graph Evidence ---\n{context_block}"
+            ),
+        })
+
+        try:
+            completion = oai.chat.completions.create(
+                model=CHAT_MODEL,
+                messages=history,
+                temperature=0.3,
+                max_tokens=800,
+            )
+            reply = completion.choices[0].message.content
+        except Exception as exc:
+            logger.error("OpenAI chat completion failed: %s", exc)
+            reply = (
+                f"I queried the knowledge graph and found {len(evidence.get('nodes', []))} entities, "
+                f"but the language model could not generate a response: {str(exc)[:150]}\n\n"
+                "The SPARQL query used is shown in the thinking section above."
+            )
+
+    elapsed_ms = int((time.time() - t0) * 1000)
+    thinking_steps.append({
+        "step": "done",
+        "title": "Complete",
+        "content": f"Answered in {elapsed_ms}ms",
     })
-
-    try:
-        completion = oai.chat.completions.create(
-            model=CHAT_MODEL,
-            messages=history,
-            temperature=0.3,
-            max_tokens=800,
-        )
-        reply = completion.choices[0].message.content
-    except Exception as exc:
-        logger.error("OpenAI chat completion failed: %s", exc)
-        reply = f"Graph evidence collected ({len(evidence.get('nodes', []))} nodes) but LLM call failed: {exc}"
 
     return {
         "reply": reply,
+        "thinking": thinking_steps,
+        "sparql_query": sparql_query,
         "tool": tool_action,
         "evidence": _slim_evidence(evidence),
     }

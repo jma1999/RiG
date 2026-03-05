@@ -57,6 +57,7 @@ const TelemetryPanel = ({ data, graphSensors = [] }) => {
 
   const loadPointData = async (pointId) => {
     setLoading(true);
+    const sensorInfo = telemetryPoints.find(p => p.point_id === pointId);
     try {
       console.log(`Loading data for point: ${pointId}`);
 
@@ -68,18 +69,38 @@ const TelemetryPanel = ({ data, graphSensors = [] }) => {
           value: parseFloat(d.value) || 0,
         }));
 
-        const sensorInfo = telemetryPoints.find(p => p.point_id === pointId);
-
         setSelectedPoint({
           id: pointId,
           name: sensorInfo?.label || pointId,
           unit: data.unit || sensorInfo?.unit || '',
           data: rows,
+          latestDT: sensorInfo?.latest_value,
+          dtUnit: sensorInfo?.unit,
+          sensorType: sensorInfo?.sensor_type,
         });
         console.log(`Loaded ${rows.length} data points for ${pointId}`);
+      } else {
+        setSelectedPoint({
+          id: pointId,
+          name: sensorInfo?.label || pointId,
+          unit: sensorInfo?.unit || '',
+          data: [],
+          latestDT: sensorInfo?.latest_value,
+          dtUnit: sensorInfo?.unit,
+          sensorType: sensorInfo?.sensor_type,
+        });
       }
     } catch (error) {
       console.error("Failed to load point data:", error);
+      setSelectedPoint({
+        id: pointId,
+        name: sensorInfo?.label || pointId,
+        unit: sensorInfo?.unit || '',
+        data: [],
+        latestDT: sensorInfo?.latest_value,
+        dtUnit: sensorInfo?.unit,
+        sensorType: sensorInfo?.sensor_type,
+      });
     } finally {
       setLoading(false);
     }
@@ -113,12 +134,8 @@ const TelemetryPanel = ({ data, graphSensors = [] }) => {
               return (
                 <button
                   key={point.point_id}
-                  onClick={() => isLive ? loadPointData(point.point_id) : null}
-                  className={`w-full text-left p-3 bg-nexus-900/50 border rounded-lg transition-all ${
-                    isLive
-                      ? 'border-nexus-700 hover:border-nexus-accent/50 hover:bg-nexus-900 cursor-pointer'
-                      : 'border-nexus-800 opacity-60 cursor-default'
-                  }`}
+                  onClick={() => loadPointData(point.point_id)}
+                  className="w-full text-left p-3 bg-nexus-900/50 border border-nexus-700 rounded-lg transition-all hover:border-nexus-accent/50 hover:bg-nexus-900 cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
@@ -130,16 +147,16 @@ const TelemetryPanel = ({ data, graphSensors = [] }) => {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {isLive && point.latest_value != null && (
+                      {point.latest_value != null && (
                         <span className="text-sm font-mono text-white">
                           {typeof point.latest_value === 'number' ? point.latest_value.toFixed(1) : point.latest_value}
                           {point.unit ? <span className="text-[10px] text-slate-500 ml-0.5">{point.unit}</span> : null}
                         </span>
                       )}
                       <span className={`px-2 py-0.5 rounded text-[10px] font-mono ${
-                        isLive ? 'bg-green-900/50 text-green-400' : 'bg-slate-800 text-slate-500'
+                        isLive ? 'bg-green-900/50 text-green-400' : 'bg-amber-900/50 text-amber-400'
                       }`}>
-                        {isLive ? 'LIVE' : 'OFFLINE'}
+                        {isLive ? 'LIVE' : 'NO DATA'}
                       </span>
                     </div>
                   </div>
@@ -159,11 +176,11 @@ const TelemetryPanel = ({ data, graphSensors = [] }) => {
   }
 
   const displayData = selectedPoint || data;
-  const latestValue = displayData?.data && displayData.data.length > 0 
-    ? displayData.data[displayData.data.length - 1].value 
-    : 0;
-
   const chartData = displayData?.data || [];
+  const latestValue = chartData.length > 0
+    ? chartData[chartData.length - 1].value
+    : (displayData?.latestDT != null ? displayData.latestDT : null);
+
   const maxValue = chartData.length > 0 ? Math.max(...chartData.map(d => d.value)) : 1;
   const minValue = chartData.length > 0 ? Math.min(...chartData.map(d => d.value)) : 0;
   const range = maxValue - minValue || 1;
@@ -175,61 +192,82 @@ const TelemetryPanel = ({ data, graphSensors = [] }) => {
           <h3 className="text-nexus-accent font-mono text-sm uppercase tracking-wider">
             {displayData.name || displayData.id}
           </h3>
-          <p className="text-xs text-slate-400">Live Stream • TimescaleDB Aggregates</p>
+          <p className="text-xs text-slate-400">
+            {chartData.length > 0 ? 'Live Stream • TimescaleDB' : (displayData.sensorType || 'Sensor')}
+          </p>
+          <button
+            onClick={() => { setSelectedPoint(null); }}
+            className="text-[10px] text-slate-500 hover:text-nexus-accent mt-1 transition-colors"
+          >
+            ← Back to sensor list
+          </button>
         </div>
         <div className="text-right">
-          <span className="text-2xl font-bold text-white">
-            {latestValue.toFixed(1)}
-          </span>
-          <span className="text-sm text-slate-400 ml-1">{displayData.unit || ''}</span>
+          {latestValue != null ? (
+            <>
+              <span className="text-2xl font-bold text-white">
+                {typeof latestValue === 'number' ? latestValue.toFixed(1) : latestValue}
+              </span>
+              <span className="text-sm text-slate-400 ml-1">{displayData.unit || displayData.dtUnit || ''}</span>
+            </>
+          ) : (
+            <span className="text-sm text-slate-500">No readings</span>
+          )}
         </div>
       </div>
       
       <div className="flex-grow min-h-0 flex items-center justify-center">
-        <div className="w-full h-full relative">
-          {/* Simple line chart visualization */}
-          <svg className="w-full h-full" viewBox="0 0 800 400" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="5%" stopColor="#00f0ff" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#00f0ff" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            {/* Grid lines */}
-            {[0, 1, 2, 3, 4].map(i => (
-              <line
-                key={i}
-                x1="0"
-                y1={i * 100}
-                x2="800"
-                y2={i * 100}
-                stroke="#2d2d3a"
-                strokeWidth="1"
-                strokeDasharray="3 3"
-              />
-            ))}
-            {/* Data line */}
-            {chartData.length > 1 && (
-              <>
-                <path
-                  d={`M ${chartData.map((d, i) => `${(i / (chartData.length - 1)) * 800},${400 - ((d.value - minValue) / range) * 350}`).join(' L ')}`}
-                  fill="none"
-                  stroke="#00f0ff"
-                  strokeWidth="2"
+        {chartData.length > 0 ? (
+          <div className="w-full h-full relative">
+            <svg className="w-full h-full" viewBox="0 0 800 400" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="5%" stopColor="#00f0ff" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#00f0ff" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              {[0, 1, 2, 3, 4].map(i => (
+                <line
+                  key={i}
+                  x1="0"
+                  y1={i * 100}
+                  x2="800"
+                  y2={i * 100}
+                  stroke="#2d2d3a"
+                  strokeWidth="1"
+                  strokeDasharray="3 3"
                 />
-                <path
-                  d={`M 0,400 L ${chartData.map((d, i) => `${(i / (chartData.length - 1)) * 800},${400 - ((d.value - minValue) / range) * 350}`).join(' L ')} L 800,400 Z`}
-                  fill="url(#gradient)"
-                />
-              </>
+              ))}
+              {chartData.length > 1 && (
+                <>
+                  <path
+                    d={`M ${chartData.map((d, i) => `${(i / (chartData.length - 1)) * 800},${400 - ((d.value - minValue) / range) * 350}`).join(' L ')}`}
+                    fill="none"
+                    stroke="#00f0ff"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d={`M 0,400 L ${chartData.map((d, i) => `${(i / (chartData.length - 1)) * 800},${400 - ((d.value - minValue) / range) * 350}`).join(' L ')} L 800,400 Z`}
+                    fill="url(#gradient)"
+                  />
+                </>
+              )}
+            </svg>
+          </div>
+        ) : (
+          <div className="text-center text-slate-500 space-y-2">
+            <Activity size={36} className="mx-auto opacity-30" />
+            <p className="text-sm">No time-series data in TimescaleDB yet</p>
+            {displayData?.latestDT != null && (
+              <p className="text-xs text-nexus-accent/70">
+                Latest DT reading: {displayData.latestDT} {displayData.dtUnit}
+              </p>
             )}
-            {chartData.length === 0 && (
-              <text x="400" y="200" textAnchor="middle" fill="#64748b" fontSize="14">
-                No data points available
-              </text>
-            )}
-          </svg>
-        </div>
+            <p className="text-xs text-slate-600">
+              Data will appear once the DT webhook pipeline is active
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

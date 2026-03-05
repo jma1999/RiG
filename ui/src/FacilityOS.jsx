@@ -576,18 +576,32 @@ function FacilityOS() {
           content: data.reply || data.message || "I received your message.",
           timestamp: Date.now(),
           toolInvocation,
-          evidenceSummary
+          evidenceSummary,
+          thinking: data.thinking || [],
+          sparqlQuery: data.sparql_query || '',
         };
         
         setMessages(prev => [...prev, modelMsg]);
+      } else {
+        const errText = await res.text();
+        console.error("Chat API error:", res.status, errText);
+        const errorMsg = {
+          id: (Date.now() + 1).toString(),
+          role: 'model',
+          content: `Chat API returned ${res.status}. The backend may be restarting or GraphDB is unreachable.`,
+          timestamp: Date.now(),
+          thinking: [{ step: 'error', title: 'API Error', content: errText.slice(0, 300) }],
+        };
+        setMessages(prev => [...prev, errorMsg]);
       }
     } catch (error) {
       console.error("Chat error:", error);
       const errorMsg = {
         id: (Date.now() + 1).toString(),
         role: 'model',
-        content: "I encountered an error processing your request. Please try again.",
-        timestamp: Date.now()
+        content: "I couldn't reach the backend. Make sure the API server is running.",
+        timestamp: Date.now(),
+        thinking: [{ step: 'error', title: 'Network Error', content: String(error) }],
       };
       setMessages(prev => [...prev, errorMsg]);
     } finally {
@@ -596,17 +610,13 @@ function FacilityOS() {
   }, [messages]);
 
   const handleNodeClick = (node) => {
-    setSelectedNodeId(node.id);
-    const types = (node.rdfTypes || []).join(' ');
-    if (types.includes('Sensor') || types.includes('Point')) {
-      toolHandlers.onGetTelemetry({ assetId: node.id, metric: 'Value' });
-    }
+    setSelectedNodeId(node.id || node.uri);
   };
 
   const renderContent = () => {
     switch(currentView) {
       case 'graph':
-        return <KnowledgeGraph data={graphData} onNodeClick={handleNodeClick} />;
+        return <KnowledgeGraph onNodeClick={handleNodeClick} />;
       case 'assets':
         return <AssetsView assets={assets} spaces={spaces} onNodeClick={handleNodeClick} />;
       case 'telemetry':

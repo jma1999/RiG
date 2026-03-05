@@ -274,6 +274,119 @@ async def get_graph(
         raise HTTPException(status_code=500, detail=f"Failed to get graph: {str(e)}")
 
 
+@router.get("/top-nodes")
+async def get_top_nodes(limit: int = Query(80, ge=1, le=500)):
+    """Return high-level typed entities for the graph explorer's initial view."""
+    try:
+        client = get_graphdb_client()
+
+        query = f"""
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            PREFIX s223: <http://data.ashrae.org/standard223#>
+            PREFIX brick1:<http://brickschema.org/schema/1.1.0/Brick#>
+            PREFIX ifc:  <http://ifc-ld.org/schemas/ifc2x3#>
+
+            SELECT DISTINCT ?s ?type ?label WHERE {{
+              ?s a ?type .
+              OPTIONAL {{ ?s rdfs:label ?label }}
+              FILTER(!STRSTARTS(STR(?s), "http://www.w3.org/"))
+              FILTER(!STRSTARTS(STR(?type), "http://www.w3.org/"))
+              FILTER(!STRSTARTS(STR(?s), "http://www.openrdf.org/"))
+              FILTER(!STRSTARTS(STR(?s), "http://rdf4j.org/"))
+            }}
+            LIMIT {limit}
+        """
+
+        results = client.execute_sparql_query(query, output_format="json")
+        bindings = results.get("results", {}).get("bindings", [])
+
+        seen: Dict[str, dict] = {}
+        for b in bindings:
+            uri = b.get("s", {}).get("value", "")
+            rdf_type = b.get("type", {}).get("value", "")
+            label = b.get("label", {}).get("value", "")
+            if not uri:
+                continue
+            if uri not in seen:
+                seen[uri] = {
+                    "uri": uri,
+                    "id": prefixed(uri),
+                    "label": label or prefixed(uri),
+                    "types": [prefixed(rdf_type)] if rdf_type else [],
+                    "ns": namespace_of(uri),
+                }
+            else:
+                if rdf_type:
+                    px = prefixed(rdf_type)
+                    if px not in seen[uri]["types"]:
+                        seen[uri]["types"].append(px)
+                if label and not seen[uri]["label"].startswith(label):
+                    seen[uri]["label"] = label
+
+        nodes = sorted(seen.values(), key=lambda n: n["label"])
+        return {"nodes": nodes}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get top nodes: {str(e)}")
+
+
+@router.get("/node-triples")
+async def get_node_triples(uri: str = Query(..., description="Full URI of the subject")):
+    """Return all predicate–object pairs for a given subject URI,
+    structured for JSON-LD playground-style visualisation."""
+    try:
+        client = get_graphdb_client()
+
+        query = f"""
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+            SELECT ?p ?o WHERE {{
+              <{uri}> ?p ?o .
+            }}
+            LIMIT 200
+        """
+
+        results = client.execute_sparql_query(query, output_format="json")
+        bindings = results.get("results", {}).get("bindings", [])
+
+        triples = []
+        for b in bindings:
+            p_uri = b.get("p", {}).get("value", "")
+            o = b.get("o", {})
+            o_type = o.get("type", "")
+            o_val = o.get("value", "")
+
+            is_uri = o_type == "uri"
+            display_val = o_val if len(o_val) <= 80 else o_val[:77] + "..."
+
+            triples.append({
+                "predicate": prefixed(p_uri),
+                "predicateUri": p_uri,
+                "value": prefixed(o_val) if is_uri else display_val,
+                "rawValue": o_val,
+                "isUri": is_uri,
+                "ns": namespace_of(o_val) if is_uri else None,
+            })
+
+        label = prefixed(uri)
+        for t in triples:
+            if t["predicateUri"] == "http://www.w3.org/2000/01/rdf-schema#label":
+                label = t["rawValue"]
+                break
+
+        return {
+            "uri": uri,
+            "id": prefixed(uri),
+            "label": label,
+            "triples": triples,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get node triples: {str(e)}")
+
+
 @router.get("/semantic-layers")
 async def get_semantic_layers():
     """Get information about semantic layers in the graph."""

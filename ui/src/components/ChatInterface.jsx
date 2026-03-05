@@ -1,11 +1,52 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Send, Sparkles, Terminal, ArrowRight, Zap, Activity, AlertCircle } from 'lucide-react';
+import { Send, Sparkles, Terminal, ArrowRight, Zap, Activity, AlertCircle, ChevronDown, ChevronRight, Code2, Brain } from 'lucide-react';
 
 const SUGGESTIONS = [
   { label: "What sensors are in Office1?", icon: Activity },
   { label: "Show the overlay knowledge graph", icon: AlertCircle },
   { label: "How many spaces are on Level 1?", icon: Zap },
 ];
+
+const ThinkingBlock = ({ thinking, sparqlQuery }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (!thinking || thinking.length === 0) return null;
+
+  const steps = thinking.filter(s => s.step !== 'done');
+  const doneStep = thinking.find(s => s.step === 'done');
+
+  return (
+    <div className="mt-2 mb-1">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
+      >
+        <Brain size={12} className="text-nexus-accent/60" />
+        <span className="font-mono">
+          {doneStep ? doneStep.content : `${steps.length} reasoning steps`}
+        </span>
+        {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+      </button>
+
+      {isOpen && (
+        <div className="mt-2 ml-1 pl-3 border-l border-nexus-700/50 space-y-2">
+          {steps.map((step, i) => (
+            <div key={i} className="text-[11px]">
+              <p className="text-slate-400 font-medium">{step.title}</p>
+              {step.step === 'sparql' ? (
+                <pre className="mt-1 p-2 bg-nexus-900/70 rounded-md border border-nexus-700/50 text-[10px] text-emerald-400/80 font-mono overflow-x-auto whitespace-pre-wrap">
+                  {step.content}
+                </pre>
+              ) : (
+                <p className="text-slate-500">{step.content}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
   const [input, setInput] = useState('');
@@ -42,7 +83,7 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
               Hello, Manager
             </h1>
             <p className="text-slate-500 mb-10 max-w-xs">
-              I'm Gemino AI. I can help you manage assets, optimize energy, and predict failures.
+              I'm Gemino AI. Ask me anything about your facility — I'll query the knowledge graph and give you grounded answers.
             </p>
             
             <div className="grid gap-3 w-full max-w-sm">
@@ -87,7 +128,11 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
                      </div>
                    ) : (
                      <div className="text-slate-300 text-sm leading-relaxed pl-1">
-                        {msg.content}
+                        <div className="whitespace-pre-wrap">{msg.content}</div>
+
+                        {/* Thinking/Reasoning steps */}
+                        <ThinkingBlock thinking={msg.thinking} sparqlQuery={msg.sparqlQuery} />
+
                         <div className="flex flex-wrap gap-2 mt-3">
                           {msg.toolInvocation && (
                             <div className="flex items-center gap-2 text-xs font-mono text-slate-500 bg-nexus-800/50 py-1.5 px-3 rounded-lg border border-nexus-700/50 w-fit">
@@ -115,10 +160,16 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
                      <Sparkles size={12} className="text-nexus-accent" />
                      <span className="text-[10px] font-bold text-nexus-accent tracking-wider uppercase">Gemino AI</span>
                   </div>
-                  <div className="flex items-center gap-1 pl-1">
-                     <span className="w-2 h-2 rounded-full bg-nexus-accent/50 animate-bounce"></span>
-                     <span className="w-2 h-2 rounded-full bg-nexus-accent/50 animate-bounce delay-75"></span>
-                     <span className="w-2 h-2 rounded-full bg-nexus-accent/50 animate-bounce delay-150"></span>
+                  <div className="pl-1 space-y-1.5">
+                    <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                      <Brain size={12} className="text-nexus-accent/60 animate-pulse" />
+                      <span className="font-mono">Querying knowledge graph...</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                       <span className="w-2 h-2 rounded-full bg-nexus-accent/50 animate-bounce"></span>
+                       <span className="w-2 h-2 rounded-full bg-nexus-accent/50 animate-bounce delay-75"></span>
+                       <span className="w-2 h-2 rounded-full bg-nexus-accent/50 animate-bounce delay-150"></span>
+                    </div>
                   </div>
                </div>
             )}
@@ -156,4 +207,3 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
 };
 
 export default ChatInterface;
-
