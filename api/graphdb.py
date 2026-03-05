@@ -43,6 +43,7 @@ PREFIX_MAP = {
     "http://data.ashrae.org/standard223#":         "s223:",
     "http://brickschema.org/schema/1.1.0/Brick#":  "brick:",
     "http://brickschema.org/schema/Brick#":         "brick:",
+    "http://ifc-ld.org/schemas/ifc4#":              "ifc:",
     "http://ifc-ld.org/schemas/ifc2x3#":            "ifc:",
     "http://www.w3.org/2004/02/skos/core#":         "skos:",
     "http://www.w3.org/2000/01/rdf-schema#":        "rdfs:",
@@ -50,6 +51,7 @@ PREFIX_MAP = {
     "http://qudt.org/schema/qudt/":                  "qudt:",
     "http://qudt.org/vocab/quantitykind/":           "qk:",
     "https://example.com/case-office/":              "co:",
+    "http://example.com/case_office#":               "co:",
     "http://example.com/mybuilding#":                "bldg:",
     "http://ifc-ld.org/ids#":                        "ifcid:",
     "https://example.com/rig#":                      "rig:",
@@ -145,7 +147,8 @@ async def get_graph(
             PREFIX owl:    <http://www.w3.org/2002/07/owl#>
             PREFIX s223:   <http://data.ashrae.org/standard223#>
             PREFIX brick1: <http://brickschema.org/schema/1.1.0/Brick#>
-            PREFIX ifc:    <http://ifc-ld.org/schemas/ifc2x3#>
+            PREFIX ifc4:   <http://ifc-ld.org/schemas/ifc4#>
+            PREFIX ifc2x3: <http://ifc-ld.org/schemas/ifc2x3#>
             PREFIX skos:   <http://www.w3.org/2004/02/skos/core#>
             PREFIX qudt:   <http://qudt.org/schema/qudt/>
 
@@ -157,6 +160,10 @@ async def get_graph(
                 s223:hasPhysicalLocation  s223:observes  s223:hasZone
                 s223:hasProperty  s223:connected  s223:cnx
                 qudt:hasQuantityKind
+                ifc4:name  ifc2x3:name
+                ifc4:longName  ifc2x3:longName
+                ifc4:objectType  ifc2x3:objectType
+                ifc4:tag  ifc2x3:tag
               }}
               ?s ?p ?o .
               FILTER(!STRSTARTS(STR(?s), "http://www.w3.org/"))
@@ -281,15 +288,17 @@ async def get_top_nodes(limit: int = Query(80, ge=1, le=500)):
         client = get_graphdb_client()
 
         query = f"""
-            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-            PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-            PREFIX s223: <http://data.ashrae.org/standard223#>
-            PREFIX brick1:<http://brickschema.org/schema/1.1.0/Brick#>
-            PREFIX ifc:  <http://ifc-ld.org/schemas/ifc2x3#>
+            PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            PREFIX ifc4:  <http://ifc-ld.org/schemas/ifc4#>
+            PREFIX ifc2x3:<http://ifc-ld.org/schemas/ifc2x3#>
 
             SELECT DISTINCT ?s ?type ?label WHERE {{
               ?s a ?type .
-              OPTIONAL {{ ?s rdfs:label ?label }}
+              OPTIONAL {{ ?s rdfs:label ?rdfsLabel }}
+              OPTIONAL {{ ?s ifc4:name ?ifc4Name }}
+              OPTIONAL {{ ?s ifc2x3:name ?ifc2x3Name }}
+              BIND(COALESCE(?rdfsLabel, ?ifc4Name, ?ifc2x3Name) AS ?label)
               FILTER(!STRSTARTS(STR(?s), "http://www.w3.org/"))
               FILTER(!STRSTARTS(STR(?type), "http://www.w3.org/"))
               FILTER(!STRSTARTS(STR(?s), "http://www.openrdf.org/"))
@@ -396,7 +405,6 @@ async def get_semantic_layers():
         query = """
         PREFIX s223:  <http://data.ashrae.org/standard223#>
         PREFIX brick1: <http://brickschema.org/schema/1.1.0/Brick#>
-        PREFIX ifc:   <http://ifc-ld.org/schemas/ifc2x3#>
 
         SELECT ?layer (COUNT(DISTINCT ?entity) as ?count)
         WHERE {
@@ -414,7 +422,7 @@ async def get_semantic_layers():
             UNION
             {
                 ?entity a ?t .
-                FILTER(STRSTARTS(STR(?t), STR(ifc:)))
+                FILTER(STRSTARTS(STR(?t), "http://ifc-ld.org/schemas/"))
                 BIND ("IFC-LD" as ?layer)
             }
         }

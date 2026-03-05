@@ -19,7 +19,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
-load_dotenv(pathlib.Path(__file__).resolve().parent.parent / ".env")
+load_dotenv(pathlib.Path(__file__).resolve().parent.parent / ".env", override=True)
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -33,7 +33,7 @@ router = APIRouter()
 logger = logging.getLogger("chat")
 
 GRAPHDB_URL = os.getenv("GRAPHDB_URL", "http://localhost:7200")
-GRAPHDB_REPOSITORY = os.getenv("GRAPHDB_REPOSITORY", "rig-facility-mgmt")
+GRAPHDB_REPOSITORY = os.getenv("GRAPHDB_REPOSITORY", "rig-ifcld")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip().strip('"').strip("'")
 logger.info("OPENAI_API_KEY loaded: %s", "yes" if OPENAI_API_KEY else "NO")
@@ -286,8 +286,7 @@ async def chat_endpoint(request: ChatRequest):
             completion = oai.chat.completions.create(
                 model=CHAT_MODEL,
                 messages=history,
-                temperature=0.3,
-                max_tokens=800,
+                max_completion_tokens=800,
             )
             reply = completion.choices[0].message.content
         except Exception as exc:

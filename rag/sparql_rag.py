@@ -28,9 +28,12 @@ SCHEMA_CONTEXT = """
 The RDF graph has 4 named graphs:
 
 1. IFC-LD graph (<https://example.com/case-office/g/ifcld>):
-   PREFIX ifc: <http://ifc-ld.org/schemas/ifc2x3#>
+   PREFIX ifc: <http://ifc-ld.org/schemas/ifc4#>
    Types are lowercase: ifc:ifcdoor, ifc:ifcwindow, ifc:ifcwall, ifc:ifcspace,
-   ifc:ifcbuildingstorey, ifc:ifcflowterminal, ifc:ifcflowsegment, ifc:ifcsensor, etc.
+   ifc:ifcbuildingstorey, ifc:ifcflowterminal, ifc:ifcflowsegment, ifc:ifcsensor,
+   ifc:ifcfurniture, ifc:ifccolumn, ifc:ifcbuildingelementproxy, etc.
+   Entity URIs use prefix: http://example.com/case_office#
+   Properties: ifc:name, ifc:longName, ifc:objectType, ifc:tag
 
 2. Brick graph (<https://example.com/case-office/g/brick>):
    PREFIX brick1: <http://brickschema.org/schema/1.1.0/Brick#>
@@ -140,8 +143,7 @@ SPARQL query:"""
                 {"role": "system", "content": system_msg},
                 {"role": "user", "content": prompt},
             ],
-            temperature=0.1,
-            max_tokens=1024,
+            max_completion_tokens=1024,
         )
         raw = response.choices[0].message.content.strip()
         if raw.startswith("```"):

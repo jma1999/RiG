@@ -1,27 +1,29 @@
 """
 Disruptive Technologies REST API client.
 
-Authenticates via OAuth2 client-credentials (service account key) and
-fetches device metadata + latest reported readings directly from the
-DT Cloud API, bypassing the webhook → TimescaleDB pipeline.
+Authenticates via JWT-bearer OAuth2 flow (service account key signs a JWT
+which is exchanged for an access token).
 
 Required env vars:
-    DT_PROJECT_ID             – DT Studio project ID
-    DT_SERVICE_ACCOUNT_KEY    – Service Account key ID
-    DT_SERVICE_ACCOUNT_SECRET – Service Account secret
+    DT_PROJECT_ID               – DT Studio project ID
+    DT_SERVICE_ACCOUNT_KEY      – Service Account key ID
+    DT_SERVICE_ACCOUNT_SECRET   – Service Account secret (HMAC signing key)
+    DT_SERVICE_ACCOUNT_EMAIL    – Service Account email
 
-The key/secret pair is created in DT Studio → Project → Service Accounts.
+Create the key/secret/email in DT Studio → Project → Service Accounts.
 """
 import os
 import pathlib
 import time
 import logging
+import urllib.parse
 from typing import Dict, List, Optional, Any
 
+import jwt
 import requests
 from dotenv import load_dotenv
 
-load_dotenv(pathlib.Path(__file__).resolve().parent.parent / ".env")
+load_dotenv(pathlib.Path(__file__).resolve().parent.parent / ".env", override=True)
 
 logger = logging.getLogger("dt_client")
 
@@ -34,56 +36,84 @@ _token_expires_at: float = 0
 
 def _cfg():
     """Read DT config lazily so dotenv values are always picked up."""
-    return (
-        os.getenv("DT_PROJECT_ID", ""),
-        os.getenv("DT_SERVICE_ACCOUNT_KEY", ""),
-        os.getenv("DT_SERVICE_ACCOUNT_SECRET", ""),
-    )
+    return {
+        "project_id": os.getenv("DT_PROJECT_ID", ""),
+        "key_id": os.getenv("DT_SERVICE_ACCOUNT_KEY", ""),
+        "secret": os.getenv("DT_SERVICE_ACCOUNT_SECRET", ""),
+        "email": os.getenv("DT_SERVICE_ACCOUNT_EMAIL", ""),
+    }
 
 
 def _is_configured() -> bool:
-    pid, key, secret = _cfg()
-    return bool(pid and key and secret)
+    c = _cfg()
+    ok = bool(c["project_id"] and c["key_id"] and c["secret"] and c["email"])
+    if not ok:
+        missing = [k for k, v in c.items() if not v]
+        logger.warning("DT API not configured — missing: %s", ", ".join(missing))
+    return ok
 
 
 def _get_access_token() -> str:
-    """Exchange service-account credentials for a short-lived Bearer token."""
+    """Create a JWT signed with the SA secret and exchange it for a Bearer token."""
     global _cached_token, _token_expires_at
     if _cached_token and time.time() < _token_expires_at - 30:
         return _cached_token
 
-    _, key, secret = _cfg()
-    logger.info("DT OAuth2 token request with key=%s...", key[:8] if key else "EMPTY")
+    c = _cfg()
+    now = int(time.time())
+
+    jwt_headers = {
+        "alg": "HS256",
+        "kid": c["key_id"],
+    }
+    jwt_payload = {
+        "iat": now,
+        "exp": now + 3600,
+        "aud": DT_TOKEN_URL,
+        "iss": c["email"],
+    }
+
+    encoded_jwt = jwt.encode(
+        jwt_payload,
+        c["secret"],
+        algorithm="HS256",
+        headers=jwt_headers,
+    )
+
+    body = urllib.parse.urlencode({
+        "assertion": encoded_jwt,
+        "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+    })
+
     resp = requests.post(
         DT_TOKEN_URL,
-        data={"grant_type": "client_credentials"},
-        auth=(key, secret),
+        data=body,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         timeout=10,
     )
-    resp.raise_for_status()
-    body = resp.json()
-    _cached_token = body["access_token"]
-    _token_expires_at = time.time() + body.get("expires_in", 3600)
+
+    if resp.status_code != 200:
+        logger.error("DT token exchange failed (%d): %s", resp.status_code, resp.text[:300])
+        raise RuntimeError(f"DT OAuth2 token exchange failed: {resp.status_code} {resp.text[:200]}")
+
+    token_data = resp.json()
+    _cached_token = token_data["access_token"]
+    _token_expires_at = time.time() + token_data.get("expires_in", 3600)
     return _cached_token
 
 
 def list_devices() -> List[Dict[str, Any]]:
     """Return all devices in the project with their latest reported values."""
     if not _is_configured():
-        pid, key, secret = _cfg()
-        logger.warning(
-            "DT API not configured — DT_PROJECT_ID=%s, KEY=%s, SECRET=%s",
-            bool(pid), bool(key), bool(secret),
-        )
         return []
 
-    pid, _, _ = _cfg()
+    c = _cfg()
     token = _get_access_token()
     devices: List[Dict[str, Any]] = []
     next_page_token = ""
 
     while True:
-        url = f"{DT_API_BASE}/projects/{pid}/devices"
+        url = f"{DT_API_BASE}/projects/{c['project_id']}/devices"
         params: Dict[str, Any] = {"page_size": 100}
         if next_page_token:
             params["page_token"] = next_page_token
@@ -102,12 +132,13 @@ def list_devices() -> List[Dict[str, Any]]:
         if not next_page_token:
             break
 
+    logger.info("DT API returned %d devices", len(devices))
     return devices
 
 
 def get_sensor_readings() -> Dict[str, Dict[str, Any]]:
-    """Return {mark_label: {value, unit, quantity_kind, updateTime, deviceType}} for
-    every device that carries an ``ifcjson`` label.
+    """Return {mark_label: {value, unit, quantity_kind, update_time, device_type}}
+    for every device that carries an ``ifcjson`` label.
 
     Returns an empty dict when the DT API is not configured.
     """
