@@ -55,7 +55,7 @@ def _verify_signature(body: bytes, signature: Optional[str]) -> bool:
         return True
     if not signature:
         return False
-    expected = hmac.new(
+    expected = hmac.HMAC(
         DT_SIGNATURE_SECRET.encode(), body, hashlib.sha256
     ).hexdigest()
     return hmac.compare_digest(expected, signature)
@@ -71,7 +71,8 @@ def _extract_reading(event_data: dict, event_type: str) -> Optional[Dict[str, An
         }
     if event_type == "humidity" and "humidity" in event_data:
         return {
-            "value": event_data["humidity"].get("temperature"),
+            "value": event_data["humidity"].get("relativeHumidity",
+                     event_data["humidity"].get("temperature")),
             "unit": "PERCENT",
             "quantity_kind": "RelativeHumidity",
         }

@@ -2,6 +2,7 @@ from __future__ import annotations
 import os, json, threading, uuid
 from typing import List, Dict, Any, Optional
 from math import sqrt
+import pathlib as _pl
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, Request, UploadFile, File, Form, Body, Path
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,7 +13,8 @@ import numpy as np
 import re
 from datetime import datetime
 
-load_dotenv()
+_env_path = _pl.Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(_env_path)
 NEO4J_URI  = os.getenv("NEO4J_URI", "bolt://localhost:7687")
 NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
 NEO4J_PASS = os.getenv("NEO4J_PASSWORD", "changeme123")

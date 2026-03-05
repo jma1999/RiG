@@ -18,6 +18,9 @@ import logging
 import time
 from typing import Any, Dict, List, Optional
 
+from dotenv import load_dotenv
+load_dotenv(pathlib.Path(__file__).resolve().parent.parent / ".env")
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -33,6 +36,7 @@ GRAPHDB_URL = os.getenv("GRAPHDB_URL", "http://localhost:7200")
 GRAPHDB_REPOSITORY = os.getenv("GRAPHDB_REPOSITORY", "rig-facility-mgmt")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip().strip('"').strip("'")
+logger.info("OPENAI_API_KEY loaded: %s", "yes" if OPENAI_API_KEY else "NO")
 CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", os.getenv("OPENAI_NL2SPARQL_MODEL", "gpt-4o-mini"))
 
 SYSTEM_PROMPT = """\

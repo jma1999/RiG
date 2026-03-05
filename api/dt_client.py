@@ -13,27 +13,37 @@ Required env vars:
 The key/secret pair is created in DT Studio → Project → Service Accounts.
 """
 import os
+import pathlib
 import time
 import logging
 from typing import Dict, List, Optional, Any
 
 import requests
+from dotenv import load_dotenv
+
+load_dotenv(pathlib.Path(__file__).resolve().parent.parent / ".env")
 
 logger = logging.getLogger("dt_client")
 
 DT_TOKEN_URL = "https://identity.disruptive-technologies.com/oauth2/token"
 DT_API_BASE = "https://api.d21s.com/v2"
 
-DT_PROJECT_ID = os.getenv("DT_PROJECT_ID", "")
-DT_SA_KEY = os.getenv("DT_SERVICE_ACCOUNT_KEY", "")
-DT_SA_SECRET = os.getenv("DT_SERVICE_ACCOUNT_SECRET", "")
-
 _cached_token: Optional[str] = None
 _token_expires_at: float = 0
 
 
+def _cfg():
+    """Read DT config lazily so dotenv values are always picked up."""
+    return (
+        os.getenv("DT_PROJECT_ID", ""),
+        os.getenv("DT_SERVICE_ACCOUNT_KEY", ""),
+        os.getenv("DT_SERVICE_ACCOUNT_SECRET", ""),
+    )
+
+
 def _is_configured() -> bool:
-    return bool(DT_PROJECT_ID and DT_SA_KEY and DT_SA_SECRET)
+    pid, key, secret = _cfg()
+    return bool(pid and key and secret)
 
 
 def _get_access_token() -> str:
@@ -42,10 +52,12 @@ def _get_access_token() -> str:
     if _cached_token and time.time() < _token_expires_at - 30:
         return _cached_token
 
+    _, key, secret = _cfg()
+    logger.info("DT OAuth2 token request with key=%s...", key[:8] if key else "EMPTY")
     resp = requests.post(
         DT_TOKEN_URL,
         data={"grant_type": "client_credentials"},
-        auth=(DT_SA_KEY, DT_SA_SECRET),
+        auth=(key, secret),
         timeout=10,
     )
     resp.raise_for_status()
@@ -58,14 +70,20 @@ def _get_access_token() -> str:
 def list_devices() -> List[Dict[str, Any]]:
     """Return all devices in the project with their latest reported values."""
     if not _is_configured():
+        pid, key, secret = _cfg()
+        logger.warning(
+            "DT API not configured — DT_PROJECT_ID=%s, KEY=%s, SECRET=%s",
+            bool(pid), bool(key), bool(secret),
+        )
         return []
 
+    pid, _, _ = _cfg()
     token = _get_access_token()
     devices: List[Dict[str, Any]] = []
     next_page_token = ""
 
     while True:
-        url = f"{DT_API_BASE}/projects/{DT_PROJECT_ID}/devices"
+        url = f"{DT_API_BASE}/projects/{pid}/devices"
         params: Dict[str, Any] = {"page_size": 100}
         if next_page_token:
             params["page_token"] = next_page_token

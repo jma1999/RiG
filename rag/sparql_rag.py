@@ -191,8 +191,9 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 SELECT ?x ?name ?type
 WHERE {{
 {union}
-  OPTIONAL {{ ?x ifc:name ?name }}
-  OPTIONAL {{ ?x rdfs:label ?name }}
+  OPTIONAL {{ ?x ifc:name ?ifcName }}
+  OPTIONAL {{ ?x rdfs:label ?rdfsName }}
+  BIND(COALESCE(?rdfsName, ?ifcName) AS ?name)
   OPTIONAL {{ ?x a ?type }}
 }}
 LIMIT 50
@@ -201,17 +202,17 @@ LIMIT 50
     # Generic keyword search fallback
     keywords = [w for w in question.split() if len(w) > 3]
     if keywords:
-        kf = " || ".join([f'CONTAINS(LCASE(STR(?name)), "{k.lower()}")' for k in keywords[:3]])
+        kf = " || ".join([f'CONTAINS(LCASE(STR(?label)), "{k.lower()}")' for k in keywords[:3]])
         return f"""
 PREFIX ifc: <{ifc_prefix}>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?entity ?name ?type
+SELECT ?entity ?label ?type
 WHERE {{
   ?entity a ?type .
   FILTER (STRSTARTS(STR(?type), "http://ifc-ld.org/schemas/"))
-  OPTIONAL {{ ?entity ifc:name ?name }}
-  OPTIONAL {{ ?entity rdfs:label ?name }}
-  BIND(COALESCE(?name, "") AS ?name)
+  OPTIONAL {{ ?entity ifc:name ?ifcName }}
+  OPTIONAL {{ ?entity rdfs:label ?rdfsName }}
+  BIND(COALESCE(?rdfsName, ?ifcName, "") AS ?label)
   FILTER ({kf})
 }}
 LIMIT 50
@@ -351,12 +352,14 @@ WHERE {{
     BIND(?seed AS ?obj)
   }}
 
-  OPTIONAL {{ ?subj ifc:name ?subjName }}
-  OPTIONAL {{ ?subj rdfs:label ?subjName }}
+  OPTIONAL {{ ?subj ifc:name ?sIfcName }}
+  OPTIONAL {{ ?subj rdfs:label ?sRdfsName }}
+  BIND(COALESCE(?sRdfsName, ?sIfcName) AS ?subjName)
   OPTIONAL {{ ?subj a ?subjType }}
 
-  OPTIONAL {{ ?obj ifc:name ?objName }}
-  OPTIONAL {{ ?obj rdfs:label ?objName }}
+  OPTIONAL {{ ?obj ifc:name ?oIfcName }}
+  OPTIONAL {{ ?obj rdfs:label ?oRdfsName }}
+  BIND(COALESCE(?oRdfsName, ?oIfcName) AS ?objName)
   OPTIONAL {{ ?obj a ?objType }}
 
   FILTER (isIRI(?subj) && isIRI(?obj))

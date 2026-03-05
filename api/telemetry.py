@@ -230,8 +230,12 @@ async def get_graph_sensors():
                 }
         if dt_readings:
             print(f"[graph-sensors] DT API enriched {len(dt_readings)} sensors")
+        else:
+            print("[graph-sensors] DT API returned 0 readings (check DT_PROJECT_ID, DT_SERVICE_ACCOUNT_KEY, DT_SERVICE_ACCOUNT_SECRET)")
     except Exception as e:
-        print(f"[graph-sensors] DT API not available: {e}")
+        import traceback
+        print(f"[graph-sensors] DT API error: {e}")
+        print(f"[graph-sensors] DT traceback: {traceback.format_exc()}")
 
     # ── 3. Enrich from TimescaleDB (secondary / historical) ──────────────
     try:
