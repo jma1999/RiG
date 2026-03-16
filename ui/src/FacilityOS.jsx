@@ -626,7 +626,7 @@ function FacilityOS() {
   const renderContent = () => {
     switch(currentView) {
       case 'graph':
-        return <KnowledgeGraph onNodeClick={handleNodeClick} />;
+        return <KnowledgeGraph data={graphData} onNodeClick={handleNodeClick} />;
       case 'assets':
         return <AssetsView assets={assets} spaces={spaces} onNodeClick={handleNodeClick} />;
       case 'telemetry':

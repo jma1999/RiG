@@ -33,7 +33,7 @@ const ThinkingBlock = ({ thinking, sparqlQuery }) => {
           {steps.map((step, i) => (
             <div key={i} className="text-[11px]">
               <p className="text-slate-400 font-medium">{step.title}</p>
-              {step.step === 'sparql' ? (
+              {step.step === 'sparql' || step.step === 'sql' ? (
                 <pre className="mt-1 p-2 bg-nexus-900/70 rounded-md border border-nexus-700/50 text-[10px] text-emerald-400/80 font-mono overflow-x-auto whitespace-pre-wrap">
                   {step.content}
                 </pre>
