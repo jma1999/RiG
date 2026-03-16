@@ -56,13 +56,21 @@ const KnowledgeGraph = ({ onNodeClick }) => {
   const loadTopNodes = async () => {
     setLoadingList(true);
     try {
-      const res = await fetch(`${API_BASE}/graphdb/top-nodes?limit=120`);
+      const res = await fetch(`${API_BASE}/graphdb/hierarchy`);
       const data = await res.json();
-      const nodes = data.nodes || [];
-      setTopNodes(nodes);
-      setFilteredNodes(nodes);
+  
+      const hierarchyNodes = (data.nodes || []).map(n => ({
+        uri: n.id,
+        id: n.id,
+        label: n.label || n.name || n.id,
+        types: n.rdfType ? [n.rdfType] : [],
+        ns: n.ns || 'other',
+      }));
+  
+      setTopNodes(hierarchyNodes);
+      setFilteredNodes(hierarchyNodes);
     } catch (err) {
-      console.error('Failed to load top nodes:', err);
+      console.error('Failed to load hierarchy:', err);
       setTopNodes([]);
       setFilteredNodes([]);
     } finally {
@@ -127,7 +135,7 @@ const KnowledgeGraph = ({ onNodeClick }) => {
             />
           </div>
           <p className="text-[10px] text-slate-600 mt-1.5 font-mono">
-            Select one entity to explore its neighborhood
+            CASE hierarchy entry points from IFC-LD, Brick, 223P, and overlay links
           </p>
         </div>
 

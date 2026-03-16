@@ -710,3 +710,105 @@ async def get_focused_graph(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get focused graph: {str(e)}")
 
+
+@router.get("/hierarchy")
+async def get_hierarchy():
+    """Return a CASE-focused spatial/semantic hierarchy for the homepage."""
+    try:
+        client = get_graphdb_client()
+
+        query = """
+        PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX ifc4:  <http://ifc-ld.org/schemas/ifc4#>
+        PREFIX ifc2x3:<http://ifc-ld.org/schemas/ifc2x3#>
+        PREFIX brick1:<http://brickschema.org/schema/1.1.0/Brick#>
+        PREFIX s223:  <http://data.ashrae.org/standard223#>
+        PREFIX skos:  <http://www.w3.org/2004/02/skos/core#>
+
+        SELECT DISTINCT ?node ?nodeType ?label ?parent ?parentLabel ?rel
+        WHERE {
+          {
+            ?parent ?rel ?node .
+            FILTER(?rel IN (
+              ifc4:isDecomposedBy, ifc2x3:isDecomposedBy,
+              ifc4:relatedObjects_IfcRelDecomposes, ifc2x3:relatedObjects_IfcRelDecomposes,
+              brick1:hasPart, brick1:hasPoint,
+              s223:hasPhysicalLocation, s223:hasZone
+            ))
+          }
+          UNION
+          {
+            ?node skos:exactMatch ?parent .
+            BIND(skos:exactMatch AS ?rel)
+          }
+
+          ?node a ?nodeType .
+
+          OPTIONAL { ?node rdfs:label ?rdfsLabel }
+          OPTIONAL { ?node ifc4:name ?ifc4Name }
+          OPTIONAL { ?node ifc2x3:name ?ifc2x3Name }
+          BIND(COALESCE(?rdfsLabel, ?ifc4Name, ?ifc2x3Name, REPLACE(STR(?node), "^.*/|^.*#", "")) AS ?label)
+
+          OPTIONAL { ?parent rdfs:label ?parentRdfsLabel }
+          OPTIONAL { ?parent ifc4:name ?parentIfc4Name }
+          OPTIONAL { ?parent ifc2x3:name ?parentIfc2x3Name }
+          BIND(COALESCE(?parentRdfsLabel, ?parentIfc4Name, ?parentIfc2x3Name, REPLACE(STR(?parent), "^.*/|^.*#", "")) AS ?parentLabel)
+
+          FILTER(!STRSTARTS(STR(?node), "http://www.w3.org/"))
+          FILTER(!STRSTARTS(STR(?parent), "http://www.w3.org/"))
+          FILTER(!STRSTARTS(STR(?node), "http://www.openrdf.org/"))
+          FILTER(!STRSTARTS(STR(?node), "http://rdf4j.org/"))
+        }
+        LIMIT 500
+        """
+
+        results = client.execute_sparql_query(query, output_format="json")
+        bindings = results.get("results", {}).get("bindings", [])
+
+        nodes = {}
+        edges = []
+
+        for b in bindings:
+            node = b.get("node", {}).get("value", "")
+            node_type = b.get("nodeType", {}).get("value", "")
+            label = b.get("label", {}).get("value", "") or prefixed(node)
+            parent = b.get("parent", {}).get("value", "")
+            parent_label = b.get("parentLabel", {}).get("value", "") or prefixed(parent)
+            rel = b.get("rel", {}).get("value", "")
+
+            if node and node not in nodes:
+                nodes[node] = {
+                    "id": node,
+                    "label": label,
+                    "name": label,
+                    "type": "resource",
+                    "ns": namespace_of(node),
+                    "rdfType": prefixed(node_type) if node_type else "",
+                }
+
+            if parent and parent not in nodes:
+                nodes[parent] = {
+                    "id": parent,
+                    "label": parent_label,
+                    "name": parent_label,
+                    "type": "resource",
+                    "ns": namespace_of(parent),
+                    "rdfType": "",
+                }
+
+            if node and parent:
+                edges.append({
+                    "source": parent,
+                    "target": node,
+                    "predicate": prefixed(rel),
+                })
+
+        return {
+            "nodes": list(nodes.values()),
+            "edges": edges,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get hierarchy: {str(e)}")
+
