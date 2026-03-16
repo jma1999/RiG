@@ -574,3 +574,139 @@ async def expand_graph_node(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to expand node: {str(e)}")
 
+
+@router.get("/focus")
+async def get_focused_graph(
+    uri: str = Query(..., description="Full URI of the center node"),
+    limit: int = Query(40, ge=1, le=120),
+):
+    """Return a small, human-readable neighborhood around one URI."""
+    try:
+        client = get_graphdb_client()
+
+        query = f"""
+        PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+        PREFIX brick1: <http://brickschema.org/schema/1.1.0/Brick#>
+        PREFIX s223: <http://data.ashrae.org/standard223#>
+
+        SELECT ?s ?p ?o ?oLabel
+        WHERE {{
+          BIND(<{uri}> AS ?s)
+
+          ?s ?p ?o .
+
+          OPTIONAL {{ ?o rdfs:label ?oLabel }}
+
+          FILTER(
+            ?p IN (
+              rdf:type,
+              rdfs:label,
+              skos:exactMatch,
+              brick1:hasPart,
+              brick1:isPartOf,
+              brick1:hasPoint,
+              brick1:isPointOf,
+              s223:hasPhysicalLocation,
+              s223:hasProperty,
+              s223:observes,
+              s223:hasZone
+            )
+          )
+        }}
+        LIMIT {limit}
+        """
+
+        results = client.execute_sparql_query(query, output_format="json")
+        bindings = results.get("results", {}).get("bindings", [])
+
+        nodes: Dict[str, dict] = {}
+        edges: List[dict] = []
+        lit_counter = 0
+
+        def ensure_resource(node_uri: str, fallback_name: Optional[str] = None):
+            if node_uri not in nodes:
+                nodes[node_uri] = {
+                    "id": node_uri,
+                    "label": fallback_name or prefixed(node_uri),
+                    "name": fallback_name or prefixed(node_uri),
+                    "type": "resource",
+                    "ns": namespace_of(node_uri),
+                    "properties": {},
+                }
+
+        ensure_resource(uri)
+
+        for b in bindings:
+            s_uri = b.get("s", {}).get("value", "")
+            p_uri = b.get("p", {}).get("value", "")
+            o = b.get("o", {})
+            o_type = o.get("type", "")
+            o_val = o.get("value", "")
+            o_label = b.get("oLabel", {}).get("value", "")
+
+            if not s_uri or not p_uri or not o_val:
+                continue
+
+            if o_type == "uri":
+                ensure_resource(o_val, o_label or prefixed(o_val))
+
+                # mark rdf:type objects as class nodes
+                if p_uri == RDF_TYPE:
+                    nodes[o_val]["type"] = "class"
+
+                edges.append({
+                    "source": s_uri,
+                    "target": o_val,
+                    "predicate": prefixed(p_uri),
+                })
+            else:
+                lit_counter += 1
+                lit_id = f"_:lit_focus_{lit_counter}"
+                display = o_val if len(o_val) <= 50 else o_val[:47] + "..."
+                nodes[lit_id] = {
+                    "id": lit_id,
+                    "label": display,
+                    "name": display,
+                    "type": "literal",
+                    "ns": "other",
+                    "properties": {"value": o_val},
+                }
+                edges.append({
+                    "source": s_uri,
+                    "target": lit_id,
+                    "predicate": prefixed(p_uri),
+                })
+
+        # try to give center node a human-readable label
+        label_query = f"""
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX ifc4: <http://ifc-ld.org/schemas/ifc4#>
+        PREFIX ifc2x3: <http://ifc-ld.org/schemas/ifc2x3#>
+
+        SELECT ?label WHERE {{
+          OPTIONAL {{ <{uri}> rdfs:label ?rdfsLabel }}
+          OPTIONAL {{ <{uri}> ifc4:name ?ifc4Name }}
+          OPTIONAL {{ <{uri}> ifc2x3:name ?ifc2x3Name }}
+          BIND(COALESCE(?rdfsLabel, ?ifc4Name, ?ifc2x3Name) AS ?label)
+        }}
+        LIMIT 1
+        """
+        label_results = client.execute_sparql_query(label_query, output_format="json")
+        label_bindings = label_results.get("results", {}).get("bindings", [])
+        if label_bindings:
+            lbl = label_bindings[0].get("label", {}).get("value")
+            if lbl:
+                nodes[uri]["label"] = lbl
+                nodes[uri]["name"] = lbl
+
+        return {
+            "center": uri,
+            "nodes": list(nodes.values()),
+            "edges": edges,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get focused graph: {str(e)}")
+
