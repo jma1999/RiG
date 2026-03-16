@@ -468,3 +468,109 @@ async def get_statistics():
         }
 
 
+@router.get("/expand")
+async def expand_graph_node(
+    uri: str = Query(..., description="Full URI of the node to expand"),
+    limit: int = Query(80, ge=1, le=300),
+):
+    """Return a local RDF neighborhood around one URI for interactive expansion."""
+    try:
+        client = get_graphdb_client()
+
+        query = f"""
+            PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+            SELECT ?s ?p ?o WHERE {{
+              {{
+                BIND(<{uri}> AS ?s)
+                ?s ?p ?o .
+              }}
+              UNION
+              {{
+                ?s ?p <{uri}> .
+                BIND(<{uri}> AS ?o)
+              }}
+              FILTER(!STRSTARTS(STR(?s), "http://www.w3.org/"))
+              FILTER(!STRSTARTS(STR(?s), "http://www.openrdf.org/"))
+              FILTER(!STRSTARTS(STR(?s), "http://rdf4j.org/"))
+            }}
+            LIMIT {limit}
+        """
+
+        results = client.execute_sparql_query(query, output_format="json")
+        bindings = results.get("results", {}).get("bindings", [])
+
+        nodes: Dict[str, dict] = {}
+        edges: list = []
+        edges_seen: set = set()
+        lit_counter = 0
+
+        def _ensure_resource(node_uri: str):
+            if node_uri not in nodes:
+                nodes[node_uri] = {
+                    "id": node_uri,
+                    "name": prefixed(node_uri),
+                    "type": "resource",
+                    "labels": [],
+                    "properties": {"ns": namespace_of(node_uri)},
+                }
+
+        for b in bindings:
+            s_uri = b.get("s", {}).get("value", "")
+            p_uri = b.get("p", {}).get("value", "")
+            o = b.get("o", {})
+            if not s_uri or not p_uri:
+                continue
+
+            _ensure_resource(s_uri)
+
+            o_type = o.get("type", "")
+            o_val = o.get("value", "")
+
+            if o_type == "uri":
+                _ensure_resource(o_val)
+
+                key = (s_uri, o_val, p_uri)
+                if key not in edges_seen:
+                    edges_seen.add(key)
+                    edges.append({
+                        "source": s_uri,
+                        "target": o_val,
+                        "type": prefixed(p_uri),
+                        "properties": {},
+                    })
+            else:
+                lit_counter += 1
+                lit_id = f"_:lit_expand_{lit_counter}"
+                display = o_val if len(o_val) <= 50 else o_val[:47] + "..."
+                nodes[lit_id] = {
+                    "id": lit_id,
+                    "name": f'"{display}"',
+                    "type": "literal",
+                    "labels": [],
+                    "properties": {
+                        "value": o_val,
+                        "datatype": o.get("datatype", ""),
+                    },
+                }
+
+                key = (s_uri, lit_id, p_uri)
+                if key not in edges_seen:
+                    edges_seen.add(key)
+                    edges.append({
+                        "source": s_uri,
+                        "target": lit_id,
+                        "type": prefixed(p_uri),
+                        "properties": {},
+                    })
+
+        return {
+            "center": uri,
+            "nodes": list(nodes.values()),
+            "edges": edges,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to expand node: {str(e)}")
+

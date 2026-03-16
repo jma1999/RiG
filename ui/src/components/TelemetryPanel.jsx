@@ -74,9 +74,10 @@ const TelemetryPanel = ({ data, graphSensors = [] }) => {
           name: sensorInfo?.label || pointId,
           unit: data.unit || sensorInfo?.unit || '',
           data: rows,
-          latestDT: sensorInfo?.latest_value,
-          dtUnit: sensorInfo?.unit,
+          latestValue: sensorInfo?.latest_value,
           sensorType: sensorInfo?.sensor_type,
+          quantityKind: sensorInfo?.quantity_kind,
+          source: sensorInfo?.source || 'timescaledb',
         });
         console.log(`Loaded ${rows.length} data points for ${pointId}`);
       } else {
@@ -85,9 +86,10 @@ const TelemetryPanel = ({ data, graphSensors = [] }) => {
           name: sensorInfo?.label || pointId,
           unit: sensorInfo?.unit || '',
           data: [],
-          latestDT: sensorInfo?.latest_value,
-          dtUnit: sensorInfo?.unit,
+          latestValue: sensorInfo?.latest_value,
           sensorType: sensorInfo?.sensor_type,
+          quantityKind: sensorInfo?.quantity_kind,
+          source: sensorInfo?.source || 'timescaledb',
         });
       }
     } catch (error) {
@@ -97,9 +99,10 @@ const TelemetryPanel = ({ data, graphSensors = [] }) => {
         name: sensorInfo?.label || pointId,
         unit: sensorInfo?.unit || '',
         data: [],
-        latestDT: sensorInfo?.latest_value,
-        dtUnit: sensorInfo?.unit,
+        latestValue: sensorInfo?.latest_value,
         sensorType: sensorInfo?.sensor_type,
+        quantityKind: sensorInfo?.quantity_kind,
+        source: sensorInfo?.source || 'timescaledb',
       });
     } finally {
       setLoading(false);
@@ -178,8 +181,8 @@ const TelemetryPanel = ({ data, graphSensors = [] }) => {
   const displayData = selectedPoint || data;
   const chartData = displayData?.data || [];
   const latestValue = chartData.length > 0
-    ? chartData[chartData.length - 1].value
-    : (displayData?.latestDT != null ? displayData.latestDT : null);
+  ? chartData[chartData.length - 1].value
+  : (displayData?.latestValue != null ? displayData.latestValue : null);
 
   const maxValue = chartData.length > 0 ? Math.max(...chartData.map(d => d.value)) : 1;
   const minValue = chartData.length > 0 ? Math.min(...chartData.map(d => d.value)) : 0;
@@ -193,7 +196,9 @@ const TelemetryPanel = ({ data, graphSensors = [] }) => {
             {displayData.name || displayData.id}
           </h3>
           <p className="text-xs text-slate-400">
-            {chartData.length > 0 ? 'Live Stream • TimescaleDB' : (displayData.sensorType || 'Sensor')}
+            {chartData.length > 0
+              ? `Time-series • ${displayData.source || 'timescaledb'}`
+              : (displayData.quantityKind || displayData.sensorType || 'Sensor')}
           </p>
           <button
             onClick={() => { setSelectedPoint(null); }}
@@ -258,13 +263,13 @@ const TelemetryPanel = ({ data, graphSensors = [] }) => {
           <div className="text-center text-slate-500 space-y-2">
             <Activity size={36} className="mx-auto opacity-30" />
             <p className="text-sm">No time-series data in TimescaleDB yet</p>
-            {displayData?.latestDT != null && (
+            {displayData?.latestValue != null && (
               <p className="text-xs text-nexus-accent/70">
-                Latest DT reading: {displayData.latestDT} {displayData.dtUnit}
+                Latest available reading: {displayData.latestValue} {displayData.unit || ''}
               </p>
             )}
             <p className="text-xs text-slate-600">
-              Data will appear once the DT webhook pipeline is active
+              No historical series returned from TimescaleDB for this point yet
             </p>
           </div>
         )}

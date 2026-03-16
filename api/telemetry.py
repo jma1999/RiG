@@ -127,19 +127,19 @@ async def list_telemetry_points():
 
 @router.get("/graph-sensors")
 async def get_graph_sensors():
-    """Query GraphDB for s223 sensors, then enrich with live readings from
-    the DT Cloud API (primary) and TimescaleDB (secondary).
+    """Query GraphDB for semantic sensors, then enrich primarily from TimescaleDB.
 
-    Priority order for status:
-      1. DT REST API (if configured) – most reliable, real-time
-      2. TimescaleDB (webhook pipeline)
-      3. Default → OFFLINE
+    Priority order:
+      1. TimescaleDB historical/latest readings
+      2. DT Cloud API only as optional fallback
+      3. Default -> OFFLINE
     """
     import sys, pathlib
     sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
-    # ── 1. Query GraphDB for aligned 223P sensors ────────────────────────
-    sensors: dict = {}   # keyed by point_id to deduplicate
+    sensors: dict = {}
+
+    # 1) Discover semantic sensors from GraphDB
     try:
         from api.graphdb import get_graphdb_client
         client = get_graphdb_client()
@@ -156,8 +156,10 @@ async def get_graph_sensors():
             s223:TemperatureSensor, s223:OccupantPresenceSensor
           ))
           OPTIONAL { ?sensor rdfs:label ?label }
-          OPTIONAL { ?sensor s223:observes ?prop .
-                     ?prop qudt:hasQuantityKind ?quantityKind }
+          OPTIONAL {
+            ?sensor s223:observes ?prop .
+            ?prop qudt:hasQuantityKind ?quantityKind
+          }
         }
         ORDER BY ?label
         """
@@ -174,89 +176,63 @@ async def get_graph_sensors():
             qk = b.get("quantityKind", {}).get("value", "").split("#")[-1] if b.get("quantityKind") else ""
             short = label or uri.split("/")[-1].split("#")[-1]
 
-            if "sensor" in short.lower():
-                num = short.lower().replace("sensor", "").strip().zfill(2)
-                point_id = f"dt_sensor_{num}"
-            else:
-                point_id = f"graph_{short.lower().replace(' ', '_')}"
+            # Keep semantic identity stable, but do not force DT naming as primary
+            point_id = short
 
-            if point_id not in sensors:
-                sensors[point_id] = {
-                    "point_id": point_id,
-                    "label": short,
-                    "mark": short,
-                    "uri": uri,
-                    "sensor_type": s_type,
-                    "quantity_kind": qk,
-                    "source": "223p",
-                    "status": "OFFLINE",
-                    "data_points": 0,
-                    "last_reading": None,
-                    "latest_value": None,
-                    "unit": "",
-                }
+            sensors[point_id] = {
+                "point_id": point_id,
+                "label": short,
+                "mark": short,
+                "uri": uri,
+                "sensor_type": s_type,
+                "quantity_kind": qk,
+                "source": "graphdb",
+                "status": "OFFLINE",
+                "data_points": 0,
+                "last_reading": None,
+                "latest_value": None,
+                "unit": "",
+            }
     except Exception as e:
         print(f"[graph-sensors] Could not query GraphDB: {e}")
 
-    # ── 2. Enrich from DT Cloud API (primary) ────────────────────────────
-    try:
-        from api.dt_client import get_sensor_readings
-        dt_readings = get_sensor_readings()
-        for mark, reading in dt_readings.items():
-            num = mark.lower().replace("sensor", "").strip().zfill(2)
-            point_id = f"dt_sensor_{num}" if "sensor" in mark.lower() else f"graph_{mark.lower()}"
-
-            if point_id in sensors:
-                sensors[point_id]["status"] = "LIVE"
-                sensors[point_id]["latest_value"] = reading["value"]
-                sensors[point_id]["unit"] = reading.get("unit", "")
-                sensors[point_id]["last_reading"] = reading.get("update_time", "")
-                if reading.get("quantity_kind"):
-                    sensors[point_id]["quantity_kind"] = reading["quantity_kind"]
-            else:
-                sensors[point_id] = {
-                    "point_id": point_id,
-                    "label": mark,
-                    "mark": mark,
-                    "uri": "",
-                    "sensor_type": reading.get("device_type", ""),
-                    "quantity_kind": reading.get("quantity_kind", ""),
-                    "source": "dt_api",
-                    "status": "LIVE",
-                    "data_points": 1,
-                    "last_reading": reading.get("update_time", ""),
-                    "latest_value": reading["value"],
-                    "unit": reading.get("unit", ""),
-                }
-        if dt_readings:
-            print(f"[graph-sensors] DT API enriched {len(dt_readings)} sensors")
-        else:
-            print("[graph-sensors] DT API returned 0 readings (check DT_PROJECT_ID, DT_SERVICE_ACCOUNT_KEY, DT_SERVICE_ACCOUNT_SECRET)")
-    except Exception as e:
-        import traceback
-        print(f"[graph-sensors] DT API error: {e}")
-        print(f"[graph-sensors] DT traceback: {traceback.format_exc()}")
-
-    # ── 3. Enrich from TimescaleDB (secondary / historical) ──────────────
+    # 2) Enrich from TimescaleDB FIRST
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
+
         cur.execute("""
-            SELECT point_id, COUNT(*) as cnt,
-                   MAX(time) as last_reading
+            SELECT point_id,
+                   COUNT(*) AS cnt,
+                   MAX(time) AS last_reading
             FROM telemetry_sample
             GROUP BY point_id
         """)
-        for row in cur.fetchall():
+        summary_rows = cur.fetchall()
+
+        for row in summary_rows:
             pid = row["point_id"]
-            cnt = row["cnt"]
+            cnt = int(row["cnt"])
             lr = row["last_reading"].isoformat() if row["last_reading"] else None
 
+            # latest value
+            cur.execute("""
+                SELECT value, quality, time
+                FROM telemetry_sample
+                WHERE point_id = %s
+                ORDER BY time DESC
+                LIMIT 1
+            """, (pid,))
+            latest = cur.fetchone()
+
+            latest_value = float(latest["value"]) if latest and latest["value"] is not None else None
+
             if pid in sensors:
+                sensors[pid]["status"] = "LIVE"
+                sensors[pid]["source"] = "timescaledb"
                 sensors[pid]["data_points"] = cnt
-                if sensors[pid]["status"] != "LIVE":
-                    sensors[pid]["status"] = "LIVE"
-                    sensors[pid]["last_reading"] = lr
+                sensors[pid]["last_reading"] = lr
+                sensors[pid]["latest_value"] = latest_value
             else:
                 sensors[pid] = {
                     "point_id": pid,
@@ -269,19 +245,36 @@ async def get_graph_sensors():
                     "status": "LIVE",
                     "data_points": cnt,
                     "last_reading": lr,
-                    "latest_value": None,
+                    "latest_value": latest_value,
                     "unit": "",
                 }
+
         cur.close()
         conn.close()
     except Exception as e:
         print(f"[graph-sensors] Could not query TimescaleDB: {e}")
 
-    result = sorted(sensors.values(), key=lambda s: s["point_id"])
+    # 3) Optional DT fallback only for sensors still offline
+    try:
+        from api.dt_client import get_sensor_readings
+        dt_readings = get_sensor_readings()
+
+        for mark, reading in dt_readings.items():
+            if mark in sensors and sensors[mark]["status"] != "LIVE":
+                sensors[mark]["status"] = "LIVE"
+                sensors[mark]["source"] = "dt_api_fallback"
+                sensors[mark]["latest_value"] = reading.get("value")
+                sensors[mark]["unit"] = reading.get("unit", "")
+                sensors[mark]["last_reading"] = reading.get("update_time", "")
+                if reading.get("quantity_kind"):
+                    sensors[mark]["quantity_kind"] = reading["quantity_kind"]
+    except Exception as e:
+        print(f"[graph-sensors] DT fallback error: {e}")
+
+    result = sorted(sensors.values(), key=lambda s: (s["status"] != "LIVE", s["label"].lower()))
     print(f"[graph-sensors] Returning {len(result)} sensors "
           f"({sum(1 for s in result if s['status']=='LIVE')} LIVE)")
     return {"sensors": result}
-
 
 @router.get("/points/{point_id}", response_model=TelemetryResponse)
 async def get_telemetry_data(
