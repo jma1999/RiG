@@ -1,0 +1,267 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix s223: <http://data.ashrae.org/standard223#> .
+@prefix qudt: <http://qudt.org/schema/qudt/> .
+@prefix quantitykind: <http://qudt.org/vocab/quantitykind/> .
+
+##########
+# Physical spaces
+##########
+
+<https://example.com/case-office/shapes/PhysicalSpaceShape>
+  a sh:NodeShape ;
+  sh:targetClass s223:PhysicalSpace ;
+  sh:property [
+    sh:path s223:hasZone ;
+    sh:nodeKind sh:IRI ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:message "Each s223:PhysicalSpace must have exactly one zone." ;
+  ] ;
+  sh:property [
+    sh:path rdfs:label ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:message "Each s223:PhysicalSpace should have exactly one label." ;
+  ] ;
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:message "Each s223:PhysicalSpace must have exactly one IFC GUID exactMatch." ;
+    sh:select """
+      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+      SELECT $this WHERE {
+        {
+          SELECT $this (COUNT(DISTINCT ?ifc) AS ?nIfc) WHERE {
+            OPTIONAL {
+              $this skos:exactMatch ?ifc .
+              FILTER(STRSTARTS(STR(?ifc), "http://ifc-ld.org/ids#"))
+            }
+          }
+          GROUP BY $this
+        }
+        FILTER(?nIfc != 1)
+      }
+    """ ;
+  ] ;
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:message "Each s223:PhysicalSpace must have exactly one Brick exactMatch." ;
+    sh:select """
+      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+      SELECT $this WHERE {
+        {
+          SELECT $this (COUNT(DISTINCT ?brick) AS ?nBrick) WHERE {
+            OPTIONAL {
+              $this skos:exactMatch ?brick .
+              FILTER(STRSTARTS(STR(?brick), "http://example.com/mybuilding#"))
+            }
+          }
+          GROUP BY $this
+        }
+        FILTER(?nBrick != 1)
+      }
+    """ ;
+  ] .
+
+##########
+# Humidity sensors
+##########
+
+<https://example.com/case-office/shapes/HumiditySensorShape>
+  a sh:NodeShape ;
+  sh:targetClass s223:HumiditySensor ;
+  sh:property [
+    sh:path s223:hasPhysicalLocation ;
+    sh:nodeKind sh:IRI ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:class s223:PhysicalSpace ;
+    sh:message "Each s223:HumiditySensor must have exactly one physical location that is an s223:PhysicalSpace." ;
+  ] ;
+  sh:property [
+    sh:path rdfs:label ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:message "Each s223:HumiditySensor should have exactly one label." ;
+  ] ;
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:message "Each s223:HumiditySensor must have exactly one IFC GUID exactMatch." ;
+    sh:select """
+      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+      SELECT $this WHERE {
+        {
+          SELECT $this (COUNT(DISTINCT ?ifc) AS ?nIfc) WHERE {
+            OPTIONAL {
+              $this skos:exactMatch ?ifc .
+              FILTER(STRSTARTS(STR(?ifc), "http://ifc-ld.org/ids#"))
+            }
+          }
+          GROUP BY $this
+        }
+        FILTER(?nIfc != 1)
+      }
+    """ ;
+  ] ;
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:message "Each s223:HumiditySensor must have exactly one dashboard point exactMatch." ;
+    sh:select """
+      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+      SELECT $this WHERE {
+        {
+          SELECT $this (COUNT(DISTINCT ?pt) AS ?nPt) WHERE {
+            OPTIONAL {
+              $this skos:exactMatch ?pt .
+              FILTER(STRSTARTS(STR(?pt), "https://example.com/case-office/point/"))
+            }
+          }
+          GROUP BY $this
+        }
+        FILTER(?nPt != 1)
+      }
+    """ ;
+  ] ;
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:message "Each s223:HumiditySensor must observe at least one RelativeHumidity property." ;
+    sh:select """
+      PREFIX s223: <http://data.ashrae.org/standard223#>
+      PREFIX qudt: <http://qudt.org/schema/qudt/>
+      PREFIX quantitykind: <http://qudt.org/vocab/quantitykind/>
+
+      SELECT $this WHERE {
+        FILTER NOT EXISTS {
+          $this s223:observes ?p .
+          ?p qudt:hasQuantityKind quantitykind:RelativeHumidity .
+        }
+      }
+    """ ;
+  ] ;
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:message "Each s223:HumiditySensor must observe at least one Temperature property." ;
+    sh:select """
+      PREFIX s223: <http://data.ashrae.org/standard223#>
+      PREFIX qudt: <http://qudt.org/schema/qudt/>
+      PREFIX quantitykind: <http://qudt.org/vocab/quantitykind/>
+
+      SELECT $this WHERE {
+        FILTER NOT EXISTS {
+          $this s223:observes ?p .
+          ?p qudt:hasQuantityKind quantitykind:Temperature .
+        }
+      }
+    """ ;
+  ] .
+
+##########
+# Occupant presence sensors
+##########
+
+<https://example.com/case-office/shapes/OccupantPresenceSensorShape>
+  a sh:NodeShape ;
+  sh:targetClass s223:OccupantPresenceSensor ;
+  sh:property [
+    sh:path s223:hasPhysicalLocation ;
+    sh:nodeKind sh:IRI ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:class s223:PhysicalSpace ;
+    sh:message "Each s223:OccupantPresenceSensor must have exactly one physical location that is an s223:PhysicalSpace." ;
+  ] ;
+  sh:property [
+    sh:path rdfs:label ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:message "Each s223:OccupantPresenceSensor should have exactly one label." ;
+  ] ;
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:message "Each s223:OccupantPresenceSensor must have exactly one IFC GUID exactMatch." ;
+    sh:select """
+      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+      SELECT $this WHERE {
+        {
+          SELECT $this (COUNT(DISTINCT ?ifc) AS ?nIfc) WHERE {
+            OPTIONAL {
+              $this skos:exactMatch ?ifc .
+              FILTER(STRSTARTS(STR(?ifc), "http://ifc-ld.org/ids#"))
+            }
+          }
+          GROUP BY $this
+        }
+        FILTER(?nIfc != 1)
+      }
+    """ ;
+  ] ;
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:message "Each s223:OccupantPresenceSensor must have exactly one dashboard point exactMatch." ;
+    sh:select """
+      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+      SELECT $this WHERE {
+        {
+          SELECT $this (COUNT(DISTINCT ?pt) AS ?nPt) WHERE {
+            OPTIONAL {
+              $this skos:exactMatch ?pt .
+              FILTER(STRSTARTS(STR(?pt), "https://example.com/case-office/point/"))
+            }
+          }
+          GROUP BY $this
+        }
+        FILTER(?nPt != 1)
+      }
+    """ ;
+  ] ;
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:message "Each s223:OccupantPresenceSensor must observe at least one DimensionlessRatio property." ;
+    sh:select """
+      PREFIX s223: <http://data.ashrae.org/standard223#>
+      PREFIX qudt: <http://qudt.org/schema/qudt/>
+      PREFIX quantitykind: <http://qudt.org/vocab/quantitykind/>
+
+      SELECT $this WHERE {
+        FILTER NOT EXISTS {
+          $this s223:observes ?p .
+          ?p qudt:hasQuantityKind quantitykind:DimensionlessRatio .
+        }
+      }
+    """ ;
+  ] .
+
+##########
+# Observable properties
+##########
+
+<https://example.com/case-office/shapes/ObservablePropertyShape>
+  a sh:NodeShape ;
+  sh:targetClass s223:QuantifiableObservableProperty ;
+  sh:property [
+    sh:path qudt:hasQuantityKind ;
+    sh:nodeKind sh:IRI ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:message "Each s223:QuantifiableObservableProperty must have exactly one quantity kind." ;
+  ] ;
+  sh:property [
+    sh:path rdfs:label ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:message "Each s223:QuantifiableObservableProperty should have exactly one label." ;
+  ] .

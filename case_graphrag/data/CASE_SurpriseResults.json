@@ -1,0 +1,624 @@
+[
+  {
+    "question_id": "H1",
+    "question_text": "Which sensors in Reception6 have telemetry available?",
+    "predicted": {
+      "router": {
+        "intent": "timeseries_only",
+        "answer_type": "set_membership",
+        "confidence": 0.95,
+        "rationale_short": "The question asks about sensors in a specific room ('Reception6') that have telemetry available, which requires checking telemetry presence linked to sensors within the room. This is a telemetry-backed room membership query, best answered by joining telemetry data with sensor-room relations, fitting timeseries_only."
+      },
+      "plan": {
+        "intent": "timeseries_only",
+        "entities": {
+          "space_label": "Reception6",
+          "sensor_label": null,
+          "device_id": null,
+          "metric_names": [],
+          "needs_latest": false,
+          "needs_aggregation": false,
+          "aggregation_fn": null
+        },
+        "steps": [
+          {
+            "step_id": "step1",
+            "tool": "sql",
+            "purpose": "Retrieve sensors that have telemetry observations and are located in Reception6 by joining telemetry_observations with sensor_space_enriched_clean filtered by space_label 'Reception6'"
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "The sensors in Reception6 that have telemetry available are Sensor38, Sensor39, and Sensor45.",
+      "evidence": {
+        "summary": "SQL query joining telemetry observations with sensor-space data filtered by space_label 'Reception6' returned sensors Sensor38, Sensor39, and Sensor45 as having telemetry data in that room.",
+        "sql_rows": 3,
+        "sparql_rows": 0
+      },
+      "errors": null,
+      "sql_query": "SELECT DISTINCT\n    sse.sensor_label\nFROM sensor_space_enriched_clean sse\nJOIN telemetry_observations tobs\n    ON sse.canonical_uri = tobs.canonical_uri\nWHERE sse.space_label = 'Reception6'\nORDER BY sse.sensor_label;",
+      "sparql_query": null,
+      "sql_validation": {
+        "ok": true,
+        "used_tables": [
+          "sensor_space_enriched_clean",
+          "telemetry_observations"
+        ]
+      },
+      "sparql_validation": null,
+      "sql_result": {
+        "ok": true,
+        "columns": [
+          "sensor_label"
+        ],
+        "rows": [
+          {
+            "sensor_label": "Sensor38"
+          },
+          {
+            "sensor_label": "Sensor39"
+          },
+          {
+            "sensor_label": "Sensor45"
+          }
+        ],
+        "row_count": 3,
+        "error": null,
+        "metadata": {
+          "source": "postgres"
+        }
+      },
+      "sparql_result": null
+    }
+  },
+  {
+    "question_id": "H2",
+    "question_text": "What is the latest temperature in Reception6?",
+    "predicted": {
+      "router": {
+        "intent": "timeseries_only",
+        "answer_type": "latest_reading",
+        "confidence": 0.95,
+        "rationale_short": "Question asks for the latest temperature reading in a specific room, which requires retrieving the latest telemetry data filtered by room and metric. This can be answered by joining telemetry_latest with sensor_space_enriched_clean without needing extra graph grounding."
+      },
+      "plan": {
+        "intent": "timeseries_only",
+        "entities": {
+          "space_label": "Reception6",
+          "sensor_label": null,
+          "device_id": null,
+          "metric_names": [
+            "temperature"
+          ],
+          "needs_latest": true,
+          "needs_aggregation": false,
+          "aggregation_fn": null
+        },
+        "steps": [
+          {
+            "step_id": "step1",
+            "tool": "sql",
+            "purpose": "Retrieve latest temperature reading in Reception6 by joining telemetry_latest with sensor_space_enriched_clean filtered by space and metric"
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "The latest temperature reading in Reception6 is 72.68 degrees Fahrenheit, recorded by Sensor39 at 2026-03-09T03:48:15Z.",
+      "evidence": {
+        "summary": "The SQL query retrieved three recent temperature readings in Reception6 with timestamps around 03:46 to 03:48 on 2026-03-09. Sensor39's reading of 72.68\u00b0F at 03:48:15Z is the most recent among them.",
+        "sql_rows": 3,
+        "sparql_rows": 0
+      },
+      "errors": null,
+      "sql_query": "SELECT\n    sse.sensor_label,\n    sse.space_label,\n    tl.metric_name,\n    tl.value_double,\n    tl.unit,\n    tl.ts,\n    tl.canonical_uri\nFROM sensor_space_enriched_clean sse\nJOIN telemetry_latest tl\n    ON sse.canonical_uri = tl.canonical_uri\nWHERE sse.space_label = 'Reception6'\n  AND tl.metric_name = 'temperature'\nORDER BY sse.sensor_label;",
+      "sparql_query": null,
+      "sql_validation": {
+        "ok": true,
+        "used_tables": [
+          "sensor_space_enriched_clean",
+          "telemetry_latest"
+        ]
+      },
+      "sparql_validation": null,
+      "sql_result": {
+        "ok": true,
+        "columns": [
+          "sensor_label",
+          "space_label",
+          "metric_name",
+          "value_double",
+          "unit",
+          "ts",
+          "canonical_uri"
+        ],
+        "rows": [
+          {
+            "sensor_label": "Sensor38",
+            "space_label": "Reception6",
+            "metric_name": "temperature",
+            "value_double": 72.95,
+            "unit": "fahrenheit",
+            "ts": "2026-03-09 03:46:52+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZPV"
+          },
+          {
+            "sensor_label": "Sensor39",
+            "space_label": "Reception6",
+            "metric_name": "temperature",
+            "value_double": 72.68,
+            "unit": "fahrenheit",
+            "ts": "2026-03-09 03:48:15+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZQC"
+          },
+          {
+            "sensor_label": "Sensor45",
+            "space_label": "Reception6",
+            "metric_name": "temperature",
+            "value_double": 72.77,
+            "unit": "fahrenheit",
+            "ts": "2026-03-09 03:46:40+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZID"
+          }
+        ],
+        "row_count": 3,
+        "error": null,
+        "metadata": {
+          "source": "postgres"
+        }
+      },
+      "sparql_result": null
+    }
+  },
+  {
+    "question_id": "H3",
+    "question_text": "Which room has the highest number of telemetry-backed sensors?",
+    "predicted": {
+      "router": {
+        "intent": "timeseries_only",
+        "answer_type": "aggregation",
+        "confidence": 0.95,
+        "rationale_short": "Question is about which room has the highest count of telemetry-backed sensors, needing aggregation over telemetry data joined with room info, suitable for timeseries_only intent and aggregation answer type."
+      },
+      "plan": {
+        "intent": "timeseries_only",
+        "entities": {
+          "space_label": null,
+          "sensor_label": null,
+          "device_id": null,
+          "metric_names": [],
+          "needs_latest": false,
+          "needs_aggregation": true,
+          "aggregation_fn": "count"
+        },
+        "steps": [
+          {
+            "step_id": "step1",
+            "tool": "sql",
+            "purpose": "Aggregate count of distinct sensors per room from telemetry_observations joined with sensor_space_enriched_clean"
+          },
+          {
+            "step_id": "step2",
+            "tool": "sql",
+            "purpose": "Identify the room with the highest number of telemetry-backed sensors"
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "The room with the highest number of telemetry-backed sensors is Office1, which has 10 sensors.",
+      "evidence": {
+        "summary": "The SQL query aggregating distinct sensors per room from telemetry observations returned Office1 with a sensor count of 10. No conflicting SPARQL result was provided.",
+        "sql_rows": 1,
+        "sparql_rows": 0
+      },
+      "errors": null,
+      "sql_query": "SELECT\n    sse.space_label,\n    COUNT(DISTINCT sse.canonical_uri) AS sensor_count\nFROM sensor_space_enriched_clean sse\nJOIN telemetry_observations tobs\n    ON sse.canonical_uri = tobs.canonical_uri\nGROUP BY sse.space_label\nORDER BY sensor_count DESC, sse.space_label\nLIMIT 1;",
+      "sparql_query": null,
+      "sql_validation": {
+        "ok": true,
+        "used_tables": [
+          "sensor_space_enriched_clean",
+          "telemetry_observations"
+        ]
+      },
+      "sparql_validation": null,
+      "sql_result": {
+        "ok": true,
+        "columns": [
+          "space_label",
+          "sensor_count"
+        ],
+        "rows": [
+          {
+            "space_label": "Office1",
+            "sensor_count": 10
+          }
+        ],
+        "row_count": 1,
+        "error": null,
+        "metadata": {
+          "source": "postgres"
+        }
+      },
+      "sparql_result": null
+    }
+  },
+  {
+    "question_id": "H4",
+    "question_text": "What metrics are available for Reception6?",
+    "predicted": {
+      "router": {
+        "intent": "timeseries_only",
+        "answer_type": "coverage",
+        "confidence": 0.95,
+        "rationale_short": "The question asks about metrics available for a specific room 'Reception6', which involves telemetry data coverage for that room; this is a telemetry-backed availability question, best answered from telemetry tables with a room filter, so 'timeseries_only' with 'coverage' is appropriate."
+      },
+      "plan": {
+        "intent": "timeseries_only",
+        "entities": {
+          "space_label": "Reception6",
+          "sensor_label": null,
+          "device_id": null,
+          "metric_names": [],
+          "needs_latest": false,
+          "needs_aggregation": false,
+          "aggregation_fn": null
+        },
+        "steps": [
+          {
+            "step_id": "1",
+            "tool": "sql",
+            "purpose": "Query metrics available for Reception6 from telemetry_observations joined with sensor_space_enriched_clean to filter by space."
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "The available metrics for Reception6 are relative humidity, measured in percent, and temperature, measured in fahrenheit.",
+      "evidence": {
+        "summary": "According to telemetry data joining observations with space information, Reception6 has two available metrics: relative humidity and temperature, with their respective units and quantity kinds identified.",
+        "sql_rows": 2,
+        "sparql_rows": 0
+      },
+      "errors": null,
+      "sql_query": "SELECT DISTINCT\n    sse.space_label,\n    tobs.metric_name,\n    tobs.unit,\n    tobs.quantity_kind\nFROM sensor_space_enriched_clean sse\nJOIN telemetry_observations tobs\n    ON sse.canonical_uri = tobs.canonical_uri\nWHERE sse.space_label = 'Reception6'\nORDER BY tobs.metric_name;",
+      "sparql_query": null,
+      "sql_validation": {
+        "ok": true,
+        "used_tables": [
+          "sensor_space_enriched_clean",
+          "telemetry_observations"
+        ]
+      },
+      "sparql_validation": null,
+      "sql_result": {
+        "ok": true,
+        "columns": [
+          "space_label",
+          "metric_name",
+          "unit",
+          "quantity_kind"
+        ],
+        "rows": [
+          {
+            "space_label": "Reception6",
+            "metric_name": "relative_humidity",
+            "unit": "percent",
+            "quantity_kind": "http://qudt.org/vocab/quantitykind/RelativeHumidity"
+          },
+          {
+            "space_label": "Reception6",
+            "metric_name": "temperature",
+            "unit": "fahrenheit",
+            "quantity_kind": "http://qudt.org/vocab/quantitykind/Temperature"
+          }
+        ],
+        "row_count": 2,
+        "error": null,
+        "metadata": {
+          "source": "postgres"
+        }
+      },
+      "sparql_result": null
+    }
+  },
+  {
+    "question_id": "H5",
+    "question_text": "Which canonical URI corresponds to Sensor41?",
+    "predicted": {
+      "router": {
+        "intent": "graph_only",
+        "answer_type": "identity_lookup",
+        "confidence": 0.95,
+        "rationale_short": "The question seeks the canonical URI associated with a sensor identifier, which is a straightforward graph lookup without involving telemetry data."
+      },
+      "plan": {
+        "intent": "graph_only",
+        "entities": {
+          "space_label": null,
+          "sensor_label": "Sensor41",
+          "device_id": null,
+          "metric_names": [],
+          "needs_latest": false,
+          "needs_aggregation": false,
+          "aggregation_fn": null
+        },
+        "steps": [
+          {
+            "step_id": "step1",
+            "tool": "sparql",
+            "purpose": "Lookup the canonical URI for Sensor41 in the semantic graph"
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "The canonical URI corresponding to Sensor41 is [https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZRQ](https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZRQ).",
+      "evidence": {
+        "summary": "SPARQL query directly retrieved the canonical URI for Sensor41 as https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZRQ from the semantic graph database.",
+        "sql_rows": 0,
+        "sparql_rows": 1
+      },
+      "errors": null,
+      "sql_query": null,
+      "sparql_query": "PREFIX ex: <https://example.com/case-office/align/>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n\nSELECT ?canonical_uri WHERE {\n  GRAPH <https://example.com/case-office/g/overlay> {\n    ?canonical_uri a ex:CanonicalSensorEntity ;\n                   rdfs:label \"Sensor41\" .\n  }\n}\nLIMIT 1",
+      "sql_validation": null,
+      "sparql_validation": {
+        "ok": true,
+        "used_graphs": [
+          "https://example.com/case-office/g/overlay"
+        ]
+      },
+      "sql_result": null,
+      "sparql_result": {
+        "ok": true,
+        "columns": [
+          "canonical_uri"
+        ],
+        "rows": [
+          {
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZRQ"
+          }
+        ],
+        "row_count": 1,
+        "error": null,
+        "metadata": {
+          "source": "graphdb"
+        }
+      }
+    }
+  },
+  {
+    "question_id": "H6",
+    "question_text": "What is the average humidity in Office1 over the export window?",
+    "predicted": {
+      "router": {
+        "intent": "timeseries_only",
+        "answer_type": "aggregation",
+        "confidence": 0.95,
+        "rationale_short": "The question asks for an average telemetry value (humidity) over a time window in a specific room, which can be answered by querying telemetry data joined with sensor location, fitting timeseries_only intent and aggregation answer_type."
+      },
+      "plan": {
+        "intent": "timeseries_only",
+        "entities": {
+          "space_label": "Office1",
+          "sensor_label": null,
+          "device_id": null,
+          "metric_names": [
+            "humidity"
+          ],
+          "needs_latest": false,
+          "needs_aggregation": true,
+          "aggregation_fn": "avg"
+        },
+        "steps": [
+          {
+            "step_id": "sql_1",
+            "tool": "sql",
+            "purpose": "Query average humidity over the export window for sensors located in Office1 using telemetry_observations joined with sensor_space_enriched_clean to filter sensors by space"
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "The average humidity in Office1 over the export window is approximately 36.36%.",
+      "evidence": {
+        "summary": "The SQL query calculated the average relative humidity for sensors located in Office1 using telemetry observations and sensor location data, returning a value of 36.3633%. No SPARQL data was available to contradict this result.",
+        "sql_rows": 1,
+        "sparql_rows": 0
+      },
+      "errors": null,
+      "sql_query": "SELECT AVG(tobs.value_double) AS avg_relative_humidity\nFROM sensor_space_enriched_clean sse\nJOIN telemetry_observations tobs\n    ON sse.canonical_uri = tobs.canonical_uri\nWHERE sse.space_label = 'Office1'\n  AND tobs.metric_name = 'relative_humidity';",
+      "sparql_query": null,
+      "sql_validation": {
+        "ok": true,
+        "used_tables": [
+          "sensor_space_enriched_clean",
+          "telemetry_observations"
+        ]
+      },
+      "sparql_validation": null,
+      "sql_result": {
+        "ok": true,
+        "columns": [
+          "avg_relative_humidity"
+        ],
+        "rows": [
+          {
+            "avg_relative_humidity": 36.363332816857906
+          }
+        ],
+        "row_count": 1,
+        "error": null,
+        "metadata": {
+          "source": "postgres"
+        }
+      },
+      "sparql_result": null
+    }
+  },
+  {
+    "question_id": "H7",
+    "question_text": "Which spaces have both humidity and temperature telemetry?",
+    "predicted": {
+      "router": {
+        "intent": "timeseries_only",
+        "answer_type": "set_membership",
+        "confidence": 0.95,
+        "rationale_short": "The question asks about spaces having both humidity and temperature telemetry, which relates to telemetry-backed metric availability and can be answered by querying telemetry tables joined with sensor-space data, without needing complex semantic graph grounding."
+      },
+      "plan": {
+        "intent": "timeseries_only",
+        "entities": {
+          "space_label": null,
+          "sensor_label": null,
+          "device_id": null,
+          "metric_names": [
+            "humidity",
+            "temperature"
+          ],
+          "needs_latest": false,
+          "needs_aggregation": false,
+          "aggregation_fn": null
+        },
+        "steps": [
+          {
+            "step_id": "sql_1",
+            "tool": "sql",
+            "purpose": "Query telemetry_observations joined with sensor_space_enriched_clean to find spaces having sensors with both humidity and temperature metrics"
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "The spaces that have both humidity and temperature telemetry are Kitchen5, Office1, Reception6, Work Area & Storage2, and Work Area & Storage4.",
+      "evidence": {
+        "summary": "A SQL query on telemetry observations joined with sensor space data identified these five spaces as having sensors measuring both humidity and temperature.",
+        "sql_rows": 5,
+        "sparql_rows": 0
+      },
+      "errors": null,
+      "sql_query": "SELECT\n    sse.space_label\nFROM sensor_space_enriched_clean sse\nJOIN telemetry_observations tobs\n    ON sse.canonical_uri = tobs.canonical_uri\nWHERE tobs.metric_name IN ('relative_humidity', 'temperature')\nGROUP BY sse.space_label\nHAVING COUNT(DISTINCT tobs.metric_name) = 2\nORDER BY sse.space_label;",
+      "sparql_query": null,
+      "sql_validation": {
+        "ok": true,
+        "used_tables": [
+          "sensor_space_enriched_clean",
+          "telemetry_observations"
+        ]
+      },
+      "sparql_validation": null,
+      "sql_result": {
+        "ok": true,
+        "columns": [
+          "space_label"
+        ],
+        "rows": [
+          {
+            "space_label": "Kitchen5"
+          },
+          {
+            "space_label": "Office1"
+          },
+          {
+            "space_label": "Reception6"
+          },
+          {
+            "space_label": "Work Area & Storage2"
+          },
+          {
+            "space_label": "Work Area & Storage4"
+          }
+        ],
+        "row_count": 5,
+        "error": null,
+        "metadata": {
+          "source": "postgres"
+        }
+      },
+      "sparql_result": null
+    }
+  },
+  {
+    "question_id": "H8",
+    "question_text": "Show the latest telemetry for Kitchen5.",
+    "predicted": {
+      "router": {
+        "intent": "timeseries_only",
+        "answer_type": "latest_reading",
+        "confidence": 0.95,
+        "rationale_short": "Request explicitly asks for latest telemetry data for a specific room, which is telemetry retrieval without requiring semantic resolution beyond the room identity."
+      },
+      "plan": {
+        "intent": "timeseries_only",
+        "entities": {
+          "space_label": "Kitchen5",
+          "sensor_label": null,
+          "device_id": null,
+          "metric_names": [],
+          "needs_latest": true,
+          "needs_aggregation": false,
+          "aggregation_fn": null
+        },
+        "steps": [
+          {
+            "step_id": "1",
+            "tool": "sql",
+            "purpose": "Retrieve latest telemetry readings for sensors located in Kitchen5 from telemetry_latest joined with sensor_space_enriched_clean to filter by space."
+          }
+        ],
+        "output_style": "table"
+      },
+      "final_answer": "The latest telemetry readings for Kitchen5 from Sensor44 at timestamp 2026-03-09T03:48:30Z are:\n- Temperature: 73.22 \u00b0F\n- Relative Humidity: 39.3 %",
+      "evidence": {
+        "summary": "The SQL query retrieved two latest telemetry readings from Kitchen5 with sensor Sensor44, showing temperature at 73.22 fahrenheit and relative humidity at 39.3 percent, both recorded at 2026-03-09T03:48:30Z.",
+        "sql_rows": 2,
+        "sparql_rows": 0
+      },
+      "errors": null,
+      "sql_query": "SELECT\n    sse.sensor_label,\n    sse.space_label,\n    tl.metric_name,\n    tl.value_double,\n    tl.unit,\n    tl.ts,\n    tl.canonical_uri\nFROM sensor_space_enriched_clean sse\nJOIN telemetry_latest tl\n    ON sse.canonical_uri = tl.canonical_uri\nWHERE sse.space_label = 'Kitchen5'\nORDER BY sse.sensor_label, tl.metric_name;",
+      "sparql_query": null,
+      "sql_validation": {
+        "ok": true,
+        "used_tables": [
+          "sensor_space_enriched_clean",
+          "telemetry_latest"
+        ]
+      },
+      "sparql_validation": null,
+      "sql_result": {
+        "ok": true,
+        "columns": [
+          "sensor_label",
+          "space_label",
+          "metric_name",
+          "value_double",
+          "unit",
+          "ts",
+          "canonical_uri"
+        ],
+        "rows": [
+          {
+            "sensor_label": "Sensor44",
+            "space_label": "Kitchen5",
+            "metric_name": "relative_humidity",
+            "value_double": 39.3,
+            "unit": "percent",
+            "ts": "2026-03-09 03:48:30+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZHL"
+          },
+          {
+            "sensor_label": "Sensor44",
+            "space_label": "Kitchen5",
+            "metric_name": "temperature",
+            "value_double": 73.22,
+            "unit": "fahrenheit",
+            "ts": "2026-03-09 03:48:30+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZHL"
+          }
+        ],
+        "row_count": 2,
+        "error": null,
+        "metadata": {
+          "source": "postgres"
+        }
+      },
+      "sparql_result": null
+    }
+  }
+]

@@ -1,0 +1,34 @@
+[
+    {
+      "question_id": "H1",
+      "question_text": "Which sensors in Reception6 have telemetry available?"
+    },
+    {
+      "question_id": "H2",
+      "question_text": "What is the latest temperature in Reception6?"
+    },
+    {
+      "question_id": "H3",
+      "question_text": "Which room has the highest number of telemetry-backed sensors?"
+    },
+    {
+      "question_id": "H4",
+      "question_text": "What metrics are available for Reception6?"
+    },
+    {
+      "question_id": "H5",
+      "question_text": "Which canonical URI corresponds to Sensor41?"
+    },
+    {
+      "question_id": "H6",
+      "question_text": "What is the average humidity in Office1 over the export window?"
+    },
+    {
+      "question_id": "H7",
+      "question_text": "Which spaces have both humidity and temperature telemetry?"
+    },
+    {
+      "question_id": "H8",
+      "question_text": "Show the latest telemetry for Kitchen5."
+    }
+  ]

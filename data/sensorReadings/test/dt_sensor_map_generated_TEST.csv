@@ -1,0 +1,2 @@
+device_id,name_label,sensor_number,point_uri,sensor_223p_uri,canonical_uri,ifc_guid
+bjn55vgpismg008i06ng,Humidity in CASE (#45),45,https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZID,https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZID,https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZID,"""2s0j47hCv8iPIoVB1rIZID"""

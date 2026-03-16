@@ -1,0 +1,1299 @@
+[
+  {
+    "question_id": "Q1",
+    "question_text": "What are the latest humidity and temperature readings in Office1?",
+    "gold": {
+      "question_id": "Q1",
+      "question_text": "What are the latest humidity and temperature readings in Office1?",
+      "answer_type": "latest-readings-set",
+      "expected_space": "Office1",
+      "expected_sensor_labels": [
+        "Sensor30",
+        "Sensor31",
+        "Sensor32",
+        "Sensor33",
+        "Sensor34",
+        "Sensor35",
+        "Sensor36",
+        "Sensor37",
+        "Sensor40",
+        "Sensor41"
+      ],
+      "expected_device_ids": [],
+      "expected_metric_names": [
+        "relative_humidity",
+        "temperature"
+      ],
+      "expected_canonical_uris": [
+        "2s0j47hCv8iPIoVB1rIWZp",
+        "2s0j47hCv8iPIoVB1rIZS1",
+        "2s0j47hCv8iPIoVB1rIZTn",
+        "2s0j47hCv8iPIoVB1rIZUb",
+        "13w9LKJMvBR9NVulm$Rjo6",
+        "2s0j47hCv8iPIoVB1rIZUL",
+        "2s0j47hCv8iPIoVB1rIZOZ",
+        "2s0j47hCv8iPIoVB1rIZOM",
+        "2s0j47hCv8iPIoVB1rIZR_",
+        "2s0j47hCv8iPIoVB1rIZRQ"
+      ],
+      "expected_answer": "Sensor30 RH 45.4, Temp 67.82; Sensor31 RH 46.15, Temp 67.82; Sensor32 RH 45.35, Temp 68.18; Sensor33 RH 49.95, Temp 64.76; Sensor34 RH 39.6, Temp 73.31; Sensor35 RH 39.45, Temp 73.58; Sensor36 RH 39.2, Temp 73.04; Sensor37 RH 45.3, Temp 67.91; Sensor40 RH 38.6, Temp 73.94; Sensor41 RH 38.95, Temp 73.31",
+      "expected_unit": [
+        "percent",
+        "fahrenheit"
+      ],
+      "expected_ts": "sensor-specific latest timestamps from SQL output",
+      "expected_sql_evidence": "sensor_space_enriched_clean JOIN telemetry_latest ON canonical_uri WHERE space_label='Office1'",
+      "expected_graph_evidence": "SPARQL query joining overlay canonical sensors to 223P physical location Office1",
+      "notes": "Office1 has 12 graph sensors but only 10 with telemetry in this result set"
+    },
+    "predicted": {
+      "router": {
+        "intent": "timeseries_only",
+        "answer_type": "latest_reading",
+        "confidence": 0.95,
+        "rationale_short": "The question asks for the latest telemetry readings (humidity and temperature) in a specific room (Office1), focusing only on latest sensor data without needing graph identity details beyond room labeling."
+      },
+      "plan": {
+        "intent": "timeseries_only",
+        "entities": {
+          "space_label": "Office1",
+          "sensor_label": null,
+          "device_id": null,
+          "metric_names": [
+            "humidity",
+            "temperature"
+          ],
+          "needs_latest": true,
+          "needs_aggregation": false,
+          "aggregation_fn": null
+        },
+        "steps": [
+          {
+            "step_id": "step1",
+            "tool": "sql",
+            "purpose": "Retrieve latest humidity and temperature readings for sensors located in Office1"
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "The latest humidity and temperature readings in Office1 are from Sensor41 at 2026-03-09T03:58:18Z, showing a relative humidity of 38.95% and a temperature of 73.31\u00b0F.",
+      "evidence": {
+        "summary": "Multiple sensors in Office1 reported humidity and temperature readings; the most recent timestamp is 2026-03-09T03:58:18Z from Sensor41 with 38.95% humidity and 73.31\u00b0F temperature.",
+        "sql_rows": 20,
+        "sparql_rows": 0
+      },
+      "errors": null,
+      "sql_query": "SELECT sse.sensor_label, sse.space_label, tl.metric_name, tl.value_double, tl.unit, tl.ts, tl.canonical_uri\nFROM sensor_space_enriched_clean sse\nJOIN telemetry_latest tl ON sse.canonical_uri = tl.canonical_uri\nWHERE sse.space_label = 'Office1'\n  AND tl.metric_name IN ('relative_humidity', 'temperature')\nORDER BY sse.sensor_label, tl.metric_name;",
+      "sparql_query": null,
+      "sql_validation": {
+        "ok": true,
+        "used_tables": [
+          "sensor_space_enriched_clean",
+          "telemetry_latest"
+        ]
+      },
+      "sparql_validation": null,
+      "sql_result": {
+        "ok": true,
+        "columns": [
+          "sensor_label",
+          "space_label",
+          "metric_name",
+          "value_double",
+          "unit",
+          "ts",
+          "canonical_uri"
+        ],
+        "rows": [
+          {
+            "sensor_label": "Sensor30",
+            "space_label": "Office1",
+            "metric_name": "relative_humidity",
+            "value_double": 45.4,
+            "unit": "percent",
+            "ts": "2026-03-09 03:57:32+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIWZp"
+          },
+          {
+            "sensor_label": "Sensor30",
+            "space_label": "Office1",
+            "metric_name": "temperature",
+            "value_double": 67.82,
+            "unit": "fahrenheit",
+            "ts": "2026-03-09 03:57:32+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIWZp"
+          },
+          {
+            "sensor_label": "Sensor31",
+            "space_label": "Office1",
+            "metric_name": "relative_humidity",
+            "value_double": 46.15,
+            "unit": "percent",
+            "ts": "2026-03-09 03:57:59+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZS1"
+          },
+          {
+            "sensor_label": "Sensor31",
+            "space_label": "Office1",
+            "metric_name": "temperature",
+            "value_double": 67.82,
+            "unit": "fahrenheit",
+            "ts": "2026-03-09 03:57:59+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZS1"
+          },
+          {
+            "sensor_label": "Sensor32",
+            "space_label": "Office1",
+            "metric_name": "relative_humidity",
+            "value_double": 45.35,
+            "unit": "percent",
+            "ts": "2026-03-09 03:45:15+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZTn"
+          },
+          {
+            "sensor_label": "Sensor32",
+            "space_label": "Office1",
+            "metric_name": "temperature",
+            "value_double": 68.18,
+            "unit": "fahrenheit",
+            "ts": "2026-03-09 03:45:15+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZTn"
+          },
+          {
+            "sensor_label": "Sensor33",
+            "space_label": "Office1",
+            "metric_name": "relative_humidity",
+            "value_double": 49.95,
+            "unit": "percent",
+            "ts": "2026-03-09 03:51:08+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZUb"
+          },
+          {
+            "sensor_label": "Sensor33",
+            "space_label": "Office1",
+            "metric_name": "temperature",
+            "value_double": 64.76,
+            "unit": "fahrenheit",
+            "ts": "2026-03-09 03:51:08+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZUb"
+          },
+          {
+            "sensor_label": "Sensor34",
+            "space_label": "Office1",
+            "metric_name": "relative_humidity",
+            "value_double": 39.6,
+            "unit": "percent",
+            "ts": "2026-03-09 03:51:50+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/13w9LKJMvBR9NVulm$Rjo6"
+          },
+          {
+            "sensor_label": "Sensor34",
+            "space_label": "Office1",
+            "metric_name": "temperature",
+            "value_double": 73.31,
+            "unit": "fahrenheit",
+            "ts": "2026-03-09 03:51:50+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/13w9LKJMvBR9NVulm$Rjo6"
+          },
+          {
+            "sensor_label": "Sensor35",
+            "space_label": "Office1",
+            "metric_name": "relative_humidity",
+            "value_double": 39.45,
+            "unit": "percent",
+            "ts": "2026-03-09 03:47:59+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZUL"
+          },
+          {
+            "sensor_label": "Sensor35",
+            "space_label": "Office1",
+            "metric_name": "temperature",
+            "value_double": 73.58,
+            "unit": "fahrenheit",
+            "ts": "2026-03-09 03:47:59+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZUL"
+          },
+          {
+            "sensor_label": "Sensor36",
+            "space_label": "Office1",
+            "metric_name": "relative_humidity",
+            "value_double": 39.2,
+            "unit": "percent",
+            "ts": "2026-03-09 03:55:28+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZOZ"
+          },
+          {
+            "sensor_label": "Sensor36",
+            "space_label": "Office1",
+            "metric_name": "temperature",
+            "value_double": 73.04,
+            "unit": "fahrenheit",
+            "ts": "2026-03-09 03:55:28+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZOZ"
+          },
+          {
+            "sensor_label": "Sensor37",
+            "space_label": "Office1",
+            "metric_name": "relative_humidity",
+            "value_double": 45.3,
+            "unit": "percent",
+            "ts": "2026-03-09 03:48:45+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZOM"
+          },
+          {
+            "sensor_label": "Sensor37",
+            "space_label": "Office1",
+            "metric_name": "temperature",
+            "value_double": 67.91,
+            "unit": "fahrenheit",
+            "ts": "2026-03-09 03:48:45+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZOM"
+          },
+          {
+            "sensor_label": "Sensor40",
+            "space_label": "Office1",
+            "metric_name": "relative_humidity",
+            "value_double": 38.6,
+            "unit": "percent",
+            "ts": "2026-03-09 03:52:50+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZR_"
+          },
+          {
+            "sensor_label": "Sensor40",
+            "space_label": "Office1",
+            "metric_name": "temperature",
+            "value_double": 73.94,
+            "unit": "fahrenheit",
+            "ts": "2026-03-09 03:52:50+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZR_"
+          },
+          {
+            "sensor_label": "Sensor41",
+            "space_label": "Office1",
+            "metric_name": "relative_humidity",
+            "value_double": 38.95,
+            "unit": "percent",
+            "ts": "2026-03-09 03:58:18+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZRQ"
+          },
+          {
+            "sensor_label": "Sensor41",
+            "space_label": "Office1",
+            "metric_name": "temperature",
+            "value_double": 73.31,
+            "unit": "fahrenheit",
+            "ts": "2026-03-09 03:58:18+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZRQ"
+          }
+        ],
+        "row_count": 20,
+        "error": null,
+        "metadata": {
+          "source": "postgres"
+        }
+      },
+      "sparql_result": null
+    }
+  },
+  {
+    "question_id": "Q2",
+    "question_text": "Which sensors are located in Office1?",
+    "gold": {
+      "question_id": "Q2",
+      "question_text": "Which sensors are located in Office1?",
+      "answer_type": "set-membership",
+      "expected_space": "Office1",
+      "expected_sensor_labels": [
+        "Sensor01",
+        "Sensor30",
+        "Sensor31",
+        "Sensor32",
+        "Sensor33",
+        "Sensor34",
+        "Sensor35",
+        "Sensor36",
+        "Sensor37",
+        "Sensor40",
+        "Sensor41",
+        "Sensor42"
+      ],
+      "expected_device_ids": [
+        {
+          "sensor_label": "Sensor30",
+          "device_id": "bjn52q0pismg008i05qg"
+        },
+        {
+          "sensor_label": "Sensor31",
+          "device_id": "bjn52ldp0jt000a5f8gg"
+        },
+        {
+          "sensor_label": "Sensor32",
+          "device_id": "bjn52q0pismg008i05r0"
+        },
+        {
+          "sensor_label": "Sensor33",
+          "device_id": "bjn562u7kro000cp6dt0"
+        },
+        {
+          "sensor_label": "Sensor34",
+          "device_id": "bjn52o67gpvg00cjtt00"
+        },
+        {
+          "sensor_label": "Sensor35",
+          "device_id": "bjn52rtntbig00f91hcg"
+        },
+        {
+          "sensor_label": "Sensor36",
+          "device_id": "bjn55ttp0jt000a5f9dg"
+        },
+        {
+          "sensor_label": "Sensor37",
+          "device_id": "bjn560vbluqg00dm3cag"
+        },
+        {
+          "sensor_label": "Sensor40",
+          "device_id": "bjn52o67gpvg00cjtt0g"
+        },
+        {
+          "sensor_label": "Sensor41",
+          "device_id": "bjn5327bluqg00dm3bh0"
+        }
+      ],
+      "expected_metric_names": [],
+      "expected_canonical_uris": [
+        "Sensor01, 30\u201337, 40, 41, 42"
+      ],
+      "expected_answer": "12 sensors in Office1: Sensor01, Sensor30, Sensor31, Sensor32, Sensor33, Sensor34, Sensor35, Sensor36, Sensor37, Sensor40, Sensor41, Sensor42",
+      "expected_unit": [],
+      "expected_ts": null,
+      "expected_sql_evidence": "sensor_space_enriched_clean WHERE space_label='Office1'",
+      "expected_graph_evidence": "SPARQL query over overlay + 223P with ?space rdfs:label \"Office1\"",
+      "notes": "Sensor01 and Sensor42 are in graph/space mapping but have no device_id in SQL result shown"
+    },
+    "predicted": {
+      "router": {
+        "intent": "graph_only",
+        "answer_type": "set_membership",
+        "confidence": 0.95,
+        "rationale_short": "The question asks about which sensors are located in Office1, focusing on entity membership and location without involving telemetry values or time series data."
+      },
+      "plan": {
+        "intent": "graph_only",
+        "entities": {
+          "space_label": "Office1",
+          "sensor_label": null,
+          "device_id": null,
+          "metric_names": [],
+          "needs_latest": false,
+          "needs_aggregation": false,
+          "aggregation_fn": null
+        },
+        "steps": [
+          {
+            "step_id": "step1",
+            "tool": "sparql",
+            "purpose": "Retrieve sensors located in Office1 using semantic graph membership"
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "The sensors located in Office1 are Sensor01, Sensor30, Sensor31, Sensor32, Sensor33, Sensor34, Sensor35, Sensor36, Sensor37, Sensor40, Sensor41, and Sensor42.",
+      "evidence": {
+        "summary": "The SPARQL query results show 12 sensors with labels Sensor01, Sensor30 to Sensor37, and Sensor40 to Sensor42, all located in Office1 according to the semantic graph.",
+        "sql_rows": 0,
+        "sparql_rows": 12
+      },
+      "errors": null,
+      "sql_query": null,
+      "sparql_query": "PREFIX ex: <https://example.com/case-office/align/>\nPREFIX s223: <http://data.ashrae.org/standard223#>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n\nSELECT ?sensor_label ?canonical_uri WHERE {\n  GRAPH <https://example.com/case-office/g/overlay> {\n    ?canonical_uri a ex:CanonicalSensorEntity ;\n                   rdfs:label ?sensor_label ;\n                   ex:aligns223p ?sensor223 .\n  }\n\n  GRAPH <https://example.com/case-office/g/223p> {\n    ?sensor223 s223:hasPhysicalLocation ?space .\n    ?space rdfs:label \"Office1\" .\n  }\n}\nORDER BY ?sensor_label",
+      "sql_validation": null,
+      "sparql_validation": {
+        "ok": true,
+        "used_graphs": [
+          "https://example.com/case-office/g/223p",
+          "https://example.com/case-office/g/overlay"
+        ]
+      },
+      "sql_result": null,
+      "sparql_result": {
+        "ok": true,
+        "columns": [
+          "sensor_label",
+          "canonical_uri"
+        ],
+        "rows": [
+          {
+            "sensor_label": "Sensor01",
+            "canonical_uri": "https://example.com/case-office/canonical/13w9LKJMvBR9NVulm$RjH_"
+          },
+          {
+            "sensor_label": "Sensor30",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIWZp"
+          },
+          {
+            "sensor_label": "Sensor31",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZS1"
+          },
+          {
+            "sensor_label": "Sensor32",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZTn"
+          },
+          {
+            "sensor_label": "Sensor33",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZUb"
+          },
+          {
+            "sensor_label": "Sensor34",
+            "canonical_uri": "https://example.com/case-office/canonical/13w9LKJMvBR9NVulm$Rjo6"
+          },
+          {
+            "sensor_label": "Sensor35",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZUL"
+          },
+          {
+            "sensor_label": "Sensor36",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZOZ"
+          },
+          {
+            "sensor_label": "Sensor37",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZOM"
+          },
+          {
+            "sensor_label": "Sensor40",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZR_"
+          },
+          {
+            "sensor_label": "Sensor41",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZRQ"
+          },
+          {
+            "sensor_label": "Sensor42",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZKz"
+          }
+        ],
+        "row_count": 12,
+        "error": null,
+        "metadata": {
+          "source": "graphdb"
+        }
+      }
+    }
+  },
+  {
+    "question_id": "Q3",
+    "question_text": "What metrics are available for Office1?",
+    "gold": {
+      "question_id": "Q3",
+      "question_text": "What metrics are available for Office1?",
+      "answer_type": "metric-availability",
+      "expected_space": "Office1",
+      "expected_sensor_labels": [
+        "Sensor30",
+        "Sensor31",
+        "Sensor32",
+        "Sensor33",
+        "Sensor34",
+        "Sensor35",
+        "Sensor36",
+        "Sensor37",
+        "Sensor40",
+        "Sensor41"
+      ],
+      "expected_device_ids": [],
+      "expected_metric_names": [
+        "relative_humidity",
+        "temperature"
+      ],
+      "expected_canonical_uris": [],
+      "expected_answer": "relative_humidity and temperature",
+      "expected_unit": [
+        "percent",
+        "fahrenheit"
+      ],
+      "expected_ts": null,
+      "expected_sql_evidence": "DISTINCT metric query joining sensor_space_enriched_clean to telemetry_observations on canonical_uri where space_label='Office1'",
+      "expected_graph_evidence": "graph evidence optional; primary truth is telemetry availability",
+      "notes": "This question should be graded against telemetry-backed metrics, not merely ontology possibilities"
+    },
+    "predicted": {
+      "router": {
+        "intent": "timeseries_only",
+        "answer_type": "coverage",
+        "confidence": 0.9,
+        "rationale_short": "The question asks about what telemetry metrics are available for a specific room (Office1), implying access to telemetry data coverage rather than only identity information."
+      },
+      "plan": {
+        "intent": "timeseries_only",
+        "entities": {
+          "space_label": "Office1",
+          "sensor_label": null,
+          "device_id": null,
+          "metric_names": [],
+          "needs_latest": false,
+          "needs_aggregation": false,
+          "aggregation_fn": null
+        },
+        "steps": [
+          {
+            "step_id": "s1",
+            "tool": "sql",
+            "purpose": "Retrieve distinct metric names from telemetry_observations for sensors located in Office1 by joining telemetry_observations with sensor_space_enriched_clean to filter by space_label"
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "The available metrics for Office1 are relative humidity (measured in percent) and temperature (measured in fahrenheit).",
+      "evidence": {
+        "summary": "The SQL query retrieved two distinct metric names for sensors located in Office1: relative_humidity with the unit percent, and temperature with the unit fahrenheit.",
+        "sql_rows": 2,
+        "sparql_rows": 0
+      },
+      "errors": null,
+      "sql_query": "SELECT DISTINCT\n    sse.space_label,\n    tobs.metric_name,\n    tobs.unit,\n    tobs.quantity_kind\nFROM sensor_space_enriched_clean sse\nJOIN telemetry_observations tobs\n    ON sse.canonical_uri = tobs.canonical_uri\nWHERE sse.space_label = 'Office1'\nORDER BY tobs.metric_name;",
+      "sparql_query": null,
+      "sql_validation": {
+        "ok": true,
+        "used_tables": [
+          "sensor_space_enriched_clean",
+          "telemetry_observations"
+        ]
+      },
+      "sparql_validation": null,
+      "sql_result": {
+        "ok": true,
+        "columns": [
+          "space_label",
+          "metric_name",
+          "unit",
+          "quantity_kind"
+        ],
+        "rows": [
+          {
+            "space_label": "Office1",
+            "metric_name": "relative_humidity",
+            "unit": "percent",
+            "quantity_kind": "http://qudt.org/vocab/quantitykind/RelativeHumidity"
+          },
+          {
+            "space_label": "Office1",
+            "metric_name": "temperature",
+            "unit": "fahrenheit",
+            "quantity_kind": "http://qudt.org/vocab/quantitykind/Temperature"
+          }
+        ],
+        "row_count": 2,
+        "error": null,
+        "metadata": {
+          "source": "postgres"
+        }
+      },
+      "sparql_result": null
+    }
+  },
+  {
+    "question_id": "Q4",
+    "question_text": "What is the average temperature in Office1 over the export window?",
+    "gold": {
+      "question_id": "Q4",
+      "question_text": "What is the average temperature in Office1 over the export window?",
+      "answer_type": "aggregation",
+      "expected_space": "Office1",
+      "expected_sensor_labels": [
+        "telemetry-backed Office1 sensors"
+      ],
+      "expected_device_ids": [],
+      "expected_metric_names": [
+        "temperature"
+      ],
+      "expected_canonical_uris": [],
+      "expected_answer": "68.4146916640845\n(this is actually the average temperature in Office1 over the export window - computed over 6454 observations from 2026-03-02 05:01:58+00 to 2026-03-09 03:58:18+00)",
+      "expected_unit": [
+        "fahrenheit"
+      ],
+      "expected_ts": "window_start=2026-03-02 05:01:58+00; window_end=2026-03-09 03:58:18+00",
+      "expected_sql_evidence": "AVG over telemetry_observations joined through sensor_space_enriched_clean, filtered to Office1 and metric_name='temperature'",
+      "expected_graph_evidence": "graph evidence optional for room/sensor membership; SQL is primary truth",
+      "notes": "n_obs = 6454"
+    },
+    "predicted": {
+      "router": {
+        "intent": "timeseries_only",
+        "answer_type": "aggregation",
+        "confidence": 0.95,
+        "rationale_short": "The question asks for an average temperature value over a time period, which requires querying telemetry time series data for Office1."
+      },
+      "plan": {
+        "intent": "timeseries_only",
+        "entities": {
+          "space_label": "Office1",
+          "sensor_label": null,
+          "device_id": null,
+          "metric_names": [
+            "temperature"
+          ],
+          "needs_latest": false,
+          "needs_aggregation": true,
+          "aggregation_fn": "avg"
+        },
+        "steps": [
+          {
+            "step_id": "step1",
+            "tool": "sql",
+            "purpose": "Query average temperature telemetry for Office1 over the export window"
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "The average temperature in Office1 over the export window is approximately 68.41 degrees.",
+      "evidence": {
+        "summary": "The SQL query returned an average temperature of 68.4147 for Office1 over the specified export window.",
+        "sql_rows": 1,
+        "sparql_rows": 0
+      },
+      "errors": null,
+      "sql_query": "SELECT AVG(tobs.value_double) AS avg_temperature\nFROM sensor_space_enriched_clean sse\nJOIN telemetry_observations tobs ON sse.canonical_uri = tobs.canonical_uri\nWHERE sse.space_label = 'Office1'\n  AND tobs.metric_name = 'temperature';",
+      "sparql_query": null,
+      "sql_validation": {
+        "ok": true,
+        "used_tables": [
+          "sensor_space_enriched_clean",
+          "telemetry_observations"
+        ]
+      },
+      "sparql_validation": null,
+      "sql_result": {
+        "ok": true,
+        "columns": [
+          "avg_temperature"
+        ],
+        "rows": [
+          {
+            "avg_temperature": 68.4146916640845
+          }
+        ],
+        "row_count": 1,
+        "error": null,
+        "metadata": {
+          "source": "postgres"
+        }
+      },
+      "sparql_result": null
+    }
+  },
+  {
+    "question_id": "Q5",
+    "question_text": "Which room has the most humidity sensors?",
+    "gold": {
+      "question_id": "Q5",
+      "question_text": "Which room has the most humidity sensors?",
+      "answer_type": "ranking / count",
+      "expected_space": "Office1",
+      "expected_sensor_labels": [
+        "telemetry-backed Office1 sensors"
+      ],
+      "expected_device_ids": [],
+      "expected_metric_names": [
+        "relative_humidity"
+      ],
+      "expected_canonical_uris": [],
+      "expected_answer": "Office1 has the most humidity sensors: 10",
+      "expected_unit": [
+        "count"
+      ],
+      "expected_ts": null,
+      "expected_sql_evidence": "grouped COUNT(DISTINCT canonical_uri) over telemetry-backed humidity rows by space",
+      "expected_graph_evidence": "graph-only companion count exists but should not be the primary gold answer",
+      "notes": "Companion graph-like count shows 12 sensors in Office1 overall, but telemetry-backed humidity count is 10"
+    },
+    "predicted": {
+      "router": {
+        "intent": "graph_plus_timeseries",
+        "answer_type": "aggregation",
+        "confidence": 0.95,
+        "rationale_short": "The question requires counting humidity sensors per room using telemetry availability or sensor metadata combined with telemetry data, needing both graph (sensor-room relationships) and timeseries (telemetry-backed availability) information."
+      },
+      "plan": {
+        "intent": "graph_plus_timeseries",
+        "entities": {
+          "space_label": null,
+          "sensor_label": null,
+          "device_id": null,
+          "metric_names": [
+            "humidity"
+          ],
+          "needs_latest": false,
+          "needs_aggregation": true,
+          "aggregation_fn": "count"
+        },
+        "steps": [
+          {
+            "step_id": "1",
+            "tool": "sql",
+            "purpose": "Query telemetry_observations for humidity sensors and join with sensor_space_enriched_clean to map sensors to rooms and count humidity sensors per room"
+          },
+          {
+            "step_id": "2",
+            "tool": "sparql",
+            "purpose": "Use SPARQL to validate or enrich sensor-to-room mappings and room identities if needed"
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "The room labeled \"Office1\" has the most humidity sensors, with a total of 10 sensors.",
+      "evidence": {
+        "summary": "The SQL query counting humidity sensors per room returned a single result: Office1 with 10 humidity sensors. The SPARQL query returned no additional data to suggest other rooms with humidity sensors.",
+        "sql_rows": 1,
+        "sparql_rows": 0
+      },
+      "errors": null,
+      "sql_query": "SELECT\n    sse.space_label,\n    COUNT(DISTINCT sse.canonical_uri) AS humidity_sensor_count\nFROM sensor_space_enriched_clean sse\nJOIN telemetry_observations tobs\n    ON sse.canonical_uri = tobs.canonical_uri\nWHERE tobs.metric_name = 'relative_humidity'\nGROUP BY sse.space_label\nORDER BY humidity_sensor_count DESC, sse.space_label\nLIMIT 1;",
+      "sparql_query": "PREFIX ex: <https://example.com/case-office/align/>\nPREFIX s223: <http://data.ashrae.org/standard223#>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n\nSELECT ?space_label (COUNT(?canonical_uri) AS ?humidity_sensor_count) WHERE {\n  GRAPH <https://example.com/case-office/g/overlay> {\n    ?canonical_uri a ex:CanonicalSensorEntity ;\n                   rdfs:label ?sensor_label ;\n                   ex:aligns223p ?sensor223 .\n  }\n  GRAPH <https://example.com/case-office/g/223p> {\n    ?sensor223 s223:hasPhysicalLocation ?space .\n    ?space rdfs:label ?space_label .\n    FILTER(CONTAINS(LCASE(?sensor_label), \"humidity\"))\n  }\n}\nGROUP BY ?space_label\nORDER BY DESC(?humidity_sensor_count)\nLIMIT 1",
+      "sql_validation": {
+        "ok": true,
+        "used_tables": [
+          "sensor_space_enriched_clean",
+          "telemetry_observations"
+        ]
+      },
+      "sparql_validation": {
+        "ok": true,
+        "used_graphs": [
+          "https://example.com/case-office/g/223p",
+          "https://example.com/case-office/g/overlay"
+        ]
+      },
+      "sql_result": {
+        "ok": true,
+        "columns": [
+          "space_label",
+          "humidity_sensor_count"
+        ],
+        "rows": [
+          {
+            "space_label": "Office1",
+            "humidity_sensor_count": 10
+          }
+        ],
+        "row_count": 1,
+        "error": null,
+        "metadata": {
+          "source": "postgres"
+        }
+      },
+      "sparql_result": {
+        "ok": true,
+        "columns": [
+          "space_label",
+          "humidity_sensor_count"
+        ],
+        "rows": [],
+        "row_count": 0,
+        "error": null,
+        "metadata": {
+          "source": "graphdb"
+        }
+      }
+    }
+  },
+  {
+    "question_id": "Q6",
+    "question_text": "What is the latest reading for Sensor40?",
+    "gold": {
+      "question_id": "Q6",
+      "question_text": "What is the latest reading for Sensor40?",
+      "answer_type": "latest-reading",
+      "expected_space": "Office1",
+      "expected_sensor_labels": [
+        "Sensor40"
+      ],
+      "expected_device_ids": [
+        {
+          "raw": "optional: bjn52o67gpvg00cjtt0g"
+        }
+      ],
+      "expected_metric_names": [
+        "relative_humidity",
+        "temperature"
+      ],
+      "expected_canonical_uris": [
+        "2s0j47hCv8iPIoVB1rIZR_"
+      ],
+      "expected_answer": "relative_humidity=38.6; temperature=73.94\n(at 2026-03-09 03:52:50+00)",
+      "expected_unit": [
+        "percent",
+        "fahrenheit"
+      ],
+      "expected_ts": "2026-03-09 03:52:50+00",
+      "expected_sql_evidence": "sensor_space_enriched_clean JOIN telemetry_latest WHERE sensor_label='Sensor40'",
+      "expected_graph_evidence": "SPARQL identity query confirms canonical URI and IFC GUID",
+      "notes": "Good benchmark for single-sensor, multi-metric latest retrieval"
+    },
+    "predicted": {
+      "router": {
+        "intent": "timeseries_only",
+        "answer_type": "latest_reading",
+        "confidence": 0.95,
+        "rationale_short": "The question asks for the latest reading of a specific sensor, which requires accessing telemetry data only."
+      },
+      "plan": {
+        "intent": "timeseries_only",
+        "entities": {
+          "space_label": null,
+          "sensor_label": "Sensor40",
+          "device_id": null,
+          "metric_names": [],
+          "needs_latest": true,
+          "needs_aggregation": false,
+          "aggregation_fn": null
+        },
+        "steps": [
+          {
+            "step_id": "1",
+            "tool": "sql",
+            "purpose": "Retrieve latest telemetry reading for Sensor40 from telemetry_latest table"
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "The latest readings for Sensor40 are 38.6 percent relative humidity and 73.94 degrees Fahrenheit temperature, recorded at 2026-03-09T03:52:50Z in Office1.",
+      "evidence": {
+        "summary": "Telemetry data from the latest readings table shows Sensor40 in Office1 recorded relative humidity of 38.6% and temperature of 73.94\u00b0F at timestamp 2026-03-09T03:52:50Z.",
+        "sql_rows": 2,
+        "sparql_rows": 0
+      },
+      "errors": null,
+      "sql_query": "SELECT\n    sse.sensor_label,\n    sse.space_label,\n    tl.metric_name,\n    tl.value_double,\n    tl.unit,\n    tl.ts,\n    tl.canonical_uri\nFROM sensor_space_enriched_clean sse\nJOIN telemetry_latest tl\n    ON sse.canonical_uri = tl.canonical_uri\nWHERE sse.sensor_label = 'Sensor40'\nORDER BY tl.metric_name;",
+      "sparql_query": null,
+      "sql_validation": {
+        "ok": true,
+        "used_tables": [
+          "sensor_space_enriched_clean",
+          "telemetry_latest"
+        ]
+      },
+      "sparql_validation": null,
+      "sql_result": {
+        "ok": true,
+        "columns": [
+          "sensor_label",
+          "space_label",
+          "metric_name",
+          "value_double",
+          "unit",
+          "ts",
+          "canonical_uri"
+        ],
+        "rows": [
+          {
+            "sensor_label": "Sensor40",
+            "space_label": "Office1",
+            "metric_name": "relative_humidity",
+            "value_double": 38.6,
+            "unit": "percent",
+            "ts": "2026-03-09 03:52:50+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZR_"
+          },
+          {
+            "sensor_label": "Sensor40",
+            "space_label": "Office1",
+            "metric_name": "temperature",
+            "value_double": 73.94,
+            "unit": "fahrenheit",
+            "ts": "2026-03-09 03:52:50+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZR_"
+          }
+        ],
+        "row_count": 2,
+        "error": null,
+        "metadata": {
+          "source": "postgres"
+        }
+      },
+      "sparql_result": null
+    }
+  },
+  {
+    "question_id": "Q7",
+    "question_text": "Which spaces have telemetry available?",
+    "gold": {
+      "question_id": "Q7",
+      "question_text": "Which spaces have telemetry available?",
+      "answer_type": "set-membership / coverage",
+      "expected_space": "Kitchen5; Office1; Reception6; Work Area & Storage2; Work Area & Storage4",
+      "expected_sensor_labels": [],
+      "expected_device_ids": [],
+      "expected_metric_names": [
+        "relative_humidity",
+        "temperature"
+      ],
+      "expected_canonical_uris": [],
+      "expected_answer": "Kitchen5, Office1, Reception6, Work Area & Storage2, Work Area & Storage4",
+      "expected_unit": [],
+      "expected_ts": null,
+      "expected_sql_evidence": "grouped counts over sensor_space_enriched_clean JOIN telemetry_observations",
+      "expected_graph_evidence": "graph-only spaces should not count unless telemetry exists",
+      "notes": "Meeting Room3 is excluded here because your telemetry coverage query returned only 5 spaces"
+    },
+    "predicted": {
+      "router": {
+        "intent": "timeseries_only",
+        "answer_type": "coverage",
+        "confidence": 0.9,
+        "rationale_short": "The question asks about telemetry availability by space, which requires checking telemetry-backed data rather than just graph identity."
+      },
+      "plan": {
+        "intent": "timeseries_only",
+        "entities": {
+          "space_label": null,
+          "sensor_label": null,
+          "device_id": null,
+          "metric_names": [],
+          "needs_latest": false,
+          "needs_aggregation": false,
+          "aggregation_fn": null
+        },
+        "steps": [
+          {
+            "step_id": "step1",
+            "tool": "sql",
+            "purpose": "Query telemetry_observations joined with sensor_space_enriched_clean to find spaces with telemetry available"
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "Telemetry is available in the following spaces: Kitchen5, Office1, Reception6, Work Area & Storage2, and Work Area & Storage4.",
+      "evidence": {
+        "summary": "The SQL query joining telemetry_observations with sensor_space_enriched_clean returned these five space labels, indicating telemetry availability in them.",
+        "sql_rows": 5,
+        "sparql_rows": 0
+      },
+      "errors": null,
+      "sql_query": "SELECT DISTINCT sse.space_label\nFROM sensor_space_enriched_clean sse\nJOIN telemetry_observations tobs\n  ON sse.canonical_uri = tobs.canonical_uri\nORDER BY sse.space_label;",
+      "sparql_query": null,
+      "sql_validation": {
+        "ok": true,
+        "used_tables": [
+          "sensor_space_enriched_clean",
+          "telemetry_observations"
+        ]
+      },
+      "sparql_validation": null,
+      "sql_result": {
+        "ok": true,
+        "columns": [
+          "space_label"
+        ],
+        "rows": [
+          {
+            "space_label": "Kitchen5"
+          },
+          {
+            "space_label": "Office1"
+          },
+          {
+            "space_label": "Reception6"
+          },
+          {
+            "space_label": "Work Area & Storage2"
+          },
+          {
+            "space_label": "Work Area & Storage4"
+          }
+        ],
+        "row_count": 5,
+        "error": null,
+        "metadata": {
+          "source": "postgres"
+        }
+      },
+      "sparql_result": null
+    }
+  },
+  {
+    "question_id": "Q8",
+    "question_text": "For Kitchen5, what is the latest humidity reading?",
+    "gold": {
+      "question_id": "Q8",
+      "question_text": "For Kitchen5, what is the latest humidity reading?",
+      "answer_type": "latest-reading",
+      "expected_space": "Kitchen5",
+      "expected_sensor_labels": [
+        "Sensor44"
+      ],
+      "expected_device_ids": [
+        {
+          "raw": "optional: bjn52ldp0jt000a5f8h0"
+        }
+      ],
+      "expected_metric_names": [
+        "relative_humidity"
+      ],
+      "expected_canonical_uris": [
+        "2s0j47hCv8iPIoVB1rIZHL"
+      ],
+      "expected_answer": "39.3\n(2026-03-09 03:48:30+00)",
+      "expected_unit": [
+        "percent"
+      ],
+      "expected_ts": "2026-03-09 03:48:30+00",
+      "expected_sql_evidence": "room-filtered query over sensor_space_enriched_clean JOIN telemetry_latest where metric_name='relative_humidity'",
+      "expected_graph_evidence": "graph evidence can confirm Sensor44 is located in Kitchen5",
+      "notes": "Nice single-room single-metric retrieval target"
+    },
+    "predicted": {
+      "router": {
+        "intent": "timeseries_only",
+        "answer_type": "latest_reading",
+        "confidence": 0.95,
+        "rationale_short": "The question asks for the latest humidity reading, which is a telemetry value and requires timeseries data access for a specific room (Kitchen5)."
+      },
+      "plan": {
+        "intent": "timeseries_only",
+        "entities": {
+          "space_label": "Kitchen5",
+          "sensor_label": null,
+          "device_id": null,
+          "metric_names": [
+            "humidity"
+          ],
+          "needs_latest": true,
+          "needs_aggregation": false,
+          "aggregation_fn": null
+        },
+        "steps": [
+          {
+            "step_id": "step1",
+            "tool": "sql",
+            "purpose": "Retrieve the latest humidity reading for sensors located in Kitchen5 by joining telemetry_latest with sensor_space_enriched_clean to filter by room"
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "The latest humidity reading for Kitchen5 is 39.3 percent, recorded at 2026-03-09T03:48:30Z.",
+      "evidence": {
+        "summary": "The most recent telemetry data from sensor 'Sensor44' in Kitchen5 shows a relative humidity of 39.3 percent at the timestamp 2026-03-09T03:48:30Z.",
+        "sql_rows": 1,
+        "sparql_rows": 0
+      },
+      "errors": null,
+      "sql_query": "SELECT sse.sensor_label, sse.space_label, tl.metric_name, tl.value_double, tl.unit, tl.ts, tl.canonical_uri\nFROM sensor_space_enriched_clean sse\nJOIN telemetry_latest tl ON sse.canonical_uri = tl.canonical_uri\nWHERE sse.space_label = 'Kitchen5'\n  AND tl.metric_name = 'relative_humidity'\nORDER BY sse.sensor_label, tl.metric_name;",
+      "sparql_query": null,
+      "sql_validation": {
+        "ok": true,
+        "used_tables": [
+          "sensor_space_enriched_clean",
+          "telemetry_latest"
+        ]
+      },
+      "sparql_validation": null,
+      "sql_result": {
+        "ok": true,
+        "columns": [
+          "sensor_label",
+          "space_label",
+          "metric_name",
+          "value_double",
+          "unit",
+          "ts",
+          "canonical_uri"
+        ],
+        "rows": [
+          {
+            "sensor_label": "Sensor44",
+            "space_label": "Kitchen5",
+            "metric_name": "relative_humidity",
+            "value_double": 39.3,
+            "unit": "percent",
+            "ts": "2026-03-09 03:48:30+00:00",
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZHL"
+          }
+        ],
+        "row_count": 1,
+        "error": null,
+        "metadata": {
+          "source": "postgres"
+        }
+      },
+      "sparql_result": null
+    }
+  },
+  {
+    "question_id": "Q9",
+    "question_text": "Which canonical URI corresponds to Sensor32?",
+    "gold": {
+      "question_id": "Q9",
+      "question_text": "Which canonical URI corresponds to Sensor32?",
+      "answer_type": "identity-lookup",
+      "expected_space": "Office1",
+      "expected_sensor_labels": [
+        "Sensor32"
+      ],
+      "expected_device_ids": [
+        {
+          "raw": "optional: bjn52q0pismg008i05r0"
+        }
+      ],
+      "expected_metric_names": [],
+      "expected_canonical_uris": [
+        "2s0j47hCv8iPIoVB1rIZTn"
+      ],
+      "expected_answer": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZTn",
+      "expected_unit": [],
+      "expected_ts": null,
+      "expected_sql_evidence": "sensor_space_enriched_clean WHERE sensor_label='Sensor32'",
+      "expected_graph_evidence": "SPARQL identity query confirms canonical URI, point URI, IFC GUID",
+      "notes": "Exact string match benchmark"
+    },
+    "predicted": {
+      "router": {
+        "intent": "graph_only",
+        "answer_type": "identity_lookup",
+        "confidence": 0.95,
+        "rationale_short": "The question asks to identify the canonical URI corresponding to a specific sensor (Sensor32), which involves graph knowledge about sensor identities without mentioning telemetry data or availability."
+      },
+      "plan": {
+        "intent": "graph_only",
+        "entities": {
+          "space_label": null,
+          "sensor_label": "Sensor32",
+          "device_id": null,
+          "metric_names": [],
+          "needs_latest": false,
+          "needs_aggregation": false,
+          "aggregation_fn": null
+        },
+        "steps": [
+          {
+            "step_id": "step1",
+            "tool": "sparql",
+            "purpose": "Lookup canonical URI for Sensor32 in the graph"
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "The canonical URI corresponding to Sensor32 is `https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZTn`.",
+      "evidence": {
+        "summary": "A SPARQL query result from the knowledge graph identifies the canonical URI for Sensor32 as `https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZTn` with no errors and one matching row.",
+        "sql_rows": 0,
+        "sparql_rows": 1
+      },
+      "errors": null,
+      "sql_query": null,
+      "sparql_query": "PREFIX ex: <https://example.com/case-office/align/>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n\nSELECT ?canonical_uri WHERE {\n  GRAPH <https://example.com/case-office/g/overlay> {\n    ?canonical_uri a ex:CanonicalSensorEntity ;\n                   rdfs:label \"Sensor32\" .\n  }\n}\nLIMIT 1",
+      "sql_validation": null,
+      "sparql_validation": {
+        "ok": true,
+        "used_graphs": [
+          "https://example.com/case-office/g/overlay"
+        ]
+      },
+      "sql_result": null,
+      "sparql_result": {
+        "ok": true,
+        "columns": [
+          "canonical_uri"
+        ],
+        "rows": [
+          {
+            "canonical_uri": "https://example.com/case-office/canonical/2s0j47hCv8iPIoVB1rIZTn"
+          }
+        ],
+        "row_count": 1,
+        "error": null,
+        "metadata": {
+          "source": "graphdb"
+        }
+      }
+    }
+  },
+  {
+    "question_id": "Q10",
+    "question_text": "What room is associated with the device mapped to Sensor38?",
+    "gold": {
+      "question_id": "Q10",
+      "question_text": "What room is associated with the device mapped to Sensor38?",
+      "answer_type": "device-to-room mapping",
+      "expected_space": "Reception6",
+      "expected_sensor_labels": [
+        "Sensor38"
+      ],
+      "expected_device_ids": [
+        {
+          "raw": "bjn55um7gpvg00cjttsg"
+        }
+      ],
+      "expected_metric_names": [],
+      "expected_canonical_uris": [
+        "2s0j47hCv8iPIoVB1rIZPV"
+      ],
+      "expected_answer": "Reception6\n(Sensor38 = bjn55um7gpvg00cjttsg)",
+      "expected_unit": [],
+      "expected_ts": null,
+      "expected_sql_evidence": "sensor_space_enriched_clean WHERE sensor_label='Sensor38'; companion join from dt_sensor_map to sensor_space_enriched_clean on canonical_uri",
+      "expected_graph_evidence": "graph evidence can confirm Sensor38\u2192canonical\u2192space; SQL confirms device mapping",
+      "notes": "Strong cross-modal mapping benchmark"
+    },
+    "predicted": {
+      "router": {
+        "intent": "graph_only",
+        "answer_type": "identity_lookup",
+        "confidence": 0.95,
+        "rationale_short": "Question asks about the room associated with a specific sensor identity, no telemetry or time series data involved."
+      },
+      "plan": {
+        "intent": "graph_only",
+        "entities": {
+          "space_label": null,
+          "sensor_label": "Sensor38",
+          "device_id": null,
+          "metric_names": [],
+          "needs_latest": false,
+          "needs_aggregation": false,
+          "aggregation_fn": null
+        },
+        "steps": [
+          {
+            "step_id": "1",
+            "tool": "sparql",
+            "purpose": "Lookup room associated with the device mapped to Sensor38 in the knowledge graph"
+          }
+        ],
+        "output_style": "concise"
+      },
+      "final_answer": "The device mapped to Sensor38 is associated with the room labeled Reception6.",
+      "evidence": {
+        "summary": "The SPARQL query result indicates that the room_label connected to the device mapped to Sensor38 is 'Reception6'. No conflicting information was found.",
+        "sql_rows": 0,
+        "sparql_rows": 1
+      },
+      "errors": null,
+      "sql_query": null,
+      "sparql_query": "PREFIX ex: <https://example.com/case-office/align/>\nPREFIX s223: <http://data.ashrae.org/standard223#>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n\nSELECT ?room_label WHERE {\n  GRAPH <https://example.com/case-office/g/overlay> {\n    ?canonical_sensor a ex:CanonicalSensorEntity ;\n                      rdfs:label \"Sensor38\" ;\n                      ex:aligns223p ?phys_sensor .\n  }\n  GRAPH <https://example.com/case-office/g/223p> {\n    ?phys_sensor s223:hasPhysicalLocation ?room .\n    ?room rdfs:label ?room_label .\n  }\n} LIMIT 1",
+      "sql_validation": null,
+      "sparql_validation": {
+        "ok": true,
+        "used_graphs": [
+          "https://example.com/case-office/g/223p",
+          "https://example.com/case-office/g/overlay"
+        ]
+      },
+      "sql_result": null,
+      "sparql_result": {
+        "ok": true,
+        "columns": [
+          "room_label"
+        ],
+        "rows": [
+          {
+            "room_label": "Reception6"
+          }
+        ],
+        "row_count": 1,
+        "error": null,
+        "metadata": {
+          "source": "graphdb"
+        }
+      }
+    }
+  }
+]

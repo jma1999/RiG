@@ -1,0 +1,183 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+@prefix ex: <https://example.com/case-office/align/> .
+
+##########
+# Base canonical entity
+##########
+
+ex:CanonicalEntityShape
+  a sh:NodeShape ;
+  sh:targetClass ex:CanonicalEntity ;
+  sh:property [
+    sh:path ex:hasIfcGuid ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:message "Each canonical entity must have exactly one IFC GUID string." ;
+  ] ;
+  sh:property [
+    sh:path ex:alignsIfcGuid ;
+    sh:nodeKind sh:IRI ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:pattern "^http://ifc-ld\\.org/ids#" ;
+    sh:message "Each canonical entity must align to exactly one IFC GUID IRI." ;
+  ] .
+
+##########
+# Canonical space entity
+##########
+
+ex:CanonicalSpaceEntityShape
+  a sh:NodeShape ;
+  sh:targetClass ex:CanonicalSpaceEntity ;
+  sh:property [
+    sh:path ex:hasIfcGuid ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:message "Each canonical space entity must have exactly one IFC GUID." ;
+  ] ;
+  sh:property [
+    sh:path ex:alignsIfcGuid ;
+    sh:nodeKind sh:IRI ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:pattern "^http://ifc-ld\\.org/ids#" ;
+    sh:message "Each canonical space entity must align to exactly one IFC GUID IRI." ;
+  ] ;
+  sh:property [
+    sh:path ex:aligns223p ;
+    sh:nodeKind sh:IRI ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:pattern "^https://example\\.com/case-office/223/space/" ;
+    sh:message "Each canonical space entity must align to exactly one 223P space URI." ;
+  ] ;
+  sh:property [
+    sh:path ex:alignsBrick ;
+    sh:nodeKind sh:IRI ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:pattern "^http://example\\.com/mybuilding#" ;
+    sh:message "Each canonical space entity must align to exactly one Brick space URI." ;
+  ] ;
+  sh:property [
+    sh:path rdfs:label ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:message "Each canonical space entity should have exactly one label." ;
+  ] .
+
+##########
+# Canonical sensor entity
+##########
+
+ex:CanonicalSensorEntityShape
+  a sh:NodeShape ;
+  sh:targetClass ex:CanonicalSensorEntity ;
+  sh:property [
+    sh:path ex:hasIfcGuid ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:message "Each canonical sensor entity must have exactly one IFC GUID." ;
+  ] ;
+  sh:property [
+    sh:path ex:alignsIfcGuid ;
+    sh:nodeKind sh:IRI ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:pattern "^http://ifc-ld\\.org/ids#" ;
+    sh:message "Each canonical sensor entity must align to exactly one IFC GUID IRI." ;
+  ] ;
+  sh:property [
+    sh:path ex:aligns223p ;
+    sh:nodeKind sh:IRI ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:pattern "^https://example\\.com/case-office/223/sensor/" ;
+    sh:message "Each canonical sensor entity must align to exactly one 223P sensor URI." ;
+  ] ;
+  sh:property [
+    sh:path ex:alignsPoint ;
+    sh:nodeKind sh:IRI ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:pattern "^https://example\\.com/case-office/point/" ;
+    sh:message "Each canonical sensor entity must align to exactly one dashboard point URI." ;
+  ] ;
+  sh:property [
+    sh:path rdfs:label ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:message "Each canonical sensor entity should have exactly one label." ;
+  ] .
+
+##########
+# GUID consistency: string GUID must match suffix of alignsIfcGuid
+##########
+
+ex:CanonicalSpaceGuidConsistencyShape
+  a sh:NodeShape ;
+  sh:targetClass ex:CanonicalSpaceEntity ;
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:message "Space canonical entity GUID must match suffix of alignsIfcGuid." ;
+    sh:select """
+      SELECT $this WHERE {
+        $this ex:hasIfcGuid ?guid ;
+              ex:alignsIfcGuid ?ifcIri .
+        BIND(STRAFTER(STR(?ifcIri), "http://ifc-ld.org/ids#") AS ?suffix)
+        FILTER(STR(?guid) != ?suffix)
+      }
+    """ ;
+  ] .
+
+ex:CanonicalSensorGuidConsistencyShape
+  a sh:NodeShape ;
+  sh:targetClass ex:CanonicalSensorEntity ;
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:message "Sensor canonical entity GUID must match suffix of alignsIfcGuid." ;
+    sh:select """
+      SELECT $this WHERE {
+        $this ex:hasIfcGuid ?guid ;
+              ex:alignsIfcGuid ?ifcIri .
+        BIND(STRAFTER(STR(?ifcIri), "http://ifc-ld.org/ids#") AS ?suffix)
+        FILTER(STR(?guid) != ?suffix)
+      }
+    """ ;
+  ] .
+
+##########
+# Optional type hint sanity
+##########
+
+ex:CanonicalSpaceTypeHintShape
+  a sh:NodeShape ;
+  sh:targetClass ex:CanonicalSpaceEntity ;
+  sh:property [
+    sh:path ex:sourceIfcTypeHint ;
+    sh:datatype xsd:string ;
+    sh:in ("IfcSpace") ;
+    sh:maxCount 1 ;
+    sh:message "Canonical space entities may only use the type hint IfcSpace." ;
+  ] .
+
+ex:CanonicalSensorTypeHintShape
+  a sh:NodeShape ;
+  sh:targetClass ex:CanonicalSensorEntity ;
+  sh:property [
+    sh:path ex:sourceIfcTypeHint ;
+    sh:datatype xsd:string ;
+    sh:in ("IfcSensor") ;
+    sh:maxCount 1 ;
+    sh:message "Canonical sensor entities may only use the type hint IfcSensor." ;
+  ] .

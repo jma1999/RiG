@@ -27,3 +27,6 @@ tools/brick-ifc-convert/
 
 # Frontend
 ui/node_modules/
+
+# Case GraphRAG
+case_graphrag/.env

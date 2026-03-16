@@ -560,6 +560,8 @@ function FacilityOS() {
           } else if (action === 'telemetry') {
             if (data.tool.asset_id) {
               await toolHandlers.onGetTelemetry({ assetId: data.tool.asset_id });
+            } else {
+              setCurrentView('telemetry');
             }
             toolInvocation = 'getTelemetry';
           }
@@ -567,19 +569,27 @@ function FacilityOS() {
 
         const evidence = data.evidence;
         const evidenceSummary = evidence
-          ? `${evidence.node_count} nodes, ${evidence.edge_count} edges`
+          ? (
+              evidence.sql_row_count > 0
+                ? `${evidence.sql_row_count} SQL rows`
+                : evidence.sparql_row_count > 0
+                  ? `${evidence.sparql_row_count} SPARQL rows`
+                  : `${evidence.node_count} nodes, ${evidence.edge_count} edges`
+            )
           : null;
         
-        const modelMsg = {
-          id: (Date.now() + 1).toString(),
-          role: 'model',
-          content: data.reply || data.message || "I received your message.",
-          timestamp: Date.now(),
-          toolInvocation,
-          evidenceSummary,
-          thinking: data.thinking || [],
-          sparqlQuery: data.sparql_query || '',
-        };
+          const modelMsg = {
+            id: (Date.now() + 1).toString(),
+            role: 'model',
+            content: data.reply || data.message || "I received your message.",
+            timestamp: Date.now(),
+            toolInvocation,
+            evidenceSummary,
+            thinking: data.thinking || [],
+            sparqlQuery: data.sparql_query || '',
+            sqlQuery: data.sql_query || '',
+            debug: data.debug || null,
+          };
         
         setMessages(prev => [...prev, modelMsg]);
       } else {

@@ -1,356 +1,338 @@
-@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
-@prefix brick1: <http://brickschema.org/schema/1.1.0/Brick#> .
-@prefix brick: <http://brickschema.org/schema/Brick#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix s223: <http://data.ashrae.org/standard223#> .
-@prefix qudt: <http://qudt.org/schema/qudt/> .
-@prefix quantitykind: <http://qudt.org/vocab/quantitykind/> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix rdf4j: <http://rdf4j.org/schema/rdf4j#> .
-@prefix sesame: <http://www.openrdf.org/schema/sesame#> .
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix fn: <http://www.w3.org/2005/xpath-functions#> .
-
-<https://example.com/case-office/223/zone/space-based-system-zone> a s223:Zone;
-  rdfs:label "Space-based system zone" .
-
-<https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh> a s223:PhysicalSpace;
-  skos:exactMatch <http://ifc-ld.org/ids#0cpPvJdt5DSQxIS05OILUh>, <http://example.com/mybuilding#Office1>;
-  rdfs:label "Office1";
-  s223:hasZone <https://example.com/case-office/223/zone/space-based-system-zone> .
-
-<https://example.com/case-office/223/sensor/13w9LKJMvBR9NVulm$RjH_> a s223:OccupantPresenceSensor;
-  skos:exactMatch <http://ifc-ld.org/ids#13w9LKJMvBR9NVulm$RjH_>, <https://example.com/case-office/point/13w9LKJMvBR9NVulm$RjH_>;
-  rdfs:label "Sensor01";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/13w9LKJMvBR9NVulm$RjH_> .
-
-<https://example.com/case-office/223/prop/13w9LKJMvBR9NVulm$RjH_> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:DimensionlessRatio;
-  rdfs:label "Presence" .
-
-<https://example.com/case-office/223/sensor/13w9LKJMvBR9NVulm$Rjo6> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#13w9LKJMvBR9NVulm$Rjo6>, <https://example.com/case-office/point/13w9LKJMvBR9NVulm$Rjo6>;
-  rdfs:label "Sensor34";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/13w9LKJMvBR9NVulm$Rjo6> .
-
-<https://example.com/case-office/223/prop/13w9LKJMvBR9NVulm$Rjo6> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIWZp> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIWZp>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIWZp>;
-  rdfs:label "Sensor30";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIWZp> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIWZp> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZS1> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZS1>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZS1>;
-  rdfs:label "Sensor31";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZS1> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZS1> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZTn> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZTn>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZTn>;
-  rdfs:label "Sensor32";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZTn> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZTn> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZUb> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZUb>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZUb>;
-  rdfs:label "Sensor33";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZUb> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZUb> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZOM> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZOM>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZOM>;
-  rdfs:label "Sensor37";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZOM> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZOM> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZKz> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZKz>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZKz>;
-  rdfs:label "Sensor42";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZKz> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZKz> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZRQ> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZRQ>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZRQ>;
-  rdfs:label "Sensor41";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZRQ> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZRQ> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZR_> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZR_>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZR_>;
-  rdfs:label "Sensor40";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZR_> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZR_> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZOZ> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZOZ>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZOZ>;
-  rdfs:label "Sensor36";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZOZ> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZOZ> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZUL> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZUL>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZUL>;
-  rdfs:label "Sensor35";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZUL> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZUL> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/sensor/3RZ_giCmzEQBVgq$EJSGCV> a s223:OccupantPresenceSensor;
-  skos:exactMatch <http://ifc-ld.org/ids#3RZ_giCmzEQBVgq$EJSGCV>, <https://example.com/case-office/point/3RZ_giCmzEQBVgq$EJSGCV>;
-  rdfs:label "Sensor19";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/3RZ_giCmzEQBVgq$EJSGCV> .
-
-<https://example.com/case-office/223/prop/3RZ_giCmzEQBVgq$EJSGCV> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:DimensionlessRatio;
-  rdfs:label "Presence" .
-
-<https://example.com/case-office/223/sensor/3RZ_giCmzEQBVgq$EJSGCu> a s223:OccupantPresenceSensor;
-  skos:exactMatch <http://ifc-ld.org/ids#3RZ_giCmzEQBVgq$EJSGCu>, <https://example.com/case-office/point/3RZ_giCmzEQBVgq$EJSGCu>;
-  rdfs:label "Sensor21";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/3RZ_giCmzEQBVgq$EJSGCu> .
-
-<https://example.com/case-office/223/prop/3RZ_giCmzEQBVgq$EJSGCu> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:DimensionlessRatio;
-  rdfs:label "Presence" .
-
-<https://example.com/case-office/223/sensor/3RZ_giCmzEQBVgq$EJSGD9> a s223:OccupantPresenceSensor;
-  skos:exactMatch <http://ifc-ld.org/ids#3RZ_giCmzEQBVgq$EJSGD9>, <https://example.com/case-office/point/3RZ_giCmzEQBVgq$EJSGD9>;
-  rdfs:label "Sensor18";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/3RZ_giCmzEQBVgq$EJSGD9> .
-
-<https://example.com/case-office/223/prop/3RZ_giCmzEQBVgq$EJSGD9> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:DimensionlessRatio;
-  rdfs:label "Presence" .
-
-<https://example.com/case-office/223/sensor/3RZ_giCmzEQBVgq$EJSGDA> a s223:OccupantPresenceSensor;
-  skos:exactMatch <http://ifc-ld.org/ids#3RZ_giCmzEQBVgq$EJSGDA>, <https://example.com/case-office/point/3RZ_giCmzEQBVgq$EJSGDA>;
-  rdfs:label "Sensor20";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/3RZ_giCmzEQBVgq$EJSGDA> .
-
-<https://example.com/case-office/223/prop/3RZ_giCmzEQBVgq$EJSGDA> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:DimensionlessRatio;
-  rdfs:label "Presence" .
-
-<https://example.com/case-office/223/sensor/3RZ_giCmzEQBVgq$EJSGDB> a s223:OccupantPresenceSensor;
-  skos:exactMatch <http://ifc-ld.org/ids#3RZ_giCmzEQBVgq$EJSGDB>, <https://example.com/case-office/point/3RZ_giCmzEQBVgq$EJSGDB>;
-  rdfs:label "Sensor22";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/3RZ_giCmzEQBVgq$EJSGDB> .
-
-<https://example.com/case-office/223/prop/3RZ_giCmzEQBVgq$EJSGDB> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:DimensionlessRatio;
-  rdfs:label "Presence" .
-
-<https://example.com/case-office/223/sensor/3RZ_giCmzEQBVgq$EJSG_5> a s223:OccupantPresenceSensor;
-  skos:exactMatch <http://ifc-ld.org/ids#3RZ_giCmzEQBVgq$EJSG_5>, <https://example.com/case-office/point/3RZ_giCmzEQBVgq$EJSG_5>;
-  rdfs:label "Sensor16";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/3RZ_giCmzEQBVgq$EJSG_5> .
-
-<https://example.com/case-office/223/prop/3RZ_giCmzEQBVgq$EJSG_5> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:DimensionlessRatio;
-  rdfs:label "Presence" .
-
-<https://example.com/case-office/223/sensor/3RZ_giCmzEQBVgq$EJSG_4> a s223:OccupantPresenceSensor;
-  skos:exactMatch <http://ifc-ld.org/ids#3RZ_giCmzEQBVgq$EJSG_4>, <https://example.com/case-office/point/3RZ_giCmzEQBVgq$EJSG_4>;
-  rdfs:label "Sensor17";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/3RZ_giCmzEQBVgq$EJSG_4> .
-
-<https://example.com/case-office/223/prop/3RZ_giCmzEQBVgq$EJSG_4> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:DimensionlessRatio;
-  rdfs:label "Presence" .
-
-<https://example.com/case-office/223/sensor/3wKgvdEoDBbxDC1XQkNob3> a s223:OccupantPresenceSensor;
-  skos:exactMatch <http://ifc-ld.org/ids#3wKgvdEoDBbxDC1XQkNob3>, <https://example.com/case-office/point/3wKgvdEoDBbxDC1XQkNob3>;
-  rdfs:label "Sensor27";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/3wKgvdEoDBbxDC1XQkNob3> .
-
-<https://example.com/case-office/223/prop/3wKgvdEoDBbxDC1XQkNob3> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:DimensionlessRatio;
-  rdfs:label "Presence" .
-
-<https://example.com/case-office/223/sensor/3wKgvdEoDBbxDC1XQkNob4> a s223:OccupantPresenceSensor;
-  skos:exactMatch <http://ifc-ld.org/ids#3wKgvdEoDBbxDC1XQkNob4>, <https://example.com/case-office/point/3wKgvdEoDBbxDC1XQkNob4>;
-  rdfs:label "Sensor25";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/3wKgvdEoDBbxDC1XQkNob4> .
-
-<https://example.com/case-office/223/prop/3wKgvdEoDBbxDC1XQkNob4> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:DimensionlessRatio;
-  rdfs:label "Presence" .
-
-<https://example.com/case-office/223/sensor/3aZ83wRHfFR90LcJljuYWH> a s223:OccupantPresenceSensor;
-  skos:exactMatch <http://ifc-ld.org/ids#3aZ83wRHfFR90LcJljuYWH>, <https://example.com/case-office/point/3aZ83wRHfFR90LcJljuYWH>;
-  rdfs:label "Sensor23";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/3aZ83wRHfFR90LcJljuYWH> .
-
-<https://example.com/case-office/223/prop/3aZ83wRHfFR90LcJljuYWH> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:DimensionlessRatio;
-  rdfs:label "Presence" .
-
-<https://example.com/case-office/223/sensor/3wKgvdEoDBbxDC1XQkNob2> a s223:OccupantPresenceSensor;
-  skos:exactMatch <http://ifc-ld.org/ids#3wKgvdEoDBbxDC1XQkNob2>, <https://example.com/case-office/point/3wKgvdEoDBbxDC1XQkNob2>;
-  rdfs:label "Sensor24";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/3wKgvdEoDBbxDC1XQkNob2> .
-
-<https://example.com/case-office/223/prop/3wKgvdEoDBbxDC1XQkNob2> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:DimensionlessRatio;
-  rdfs:label "Presence" .
-
-<https://example.com/case-office/223/sensor/3wKgvdEoDBbxDC1XQkNob1> a s223:OccupantPresenceSensor;
-  skos:exactMatch <http://ifc-ld.org/ids#3wKgvdEoDBbxDC1XQkNob1>, <https://example.com/case-office/point/3wKgvdEoDBbxDC1XQkNob1>;
-  rdfs:label "Sensor26";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
-  s223:observes <https://example.com/case-office/223/prop/3wKgvdEoDBbxDC1XQkNob1> .
-
-<https://example.com/case-office/223/prop/3wKgvdEoDBbxDC1XQkNob1> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:DimensionlessRatio;
-  rdfs:label "Presence" .
-
-<https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILCV> a s223:PhysicalSpace;
-  skos:exactMatch <http://ifc-ld.org/ids#0cpPvJdt5DSQxIS05OILCV>, <http://example.com/mybuilding#Work_Area_&_Storage2>;
-  rdfs:label "Work Area & Storage2";
-  s223:hasZone <https://example.com/case-office/223/zone/space-based-system-zone> .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZGL> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZGL>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZGL>;
-  rdfs:label "Sensor43";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILCV>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZGL> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZGL> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUe> a s223:PhysicalSpace;
-  skos:exactMatch <http://ifc-ld.org/ids#0cpPvJdt5DSQxIS05OILUe>, <http://example.com/mybuilding#Meeting_Room3>;
-  rdfs:label "Meeting Room3";
-  s223:hasZone <https://example.com/case-office/223/zone/space-based-system-zone> .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZJo> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZJo>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZJo>;
-  rdfs:label "Sensor46";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUe>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZJo> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZJo> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUf> a s223:PhysicalSpace;
-  skos:exactMatch <http://ifc-ld.org/ids#0cpPvJdt5DSQxIS05OILUf>, <http://example.com/mybuilding#Work_Area_&_Storage4>;
-  rdfs:label "Work Area & Storage4";
-  s223:hasZone <https://example.com/case-office/223/zone/space-based-system-zone> .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZCh> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZCh>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZCh>;
-  rdfs:label "Sensor47";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUf>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZCh> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZCh> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/space/1$ENqVPJPDFOY8xRKDpOSk> a s223:PhysicalSpace;
-  skos:exactMatch <http://ifc-ld.org/ids#1$ENqVPJPDFOY8xRKDpOSk>, <http://example.com/mybuilding#Kitchen5>;
-  rdfs:label "Kitchen5";
-  s223:hasZone <https://example.com/case-office/223/zone/space-based-system-zone> .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZHL> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZHL>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZHL>;
-  rdfs:label "Sensor44";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/1$ENqVPJPDFOY8xRKDpOSk>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZHL> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZHL> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/space/1$ENqVPJPDFOY8xRKDpOSn> a s223:PhysicalSpace;
-  skos:exactMatch <http://ifc-ld.org/ids#1$ENqVPJPDFOY8xRKDpOSn>, <http://example.com/mybuilding#Reception6>;
-  rdfs:label "Reception6";
-  s223:hasZone <https://example.com/case-office/223/zone/space-based-system-zone> .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZID> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZID>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZID>;
-  rdfs:label "Sensor45";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/1$ENqVPJPDFOY8xRKDpOSn>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZID> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZID> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZPV> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZPV>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZPV>;
-  rdfs:label "Sensor38";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/1$ENqVPJPDFOY8xRKDpOSn>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZPV> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZPV> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
-
-<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZQC> a s223:HumiditySensor;
-  skos:exactMatch <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZQC>, <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZQC>;
-  rdfs:label "Sensor39";
-  s223:hasPhysicalLocation <https://example.com/case-office/223/space/1$ENqVPJPDFOY8xRKDpOSn>;
-  s223:observes <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZQC> .
-
-<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZQC> a s223:QuantifiableObservableProperty;
-  qudt:hasQuantityKind quantitykind:RelativeHumidity;
-  rdfs:label "Relative humidity" .
+
+<https://example.com/case-office/223/prop/13w9LKJMvBR9NVulm$RjH_> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/DimensionlessRatio>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Presence" .
+
+<https://example.com/case-office/223/prop/13w9LKJMvBR9NVulm$Rjo6> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/13w9LKJMvBR9NVulm$Rjo6_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIWZp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIWZp_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZCh> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZCh_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZGL> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZGL_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZHL> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZHL_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZID> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZID_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZJo> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZJo_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZKz> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZKz_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZOM> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZOM_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZOZ> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZOZ_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZPV> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZPV_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZQC> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZQC_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZRQ> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZRQ_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZR_> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZR__temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZS1> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZS1_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZTn> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZTn_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZUL> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZUL_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZUb> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/RelativeHumidity>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Relative humidity" .
+
+<https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZUb_temp> a <http://data.ashrae.org/standard223#QuantifiableObservableProperty>;
+  <http://qudt.org/schema/qudt/hasQuantityKind> <http://qudt.org/vocab/quantitykind/Temperature>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Air temperature" .
+
+<https://example.com/case-office/223/sensor/13w9LKJMvBR9NVulm$RjH_> a <http://data.ashrae.org/standard223#OccupantPresenceSensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/13w9LKJMvBR9NVulm$RjH_>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor01";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#13w9LKJMvBR9NVulm$RjH_>,
+    <https://example.com/case-office/point/13w9LKJMvBR9NVulm$RjH_> .
+
+<https://example.com/case-office/223/sensor/13w9LKJMvBR9NVulm$Rjo6> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/13w9LKJMvBR9NVulm$Rjo6>,
+    <https://example.com/case-office/223/prop/13w9LKJMvBR9NVulm$Rjo6_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor34";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#13w9LKJMvBR9NVulm$Rjo6>,
+    <https://example.com/case-office/point/13w9LKJMvBR9NVulm$Rjo6> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIWZp> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIWZp>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIWZp_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor30";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIWZp>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIWZp> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZCh> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUf>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZCh>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZCh_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor47";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZCh>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZCh> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZGL> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILCV>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZGL>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZGL_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor43";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZGL>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZGL> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZHL> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/1$ENqVPJPDFOY8xRKDpOSk>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZHL>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZHL_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor44";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZHL>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZHL> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZID> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/1$ENqVPJPDFOY8xRKDpOSn>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZID>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZID_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor45";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZID>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZID> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZJo> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUe>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZJo>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZJo_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor46";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZJo>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZJo> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZKz> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZKz>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZKz_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor42";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZKz>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZKz> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZOM> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZOM>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZOM_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor37";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZOM>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZOM> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZOZ> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZOZ>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZOZ_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor36";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZOZ>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZOZ> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZPV> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/1$ENqVPJPDFOY8xRKDpOSn>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZPV>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZPV_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor38";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZPV>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZPV> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZQC> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/1$ENqVPJPDFOY8xRKDpOSn>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZQC>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZQC_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor39";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZQC>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZQC> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZRQ> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZRQ>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZRQ_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor41";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZRQ>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZRQ> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZR_> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZR_>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZR__temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor40";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZR_>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZR_> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZS1> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZS1>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZS1_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor31";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZS1>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZS1> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZTn> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZTn>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZTn_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor32";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZTn>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZTn> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZUL> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZUL>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZUL_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor35";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZUL>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZUL> .
+
+<https://example.com/case-office/223/sensor/2s0j47hCv8iPIoVB1rIZUb> a <http://data.ashrae.org/standard223#HumiditySensor>;
+  <http://data.ashrae.org/standard223#hasPhysicalLocation> <https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh>;
+  <http://data.ashrae.org/standard223#observes> <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZUb>,
+    <https://example.com/case-office/223/prop/2s0j47hCv8iPIoVB1rIZUb_temp>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Sensor33";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://ifc-ld.org/ids#2s0j47hCv8iPIoVB1rIZUb>,
+    <https://example.com/case-office/point/2s0j47hCv8iPIoVB1rIZUb> .
+
+<https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILCV> a <http://data.ashrae.org/standard223#PhysicalSpace>;
+  <http://data.ashrae.org/standard223#hasZone> <https://example.com/case-office/223/zone/space-based-system-zone>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Work Area & Storage2";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://example.com/mybuilding#Work_Area_&_Storage2>,
+    <http://ifc-ld.org/ids#0cpPvJdt5DSQxIS05OILCV> .
+
+<https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUe> a <http://data.ashrae.org/standard223#PhysicalSpace>;
+  <http://data.ashrae.org/standard223#hasZone> <https://example.com/case-office/223/zone/space-based-system-zone>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Meeting Room3";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://example.com/mybuilding#Meeting_Room3>,
+    <http://ifc-ld.org/ids#0cpPvJdt5DSQxIS05OILUe> .
+
+<https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUf> a <http://data.ashrae.org/standard223#PhysicalSpace>;
+  <http://data.ashrae.org/standard223#hasZone> <https://example.com/case-office/223/zone/space-based-system-zone>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Work Area & Storage4";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://example.com/mybuilding#Work_Area_&_Storage4>,
+    <http://ifc-ld.org/ids#0cpPvJdt5DSQxIS05OILUf> .
+
+<https://example.com/case-office/223/space/0cpPvJdt5DSQxIS05OILUh> a <http://data.ashrae.org/standard223#PhysicalSpace>;
+  <http://data.ashrae.org/standard223#hasZone> <https://example.com/case-office/223/zone/space-based-system-zone>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Office1";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://example.com/mybuilding#Office1>,
+    <http://ifc-ld.org/ids#0cpPvJdt5DSQxIS05OILUh> .
+
+<https://example.com/case-office/223/space/1$ENqVPJPDFOY8xRKDpOSk> a <http://data.ashrae.org/standard223#PhysicalSpace>;
+  <http://data.ashrae.org/standard223#hasZone> <https://example.com/case-office/223/zone/space-based-system-zone>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Kitchen5";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://example.com/mybuilding#Kitchen5>,
+    <http://ifc-ld.org/ids#1$ENqVPJPDFOY8xRKDpOSk> .
+
+<https://example.com/case-office/223/space/1$ENqVPJPDFOY8xRKDpOSn> a <http://data.ashrae.org/standard223#PhysicalSpace>;
+  <http://data.ashrae.org/standard223#hasZone> <https://example.com/case-office/223/zone/space-based-system-zone>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Reception6";
+  <http://www.w3.org/2004/02/skos/core#exactMatch> <http://example.com/mybuilding#Reception6>,
+    <http://ifc-ld.org/ids#1$ENqVPJPDFOY8xRKDpOSn> .
+
+<https://example.com/case-office/223/zone/space-based-system-zone> a <http://data.ashrae.org/standard223#Zone>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Space-based system zone" .

@@ -1,0 +1,32 @@
+@prefix ex: <https://example.com/case-office/align/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:CanonicalEntity a rdfs:Class ;
+  rdfs:label "Canonical entity" .
+
+ex:CanonicalSpaceEntity a rdfs:Class ;
+  rdfs:subClassOf ex:CanonicalEntity ;
+  rdfs:label "Canonical space entity" .
+
+ex:CanonicalSensorEntity a rdfs:Class ;
+  rdfs:subClassOf ex:CanonicalEntity ;
+  rdfs:label "Canonical sensor entity" .
+
+ex:hasIfcGuid a rdf:Property ;
+  rdfs:label "has IFC GUID" .
+
+ex:alignsIfcGuid a rdf:Property ;
+  rdfs:label "aligns IFC GUID IRI" .
+
+ex:aligns223p a rdf:Property ;
+  rdfs:label "aligns 223P entity" .
+
+ex:alignsBrick a rdf:Property ;
+  rdfs:label "aligns Brick entity" .
+
+ex:alignsPoint a rdf:Property ;
+  rdfs:label "aligns dashboard point entity" .
+
+ex:sourceIfcTypeHint a rdf:Property ;
+  rdfs:label "source IFC type hint" .

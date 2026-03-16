@@ -29,6 +29,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from ingest.graphdb_client import GraphDBClient
 from rag.sparql_rag import SPARQLGraphRAG
 
+from api.case_graphrag_adapter import run_case_graphrag
+
 router = APIRouter()
 logger = logging.getLogger("chat")
 
@@ -172,10 +174,34 @@ def _detect_tool_action(message: str, evidence: Dict[str, Any]) -> Optional[Dict
 
 @router.post("/chat")
 async def chat_endpoint(request: ChatRequest):
-    thinking_steps = []
     t0 = time.time()
 
-    # Step 1: Build graph evidence via SPARQL RAG
+    try:
+        result = run_case_graphrag(request.message)
+
+        thinking_steps = result.get("thinking", [])
+        elapsed_ms = int((time.time() - t0) * 1000)
+        thinking_steps.append({
+            "step": "done",
+            "title": "Complete",
+            "content": f"Answered in {elapsed_ms}ms",
+        })
+
+        return {
+            "reply": result.get("reply", ""),
+            "thinking": thinking_steps,
+            "sparql_query": result.get("sparql_query", ""),
+            "sql_query": result.get("sql_query", ""),
+            "tool": result.get("tool"),
+            "evidence": result.get("evidence", {}),
+            "debug": result.get("debug", {}),
+        }
+
+    except Exception as exc:
+        logger.exception("case_graphrag pipeline failed, falling back to legacy GraphRAG: %s", exc)
+
+    # ------- legacy fallback path below -------
+    thinking_steps = []
     thinking_steps.append({
         "step": "understanding",
         "title": "Understanding your question",
@@ -245,16 +271,13 @@ async def chat_endpoint(request: ChatRequest):
     context_block = _evidence_to_context(evidence)
     tool_action = _detect_tool_action(request.message, evidence)
 
-    # Step 2: Generate natural language answer
     if not oai:
         thinking_steps.append({
             "step": "llm",
             "title": "LLM not available",
             "content": "OPENAI_API_KEY is not configured. Returning raw evidence.",
         })
-        reply = (
-            f"I found {len(evidence.get('nodes', []))} related entities in the knowledge graph.\n\n"
-        )
+        reply = f"I found {len(evidence.get('nodes', []))} related entities in the knowledge graph.\n\n"
         if evidence.get("nodes"):
             for n in evidence["nodes"][:8]:
                 name = n.get("name") or n.get("id", "").split("/")[-1].split("#")[-1]
@@ -276,10 +299,7 @@ async def chat_endpoint(request: ChatRequest):
 
         history.append({
             "role": "user",
-            "content": (
-                f"{request.message}\n\n"
-                f"--- Graph Evidence ---\n{context_block}"
-            ),
+            "content": f"{request.message}\n\n--- Graph Evidence ---\n{context_block}",
         })
 
         try:
