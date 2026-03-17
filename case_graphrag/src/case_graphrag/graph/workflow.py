@@ -12,6 +12,8 @@ from ..nodes.synthesis import synthesis_node
 from ..nodes.fallback import fallback_node
 from ..nodes.sql_repair import sql_repair_node
 from ..nodes.sparql_repair import sparql_repair_node
+from ..nodes.entity_resolver import entity_resolver_node
+from ..nodes.derived_reasoning import derived_reasoning_node
 
 def route_after_planner(state: GraphState) -> str:
     intent = state["plan"].intent
@@ -57,8 +59,13 @@ def route_after_sparql_validation(state: GraphState) -> str:
 
 def route_after_sql_execution(state: GraphState) -> str:
     result = state.get("sql_result")
+    answer_type = state["router"].answer_type if state.get("router") else None
+
     if result and result.ok and result.row_count > 0:
+        if answer_type == "comfort_assessment":
+            return "derived_reasoning"
         return "synthesis"
+
     if state.get("sql_repair_count", 0) < 1:
         return "sql_repair"
     return "fallback"
@@ -99,9 +106,13 @@ builder.add_node("synthesis", synthesis_node)
 builder.add_node("fallback", fallback_node)
 builder.add_node("sql_repair", sql_repair_node)
 builder.add_node("sparql_repair", sparql_repair_node)
+builder.add_node("entity_resolver", entity_resolver_node)
+builder.add_node("derived_reasoning", derived_reasoning_node)
 
 builder.set_entry_point("router")
-builder.add_edge("router", "planner")
+builder.add_edge("router", "entity_resolver")
+builder.add_edge("entity_resolver", "planner")
+builder.add_edge("derived_reasoning", "synthesis")
 
 builder.add_conditional_edges("planner", route_after_planner, {
     "sparql_generator": "sparql_generator",
@@ -110,21 +121,8 @@ builder.add_conditional_edges("planner", route_after_planner, {
 })
 
 builder.add_edge("sparql_generator", "sparql_validator")
-builder.add_conditional_edges("sparql_validator", route_after_validation("sparql"), {
-    "sparql_executor": "sparql_executor",
-    "fallback": "fallback",
-})
-
-builder.add_conditional_edges("sparql_executor", route_after_sparql_exec, {
-    "sql_generator": "sql_generator",
-    "synthesis": "synthesis",
-})
 
 builder.add_edge("sql_generator", "sql_validator")
-builder.add_conditional_edges("sql_validator", route_after_validation("sql"), {
-    "sql_executor": "sql_executor",
-    "fallback": "fallback",
-})
 
 builder.add_conditional_edges("sparql_validator", route_after_sparql_validation, {
     "sparql_executor": "sparql_executor",
@@ -155,7 +153,6 @@ builder.add_conditional_edges("sql_executor", route_after_sql_execution, {
     "fallback": "fallback",
 })
 
-builder.add_edge("sql_executor", "synthesis")
 builder.add_edge("synthesis", END)
 builder.add_edge("fallback", END)
 

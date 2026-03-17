@@ -30,6 +30,7 @@ Important schema rules:
   PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 - Return exactly one SPARQL SELECT query.
 - Never use INSERT, DELETE, CLEAR, LOAD, CREATE, DROP, MOVE, COPY, ADD.
+- For project-wide room or space counting, count distinct labeled spaces in the 223p graph unless the planner specifies a different graph path.
 
 Example:
 Question: Which sensors are located in Office1?
@@ -64,11 +65,25 @@ SELECT ?canonical_uri WHERE {
   }
 }
 LIMIT 1
+
+Example for project-wide room count:
+Question: How many rooms are in this project?
+
+Correct SPARQL:
+PREFIX s223: <http://data.ashrae.org/standard223#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT (COUNT(DISTINCT ?space) AS ?room_count) WHERE {
+  GRAPH <https://example.com/case-office/g/223p> {
+    ?space rdfs:label ?space_label .
+  }
+}
 """
 
 def sparql_generator_node(state):
     question = state["question"]
     plan = state["plan"]
+    entity_resolution = state.get("entity_resolution")
 
     user_prompt = f"""
 Question:
@@ -76,6 +91,9 @@ Question:
 
 Plan:
 {plan.model_dump_json(indent=2)}
+
+Entity Resolution:
+{entity_resolution.model_dump_json(indent=2) if entity_resolution else "null"}
 """
 
     obj = call_structured(

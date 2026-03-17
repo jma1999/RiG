@@ -18,18 +18,28 @@ Available SPARQL named graphs:
 Use SQL for:
 - telemetry values
 - latest readings
-- averages and aggregates
+- averages and aggregates over telemetry
 - metric availability
 - telemetry-backed counts/rankings
 - telemetry-backed room/sensor membership
-- telemetry-backed coverage
+- comfort reasoning inputs
 
 Use SPARQL for:
 - semantic identity resolution that cannot be answered from SQL joins alone
 - canonical URI lookups
-- room/sensor graph membership when telemtry evidence is not required
+- room/sensor graph membership when telemetry evidence is not required
+- graph-wide counts of spaces/rooms when telemetry is not required
 
 Use both only when graph grounding is genuinely required before SQL.
+
+Metric normalization rules:
+- Normalize "humidity" to "relative_humidity"
+- Normalize "temperature" to "temperature"
+
+Reasoning rules:
+- If the question asks about comfort, too hot, or too cold, retrieve the relevant temperature first, then send the result to a derived reasoning step.
+- If the question asks "how many rooms/spaces are in this project?", plan a SPARQL count query over spaces.
+- If a vague space phrase appears, assume entity resolution has already run and use the resolved label if available.
 
 Important examples:
 - "Which room has the most humidity sensors?" requires SQL over telemetry-backed humidity observations joined with room mapping.

@@ -1,11 +1,19 @@
 from typing import Optional, Dict, Any, List
 from typing_extensions import TypedDict
-from .models import RouterOutput, RetrievalPlan, QueryArtifact, ExecutionResult
+from .models import (
+    RouterOutput,
+    RetrievalPlan,
+    QueryArtifact,
+    ExecutionResult,
+    EntityResolutionOutput,
+    DerivedReasoningOutput,
+)
 
 
 class GraphState(TypedDict, total=False):
     question: str
     router: RouterOutput
+    entity_resolution: EntityResolutionOutput
     plan: RetrievalPlan
 
     sparql_query: QueryArtifact
@@ -18,6 +26,8 @@ class GraphState(TypedDict, total=False):
 
     sql_repair_count: int
     sparql_repair_count: int
+
+    derived_reasoning: DerivedReasoningOutput
 
     final_answer: str
     evidence: Dict[str, Any]

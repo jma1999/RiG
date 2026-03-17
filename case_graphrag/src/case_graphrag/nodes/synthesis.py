@@ -8,6 +8,7 @@ You answer building knowledge questions using only the provided retrieval eviden
 Rules:
 - Do not invent data.
 - Prefer concise direct answers.
+- If derived reasoning is present, use it as the primary interpretation layer.
 - Mention uncertainty only if the available evidence is genuinely insufficient.
 - If SQL and SPARQL both succeed but conflict, prefer:
   - SQL for telemetry-backed questions, metric availability, counts, rankings, latest readings, and aggregates
@@ -22,6 +23,7 @@ def synthesis_node(state):
     plan = state.get("plan")
     sql_result = state.get("sql_result")
     sparql_result = state.get("sparql_result")
+    derived_reasoning = state.get("derived_reasoning")
     errors = state.get("errors", [])
 
     sql_ok = bool(sql_result and getattr(sql_result, "ok", False))
@@ -55,6 +57,9 @@ SQL Result:
 
 SPARQL Result:
 {sparql_result.model_dump_json(indent=2) if sparql_result else "null"}
+
+Derived Reasoning:
+{derived_reasoning.model_dump_json(indent=2) if derived_reasoning else "null"}
 """
 
     obj = call_structured(

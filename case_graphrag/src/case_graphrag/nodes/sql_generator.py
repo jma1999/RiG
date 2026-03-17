@@ -22,6 +22,8 @@ Important rules:
 - name_label values look like 'Humidity in CASE (#32)' and should NOT be used to filter for 'Sensor32'.
 - For questions about SensorXX, join telemetry_latest or telemetry_observations to sensor_space_enriched_clean on canonical_uri and filter with sensor_space_enriched_clean.sensor_label = 'SensorXX'.
 - Avoid reserved or confusing aliases like 'to'. Prefer aliases like t, tl, sse, tobs.
+- If the question uses a vague space phrase and entity resolution is available in state, use the resolved space label.
+- For comfort-related questions, retrieve a temperature value first, preferably an average temperature when the question is not explicitly asking for the latest reading.
 
 Metric vocabulary rules:
 - The only telemetry metric_name values currently supported are:
@@ -155,11 +157,38 @@ JOIN telemetry_observations tobs
 GROUP BY sse.space_label
 ORDER BY sensor_count DESC, sse.space_label
 LIMIT 1;
+
+Example for vague office reference after resolution:
+Question: What is the average temperature in the office?
+Resolved meaning: Office1
+
+Correct SQL:
+SELECT
+    AVG(tobs.value_double) AS avg_temperature_f
+FROM sensor_space_enriched_clean sse
+JOIN telemetry_observations tobs
+    ON sse.canonical_uri = tobs.canonical_uri
+WHERE sse.space_label = 'Office1'
+  AND tobs.metric_name = 'temperature';
+
+Example for comfort assessment input:
+Question: Is the temperature in the office comfortable?
+Resolved meaning: Office1
+
+Correct SQL:
+SELECT
+    AVG(tobs.value_double) AS avg_temperature_f
+FROM sensor_space_enriched_clean sse
+JOIN telemetry_observations tobs
+    ON sse.canonical_uri = tobs.canonical_uri
+WHERE sse.space_label = 'Office1'
+  AND tobs.metric_name = 'temperature';
 """
 
 def sql_generator_node(state):
     question = state["question"]
     plan = state["plan"]
+    entity_resolution = state.get("entity_resolution")
 
     user_prompt = f"""
 Question:
@@ -167,6 +196,9 @@ Question:
 
 Plan:
 {plan.model_dump_json(indent=2)}
+
+Entity Resolution:
+{entity_resolution.model_dump_json(indent=2) if entity_resolution else "null"}
 """
 
     obj = call_structured(
