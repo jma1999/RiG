@@ -812,3 +812,119 @@ async def get_hierarchy():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get hierarchy: {str(e)}")
 
+@router.get("/tree/root")
+async def get_tree_root():
+    """Return one main CASE root entity for the hierarchy explorer."""
+    try:
+        client = get_graphdb_client()
+
+        query = """
+        PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX ifc4:  <http://ifc-ld.org/schemas/ifc4#>
+        PREFIX ifc2x3:<http://ifc-ld.org/schemas/ifc2x3#>
+
+        SELECT ?s ?label ?type
+        WHERE {
+          ?s a ?type .
+          FILTER(?type IN (ifc4:ifcproject, ifc2x3:ifcproject, ifc4:ifcbuilding, ifc2x3:ifcbuilding))
+          OPTIONAL { ?s rdfs:label ?rdfsLabel }
+          OPTIONAL { ?s ifc4:name ?ifc4Name }
+          OPTIONAL { ?s ifc2x3:name ?ifc2x3Name }
+          BIND(COALESCE(?rdfsLabel, ?ifc4Name, ?ifc2x3Name, REPLACE(STR(?s), "^.*/|^.*#", "")) AS ?label)
+        }
+        LIMIT 1
+        """
+
+        results = client.execute_sparql_query(query, output_format="json")
+        bindings = results.get("results", {}).get("bindings", [])
+        if not bindings:
+            raise HTTPException(status_code=404, detail="No root project/building found")
+
+        b = bindings[0]
+        uri = b["s"]["value"]
+        label = b.get("label", {}).get("value", prefixed(uri))
+        rdf_type = b.get("type", {}).get("value", "")
+
+        return {
+            "id": uri,
+            "label": label,
+            "type": prefixed(rdf_type) if rdf_type else "",
+            "ns": namespace_of(uri),
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get tree root: {str(e)}")
+
+@router.get("/tree/children")
+async def get_tree_children(uri: str = Query(...)):
+    """Return hierarchical children of one node for the tree explorer."""
+    try:
+        client = get_graphdb_client()
+
+        query = f"""
+        PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX ifc4:  <http://ifc-ld.org/schemas/ifc4#>
+        PREFIX ifc2x3:<http://ifc-ld.org/schemas/ifc2x3#>
+        PREFIX brick1:<http://brickschema.org/schema/1.1.0/Brick#>
+        PREFIX s223:  <http://data.ashrae.org/standard223#>
+
+        SELECT DISTINCT ?child ?childType ?label ?rel
+        WHERE {{
+          {{
+            <{uri}> ?rel ?child .
+            FILTER(?rel IN (
+              ifc4:isDecomposedBy, ifc2x3:isDecomposedBy,
+              ifc4:relatedObjects_IfcRelDecomposes, ifc2x3:relatedObjects_IfcRelDecomposes,
+              brick1:hasPart, brick1:hasPoint,
+              s223:hasPhysicalLocation, s223:hasZone
+            ))
+          }}
+          UNION
+          {{
+            ?child ?rel <{uri}> .
+            FILTER(?rel IN (
+              brick1:isPartOf, brick1:isPointOf
+            ))
+          }}
+
+          ?child a ?childType .
+
+          OPTIONAL {{ ?child rdfs:label ?rdfsLabel }}
+          OPTIONAL {{ ?child ifc4:name ?ifc4Name }}
+          OPTIONAL {{ ?child ifc2x3:name ?ifc2x3Name }}
+          BIND(COALESCE(?rdfsLabel, ?ifc4Name, ?ifc2x3Name, REPLACE(STR(?child), "^.*/|^.*#", "")) AS ?label)
+        }}
+        LIMIT 100
+        """
+
+        results = client.execute_sparql_query(query, output_format="json")
+        bindings = results.get("results", {}).get("bindings", [])
+
+        children = []
+        seen = set()
+
+        for b in bindings:
+            child = b.get("child", {}).get("value", "")
+            if not child or child in seen:
+                continue
+            seen.add(child)
+
+            child_type = b.get("childType", {}).get("value", "")
+            label = b.get("label", {}).get("value", prefixed(child))
+            rel = b.get("rel", {}).get("value", "")
+
+            children.append({
+                "id": child,
+                "label": label,
+                "type": prefixed(child_type) if child_type else "",
+                "rel": prefixed(rel) if rel else "",
+                "ns": namespace_of(child),
+            })
+
+        children.sort(key=lambda x: x["label"].lower())
+        return {"children": children}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get tree children: {str(e)}")

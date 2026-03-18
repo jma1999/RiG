@@ -62,7 +62,7 @@ def route_after_sql_execution(state: GraphState) -> str:
     answer_type = state["router"].answer_type if state.get("router") else None
 
     if result and result.ok and result.row_count > 0:
-        if answer_type == "comfort_assessment":
+        if answer_type in {"comfort_assessment", "hot_cold_assessment"}:
             return "derived_reasoning"
         return "synthesis"
 
@@ -148,6 +148,7 @@ builder.add_conditional_edges("sql_validator", route_after_sql_validation, {
 builder.add_edge("sql_repair", "sql_validator")
 
 builder.add_conditional_edges("sql_executor", route_after_sql_execution, {
+    "derived_reasoning": "derived_reasoning",
     "synthesis": "synthesis",
     "sql_repair": "sql_repair",
     "fallback": "fallback",
