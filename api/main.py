@@ -638,7 +638,7 @@ def nearest(typeA: str, typeB: str, limit: int = 1):
 
 
 # register additional chat routes
-import api.chat  # noqa: E402  pylint: disable=wrong-import-position
+# import api.chat  # noqa: E402  pylint: disable=wrong-import-position
 
 # Import new services
 from api.cloud_storage import cloud_storage

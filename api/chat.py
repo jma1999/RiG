@@ -27,7 +27,7 @@ from pydantic import BaseModel
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
 from ingest.graphdb_client import GraphDBClient
-from rag.sparql_rag import SPARQLGraphRAG
+# from rag.sparql_rag import SPARQLGraphRAG
 
 from api.case_graphrag_adapter import run_case_graphrag
 
