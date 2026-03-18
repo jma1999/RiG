@@ -27,7 +27,7 @@ MODEL_NAME = os.getenv("EMBEDDING_MODEL", os.getenv("RAG_MODEL", "sentence-trans
 os.environ.setdefault("TRANSFORMERS_NO_TORCH_FLEX_ATTENTION", "1")
 
 app = FastAPI(title="RiG GraphRAG API", version="0.1")
-app.mount("/app", StaticFiles(directory="web", html=True), name="app")
+# app.mount("/app", StaticFiles(directory="web", html=True), name="app")
 
 # CORS: Allow all origins for development (Cloudflare Tunnel + Vercel)
 # In production, set FRONTEND_ORIGINS env var with specific origins
