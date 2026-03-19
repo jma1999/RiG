@@ -81,6 +81,28 @@ def namespace_of(uri: str) -> str:
             return px.rstrip(":")
     return "other"
 
+def readable_label_or_fallback(raw_label: str, uri: str, rdf_type: str = "") -> str:
+    raw = (raw_label or "").strip()
+    t = (rdf_type or "").lower()
+
+    if raw and not raw.lower().startswith("node"):
+        return raw
+
+    px = prefixed(uri)
+
+    if "ifcproject" in t:
+        return "CASE Project"
+    if "ifcspace" in t:
+        return f"Space ({prefixed(uri)})"
+    if "ifcbuilding" in t and "ifcbuildingstorey" not in t:
+        return "Building"
+    if "ifcbuildingstorey" in t:
+        return f"Storey ({prefixed(uri)})"
+    if "ifcspace" in t:
+        return "Space"
+
+    return px
+
 
 # ── Models ────────────────────────────────────────────────────────────────────
 
@@ -585,19 +607,19 @@ async def get_focused_graph(
         client = get_graphdb_client()
 
         query = f"""
-        PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-        PREFIX brick1: <http://brickschema.org/schema/1.1.0/Brick#>
-        PREFIX s223: <http://data.ashrae.org/standard223#>
+        PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX skos:  <http://www.w3.org/2004/02/skos/core#>
+        PREFIX brick1:<http://brickschema.org/schema/1.1.0/Brick#>
+        PREFIX s223:  <http://data.ashrae.org/standard223#>
+        PREFIX ifc4:  <http://ifc-ld.org/schemas/ifc4#>
+        PREFIX ifc2x3:<http://ifc-ld.org/schemas/ifc2x3#>
 
         SELECT ?s ?p ?o ?oLabel
         WHERE {{
           BIND(<{uri}> AS ?s)
 
           ?s ?p ?o .
-
-          OPTIONAL {{ ?o rdfs:label ?oLabel }}
 
           FILTER(
             ?p IN (
@@ -614,6 +636,39 @@ async def get_focused_graph(
               s223:hasZone
             )
           )
+
+          OPTIONAL {{ ?o rdfs:label ?oRdfsLabel }}
+
+          OPTIONAL {{ ?o ifc4:name ?oIfc4NameDirect . FILTER(isLiteral(?oIfc4NameDirect)) }}
+          OPTIONAL {{ ?o ifc2x3:name ?oIfc2x3NameDirect . FILTER(isLiteral(?oIfc2x3NameDirect)) }}
+          OPTIONAL {{ ?o ifc4:longname ?oIfc4LongNameDirect . FILTER(isLiteral(?oIfc4LongNameDirect)) }}
+          OPTIONAL {{ ?o ifc2x3:longname ?oIfc2x3LongNameDirect . FILTER(isLiteral(?oIfc2x3LongNameDirect)) }}
+
+          OPTIONAL {{
+            ?o ifc4:name ?oIfc4NameNode .
+            ?oIfc4NameNode rdf:value ?oIfc4NameLiteral .
+          }}
+          OPTIONAL {{
+            ?o ifc2x3:name ?oIfc2x3NameNode .
+            ?oIfc2x3NameNode rdf:value ?oIfc2x3NameLiteral .
+          }}
+          OPTIONAL {{
+            ?o ifc4:longname ?oIfc4LongNameNode .
+            ?oIfc4LongNameNode rdf:value ?oIfc4LongNameLiteral .
+          }}
+          OPTIONAL {{
+            ?o ifc2x3:longname ?oIfc2x3LongNameNode .
+            ?oIfc2x3LongNameNode rdf:value ?oIfc2x3LongNameLiteral .
+          }}
+
+          BIND(COALESCE(
+            ?oRdfsLabel,
+            ?oIfc4LongNameLiteral, ?oIfc2x3LongNameLiteral,
+            ?oIfc4NameLiteral, ?oIfc2x3NameLiteral,
+            ?oIfc4LongNameDirect, ?oIfc2x3LongNameDirect,
+            ?oIfc4NameDirect, ?oIfc2x3NameDirect,
+            REPLACE(STR(?o), "^.*/|^.*#", "")
+          ) AS ?oLabel)
         }}
         LIMIT {limit}
         """
@@ -627,10 +682,11 @@ async def get_focused_graph(
 
         def ensure_resource(node_uri: str, fallback_name: Optional[str] = None):
             if node_uri not in nodes:
+                display_name = fallback_name or prefixed(node_uri)
                 nodes[node_uri] = {
                     "id": node_uri,
-                    "label": fallback_name or prefixed(node_uri),
-                    "name": fallback_name or prefixed(node_uri),
+                    "label": display_name,
+                    "name": display_name,
                     "type": "resource",
                     "ns": namespace_of(node_uri),
                     "properties": {},
@@ -652,9 +708,16 @@ async def get_focused_graph(
             if o_type == "uri":
                 ensure_resource(o_val, o_label or prefixed(o_val))
 
-                # mark rdf:type objects as class nodes
                 if p_uri == RDF_TYPE:
                     nodes[o_val]["type"] = "class"
+
+                # refresh label if a better one came back later
+                if o_label:
+                    better = readable_label_or_fallback(
+                        o_label, o_val, nodes[o_val].get("type", "")
+                    )
+                    nodes[o_val]["label"] = better
+                    nodes[o_val]["name"] = better
 
                 edges.append({
                     "source": s_uri,
@@ -679,27 +742,60 @@ async def get_focused_graph(
                     "predicate": prefixed(p_uri),
                 })
 
-        # try to give center node a human-readable label
+        # give center node a human-readable label using same logic as /tree/root and /tree/children
         label_query = f"""
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        PREFIX ifc4: <http://ifc-ld.org/schemas/ifc4#>
-        PREFIX ifc2x3: <http://ifc-ld.org/schemas/ifc2x3#>
+        PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX ifc4:  <http://ifc-ld.org/schemas/ifc4#>
+        PREFIX ifc2x3:<http://ifc-ld.org/schemas/ifc2x3#>
 
-        SELECT ?label WHERE {{
+        SELECT ?label
+        WHERE {{
           OPTIONAL {{ <{uri}> rdfs:label ?rdfsLabel }}
-          OPTIONAL {{ <{uri}> ifc4:name ?ifc4Name }}
-          OPTIONAL {{ <{uri}> ifc2x3:name ?ifc2x3Name }}
-          BIND(COALESCE(?rdfsLabel, ?ifc4Name, ?ifc2x3Name) AS ?label)
+
+          OPTIONAL {{ <{uri}> ifc4:name ?ifc4NameDirect . FILTER(isLiteral(?ifc4NameDirect)) }}
+          OPTIONAL {{ <{uri}> ifc2x3:name ?ifc2x3NameDirect . FILTER(isLiteral(?ifc2x3NameDirect)) }}
+          OPTIONAL {{ <{uri}> ifc4:longname ?ifc4LongNameDirect . FILTER(isLiteral(?ifc4LongNameDirect)) }}
+          OPTIONAL {{ <{uri}> ifc2x3:longname ?ifc2x3LongNameDirect . FILTER(isLiteral(?ifc2x3LongNameDirect)) }}
+
+          OPTIONAL {{
+            <{uri}> ifc4:name ?ifc4NameNode .
+            ?ifc4NameNode rdf:value ?ifc4NameLiteral .
+          }}
+          OPTIONAL {{
+            <{uri}> ifc2x3:name ?ifc2x3NameNode .
+            ?ifc2x3NameNode rdf:value ?ifc2x3NameLiteral .
+          }}
+          OPTIONAL {{
+            <{uri}> ifc4:longname ?ifc4LongNameNode .
+            ?ifc4LongNameNode rdf:value ?ifc4LongNameLiteral .
+          }}
+          OPTIONAL {{
+            <{uri}> ifc2x3:longname ?ifc2x3LongNameNode .
+            ?ifc2x3LongNameNode rdf:value ?ifc2x3LongNameLiteral .
+          }}
+
+          BIND(COALESCE(
+            ?rdfsLabel,
+            ?ifc4LongNameLiteral, ?ifc2x3LongNameLiteral,
+            ?ifc4NameLiteral, ?ifc2x3NameLiteral,
+            ?ifc4LongNameDirect, ?ifc2x3LongNameDirect,
+            ?ifc4NameDirect, ?ifc2x3NameDirect,
+            REPLACE(STR(<{uri}>), "^.*/|^.*#", "")
+          ) AS ?label)
         }}
         LIMIT 1
         """
+
         label_results = client.execute_sparql_query(label_query, output_format="json")
         label_bindings = label_results.get("results", {}).get("bindings", [])
         if label_bindings:
             lbl = label_bindings[0].get("label", {}).get("value")
             if lbl:
-                nodes[uri]["label"] = lbl
-                nodes[uri]["name"] = lbl
+                nodes[uri]["label"] = readable_label_or_fallback(
+                    lbl, uri, nodes[uri].get("type", "")
+                )
+                nodes[uri]["name"] = nodes[uri]["label"]
 
         return {
             "center": uri,
@@ -709,7 +805,6 @@ async def get_focused_graph(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get focused graph: {str(e)}")
-
 
 @router.get("/hierarchy")
 async def get_hierarchy():
@@ -828,10 +923,39 @@ async def get_tree_root():
         WHERE {
           ?s a ?type .
           FILTER(?type IN (ifc4:ifcproject, ifc2x3:ifcproject, ifc4:ifcbuilding, ifc2x3:ifcbuilding))
+
           OPTIONAL { ?s rdfs:label ?rdfsLabel }
-          OPTIONAL { ?s ifc4:name ?ifc4Name }
-          OPTIONAL { ?s ifc2x3:name ?ifc2x3Name }
-          BIND(COALESCE(?rdfsLabel, ?ifc4Name, ?ifc2x3Name, REPLACE(STR(?s), "^.*/|^.*#", "")) AS ?label)
+
+          OPTIONAL { ?s ifc4:name ?ifc4NameDirect . FILTER(isLiteral(?ifc4NameDirect)) }
+          OPTIONAL { ?s ifc2x3:name ?ifc2x3NameDirect . FILTER(isLiteral(?ifc2x3NameDirect)) }
+          OPTIONAL { ?s ifc4:longname ?ifc4LongNameDirect . FILTER(isLiteral(?ifc4LongNameDirect)) }
+          OPTIONAL { ?s ifc2x3:longname ?ifc2x3LongNameDirect . FILTER(isLiteral(?ifc2x3LongNameDirect)) }
+
+          OPTIONAL {
+            ?s ifc4:name ?ifc4NameNode .
+            ?ifc4NameNode rdf:value ?ifc4NameLiteral .
+          }
+          OPTIONAL {
+            ?s ifc2x3:name ?ifc2x3NameNode .
+            ?ifc2x3NameNode rdf:value ?ifc2x3NameLiteral .
+          }
+          OPTIONAL {
+            ?s ifc4:longname ?ifc4LongNameNode .
+            ?ifc4LongNameNode rdf:value ?ifc4LongNameLiteral .
+          }
+          OPTIONAL {
+            ?s ifc2x3:longname ?ifc2x3LongNameNode .
+            ?ifc2x3LongNameNode rdf:value ?ifc2x3LongNameLiteral .
+          }
+
+          BIND(COALESCE(
+            ?rdfsLabel,
+            ?ifc4LongNameLiteral, ?ifc2x3LongNameLiteral,
+            ?ifc4NameLiteral, ?ifc2x3NameLiteral,
+            ?ifc4LongNameDirect, ?ifc2x3LongNameDirect,
+            ?ifc4NameDirect, ?ifc2x3NameDirect,
+            REPLACE(STR(?s), "^.*/|^.*#", "")
+          ) AS ?label)
         }
         LIMIT 1
         """
@@ -844,8 +968,8 @@ async def get_tree_root():
         b = bindings[0]
         uri = b["s"]["value"]
         raw_label = b.get("label", {}).get("value", "").strip()
-        label = raw_label if raw_label and not raw_label.lower().startswith("node") else "CASE Project"
         rdf_type = b.get("type", {}).get("value", "")
+        label = readable_label_or_fallback(raw_label, uri, rdf_type)
 
         return {
             "id": uri,
@@ -992,12 +1116,38 @@ async def get_tree_children(uri: str = Query(...)):
 
           ?child a ?childType .
 
-          OPTIONAL { ?child rdfs:label ?rdfsLabel }
-          OPTIONAL { ?child ifc4:name ?ifc4Name }
-          OPTIONAL { ?child ifc2x3:name ?ifc2x3Name }
-          OPTIONAL { ?child ifc4:longname ?ifc4LongName }
-          OPTIONAL { ?child ifc2x3:longname ?ifc2x3LongName }
-          BIND(COALESCE(?rdfsLabel, ?ifc4Name, ?ifc2x3Name, ?ifc4LongName, ?ifc2x3LongName, REPLACE(STR(?child), "^.*/|^.*#", "")) AS ?label)
+          OPTIONAL {{ ?child rdfs:label ?rdfsLabel }}
+
+          OPTIONAL {{ ?child ifc4:name ?ifc4NameDirect . FILTER(isLiteral(?ifc4NameDirect)) }}
+          OPTIONAL {{ ?child ifc2x3:name ?ifc2x3NameDirect . FILTER(isLiteral(?ifc2x3NameDirect)) }}
+          OPTIONAL {{ ?child ifc4:longname ?ifc4LongNameDirect . FILTER(isLiteral(?ifc4LongNameDirect)) }}
+          OPTIONAL {{ ?child ifc2x3:longname ?ifc2x3LongNameDirect . FILTER(isLiteral(?ifc2x3LongNameDirect)) }}
+
+          OPTIONAL {{
+            ?child ifc4:name ?ifc4NameNode .
+            ?ifc4NameNode rdf:value ?ifc4NameLiteral .
+          }}
+          OPTIONAL {{
+            ?child ifc2x3:name ?ifc2x3NameNode .
+            ?ifc2x3NameNode rdf:value ?ifc2x3NameLiteral .
+          }}
+          OPTIONAL {{
+            ?child ifc4:longname ?ifc4LongNameNode .
+            ?ifc4LongNameNode rdf:value ?ifc4LongNameLiteral .
+          }}
+          OPTIONAL {{
+            ?child ifc2x3:longname ?ifc2x3LongNameNode .
+            ?ifc2x3LongNameNode rdf:value ?ifc2x3LongNameLiteral .
+          }}
+
+          BIND(COALESCE(
+            ?rdfsLabel,
+            ?ifc4LongNameLiteral, ?ifc2x3LongNameLiteral,
+            ?ifc4NameLiteral, ?ifc2x3NameLiteral,
+            ?ifc4LongNameDirect, ?ifc2x3LongNameDirect,
+            ?ifc4NameDirect, ?ifc2x3NameDirect,
+            REPLACE(STR(?child), "^.*/|^.*#", "")
+          ) AS ?label)
         }}
         LIMIT 150
         """
@@ -1018,7 +1168,7 @@ async def get_tree_children(uri: str = Query(...)):
             raw_label = b.get("label", {}).get("value", "").strip()
             rel = b.get("rel", {}).get("value", "")
 
-            label = raw_label if raw_label and not raw_label.lower().startswith("node") else prefixed(child)
+            label = readable_label_or_fallback(raw_label, child, child_type)
 
             children.append({
                 "id": child,
@@ -1027,6 +1177,19 @@ async def get_tree_children(uri: str = Query(...)):
                 "rel": prefixed(rel) if rel else "",
                 "ns": namespace_of(child),
             })
+
+        # Prefer a clean hierarchy backbone for the tree:
+        # Project -> Site -> Building -> Storey -> Space
+        child_types = {c["type"].lower() for c in children}
+
+        if any("ifc:ifcspace" in t for t in child_types):
+            children = [c for c in children if c["type"].lower() == "ifc:ifcspace"]
+        elif any("ifc:ifcbuildingstorey" in t for t in child_types):
+            children = [c for c in children if c["type"].lower() == "ifc:ifcbuildingstorey"]
+        elif any("ifc:ifcbuilding" in t for t in child_types):
+            children = [c for c in children if c["type"].lower() == "ifc:ifcbuilding"]
+        elif any("ifc:ifcsite" in t for t in child_types):
+            children = [c for c in children if c["type"].lower() == "ifc:ifcsite"]
 
         children.sort(key=lambda x: x["label"].lower())
         return {"children": children}
@@ -1059,3 +1222,57 @@ async def debug_triples(uri: str = Query(...)):
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Debug query failed: {str(e)}")
+
+@router.get("/debug/name")
+async def debug_name(uri: str = Query(...)):
+    try:
+        client = get_graphdb_client()
+
+        query = f"""
+        PREFIX ifc4:  <http://ifc-ld.org/schemas/ifc4#>
+        PREFIX ifc2x3:<http://ifc-ld.org/schemas/ifc2x3#>
+
+        SELECT ?p1 ?o1 ?p2 ?o2 ?p3 ?o3
+        WHERE {{
+          {{
+            <{uri}> ifc4:name ?nameNode .
+            ?nameNode ?p1 ?o1 .
+            OPTIONAL {{
+              ?o1 ?p2 ?o2 .
+              OPTIONAL {{ ?o2 ?p3 ?o3 . }}
+            }}
+          }}
+          UNION
+          {{
+            <{uri}> ifc4:longname ?nameNode .
+            ?nameNode ?p1 ?o1 .
+            OPTIONAL {{
+              ?o1 ?p2 ?o2 .
+              OPTIONAL {{ ?o2 ?p3 ?o3 . }}
+            }}
+          }}
+          UNION
+          {{
+            <{uri}> ifc2x3:name ?nameNode .
+            ?nameNode ?p1 ?o1 .
+            OPTIONAL {{
+              ?o1 ?p2 ?o2 .
+              OPTIONAL {{ ?o2 ?p3 ?o3 . }}
+            }}
+          }}
+          UNION
+          {{
+            <{uri}> ifc2x3:longname ?nameNode .
+            ?nameNode ?p1 ?o1 .
+            OPTIONAL {{
+              ?o1 ?p2 ?o2 .
+              OPTIONAL {{ ?o2 ?p3 ?o3 . }}
+            }}
+          }}
+        }}
+        LIMIT 50
+        """
+
+        return client.execute_sparql_query(query, output_format="json")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Debug name query failed: {str(e)}")

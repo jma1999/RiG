@@ -41,6 +41,28 @@ function TypeBadge({ text }) {
   );
 }
 
+function prettyLabel(node) {
+  const label = node?.label || node?.name || node?.id || '';
+  const type = (node?.type || '').toLowerCase();
+
+  if (label && !/^co:\d+$/i.test(label)) return label;
+
+  if (type.includes('ifcproject')) return 'CASE Project';
+  if (type.includes('ifcsite')) return 'Site';
+  if (type.includes('ifcbuilding')) return 'Building';
+
+  if (type.includes('ifcbuildingstorey')) {
+    if (node?.id?.endsWith('#46')) return 'Storey 1';
+    if (node?.id?.endsWith('#50')) return 'Storey 2';
+    if (node?.id?.endsWith('#54')) return 'Storey 3';
+    return 'Storey';
+  }
+
+  if (type.includes('ifcspace')) return 'Space';
+
+  return label;
+}
+
 function TreeRow({
   node,
   depth = 0,
@@ -91,7 +113,7 @@ function TreeRow({
           />
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm text-slate-200 group-hover:text-white">
-              {node.label || node.name || node.id}
+              {prettyLabel(node)}
             </div>
             <div className="flex items-center gap-2 mt-0.5">
               {node.type && <TypeBadge text={node.type} />}
@@ -274,12 +296,35 @@ const KnowledgeGraph = ({ onNodeClick }) => {
     try {
       const res = await fetch(`${API_BASE}/graphdb/tree/root`);
       const data = await res.json();
+  
       setRoot(data);
       setSelected(data);
       await loadFocus(data.id, false);
-      const children = await fetchChildren(data.id);
-      setLoadedChildren(prev => ({ ...prev, [data.id]: children }));
-      setExpandedIds(new Set([data.id]));
+  
+      const expanded = new Set([data.id]);
+      const nextLoadedChildren = {};
+  
+      const rootChildren = await fetchChildren(data.id);
+      nextLoadedChildren[data.id] = rootChildren;
+  
+      if (rootChildren.length > 0) {
+        const siteNode = rootChildren[0];
+        expanded.add(siteNode.id);
+  
+        const siteChildren = await fetchChildren(siteNode.id);
+        nextLoadedChildren[siteNode.id] = siteChildren;
+  
+        if (siteChildren.length > 0) {
+          const buildingNode = siteChildren[0];
+          expanded.add(buildingNode.id);
+  
+          const buildingChildren = await fetchChildren(buildingNode.id);
+          nextLoadedChildren[buildingNode.id] = buildingChildren;
+        }
+      }
+  
+      setLoadedChildren(nextLoadedChildren);
+      setExpandedIds(expanded);
     } catch (err) {
       console.error('Failed to load tree root:', err);
       setRoot(null);
@@ -554,7 +599,7 @@ const KnowledgeGraph = ({ onNodeClick }) => {
             </p>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
+          <div className="flex-1 overflow-auto p-3 custom-scrollbar">
             <TreeRow
               node={root}
               depth={0}
@@ -581,7 +626,7 @@ const KnowledgeGraph = ({ onNodeClick }) => {
                 <ArrowLeft size={16} />
               </button>
               <div className="truncate text-sm font-medium text-white">
-                {center?.label || center?.name || selected?.label}
+                {prettyLabel(center || selected)}
               </div>
             </div>
             <p className="truncate mt-1 text-[10px] font-mono text-slate-500">
