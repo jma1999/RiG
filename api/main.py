@@ -12,6 +12,8 @@ from pydantic import BaseModel
 import numpy as np
 import re
 from datetime import datetime
+from api.chat import router as chat_router
+from rdflib import Namespace
 
 _env_path = _pl.Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(_env_path, override=True)
@@ -27,7 +29,10 @@ MODEL_NAME = os.getenv("EMBEDDING_MODEL", os.getenv("RAG_MODEL", "sentence-trans
 os.environ.setdefault("TRANSFORMERS_NO_TORCH_FLEX_ATTENTION", "1")
 
 app = FastAPI(title="RiG GraphRAG API", version="0.1")
-# app.mount("/app", StaticFiles(directory="web", html=True), name="app")
+
+_WEB_DIR = _pl.Path(__file__).resolve().parent.parent / "web"
+if _WEB_DIR.exists():
+    app.mount("/app", StaticFiles(directory=str(_WEB_DIR), html=True), name="app")
 
 # CORS: Allow all origins for development (Cloudflare Tunnel + Vercel)
 # In production, set FRONTEND_ORIGINS env var with specific origins
@@ -638,7 +643,6 @@ def nearest(typeA: str, typeB: str, limit: int = 1):
 
 
 # register additional chat routes
-# import api.chat  # noqa: E402  pylint: disable=wrong-import-position
 
 # Import new services
 from api.cloud_storage import cloud_storage
@@ -646,6 +650,7 @@ from api.tasks import parse_ifc_file, get_job_status
 
 # Register GraphDB, Telemetry, Agents, BACnet, and DT webhook routers
 from api import graphdb, telemetry, agents, bacnet, dt_webhook  # noqa: E402
+app.include_router(chat_router, tags=["chat"])
 app.include_router(graphdb.router, prefix="/graphdb", tags=["graphdb"])
 app.include_router(telemetry.router, prefix="/telemetry", tags=["telemetry"])
 app.include_router(agents.router, prefix="/agents", tags=["agents"])

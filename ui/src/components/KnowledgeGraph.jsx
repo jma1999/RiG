@@ -133,6 +133,126 @@ function TreeRow({
   );
 }
 
+function radialPositions(cx, cy, count, radius) {
+  if (count === 0) return [];
+  const positions = [];
+  const startAngle = -Math.PI / 2;
+  const sweep = Math.PI * 1.4;
+  for (let i = 0; i < count; i++) {
+    const angle =
+      startAngle +
+      (count === 1 ? 0 : (sweep * i) / (count - 1)) -
+      sweep / 2 +
+      Math.PI / 2;
+
+    positions.push({
+      x: cx + radius * Math.cos(angle),
+      y: cy + radius * Math.sin(angle),
+    });
+  }
+  return positions;
+}
+
+function RadialInspector({ centerNode, edges, nodesById, onSelectNode }) {
+  const width = 1400;
+  const height = 900;
+  const cx = 240;
+  const cy = height / 2;
+  const radius = 380;
+
+  const triples = edges.map((e) => {
+    const target = nodesById[e.target];
+    return {
+      predicate: e.predicate,
+      target,
+      clickable: target && !String(target.id).startsWith('_:') && target.type !== 'literal',
+    };
+  });
+
+  const positions = radialPositions(cx, cy, triples.length, radius);
+
+  return (
+    <div className="w-full h-full overflow-auto">
+      <div className="min-w-[1400px] min-h-[900px] bg-white">
+        <svg width={width} height={height}>
+          {triples.map((t, i) => {
+            const pos = positions[i];
+            const target = t.target;
+            const label = target?.label || target?.name || 'Unknown';
+            const predicateLabel = t.predicate || '';
+
+            return (
+              <g key={`${predicateLabel}-${target?.id || i}`}>
+                <line
+                  x1={cx}
+                  y1={cy}
+                  x2={pos.x}
+                  y2={pos.y}
+                  stroke="#cbd5e1"
+                  strokeWidth="1.5"
+                />
+
+                <text
+                  x={(cx + pos.x) / 2 - 8}
+                  y={(cy + pos.y) / 2 - 6}
+                  textAnchor="end"
+                  fontSize="13"
+                  fill="#444"
+                >
+                  {predicateLabel}
+                </text>
+
+                <circle
+                  cx={pos.x}
+                  cy={pos.y}
+                  r={8}
+                  fill={target?.type === 'literal' ? '#ffffff' : '#e0f2fe'}
+                  stroke="#4fd1c5"
+                  strokeWidth="2"
+                  style={{ cursor: t.clickable ? 'pointer' : 'default' }}
+                  onClick={() => t.clickable && onSelectNode(target)}
+                />
+
+                <text
+                  x={pos.x + 14}
+                  y={pos.y + 4}
+                  textAnchor="start"
+                  fontSize="14"
+                  fill={t.clickable ? '#222' : '#444'}
+                  style={{ cursor: t.clickable ? 'pointer' : 'default' }}
+                  onClick={() => t.clickable && onSelectNode(target)}
+                >
+                  {label.length > 42 ? `${label.slice(0, 39)}...` : label}
+                </text>
+              </g>
+            );
+          })}
+
+          <circle
+            cx={cx}
+            cy={cy}
+            r={16}
+            fill="#fff7ed"
+            stroke="#f59e0b"
+            strokeWidth="3"
+          />
+
+          <text
+            x={cx - 24}
+            y={cy + 34}
+            textAnchor="start"
+            fontSize="18"
+            fill="#222"
+            fontWeight="600"
+          >
+            {centerNode?.label || centerNode?.name || 'Selected Node'}
+          </text>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 const KnowledgeGraph = ({ onNodeClick }) => {
   const [root, setRoot] = useState(null);
   const [expandedIds, setExpandedIds] = useState(new Set());
@@ -157,6 +277,9 @@ const KnowledgeGraph = ({ onNodeClick }) => {
       setRoot(data);
       setSelected(data);
       await loadFocus(data.id, false);
+      const children = await fetchChildren(data.id);
+      setLoadedChildren(prev => ({ ...prev, [data.id]: children }));
+      setExpandedIds(new Set([data.id]));
     } catch (err) {
       console.error('Failed to load tree root:', err);
       setRoot(null);
@@ -466,47 +589,18 @@ const KnowledgeGraph = ({ onNodeClick }) => {
             </p>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+          <div className="flex-1 min-h-0 overflow-hidden">
             {loadingFocus ? (
               <div className="flex items-center justify-center h-full">
                 <Loader2 size={20} className="animate-spin text-nexus-accent" />
               </div>
             ) : (
-              <div className="grid grid-cols-[280px_1fr] gap-6 min-h-full">
-                <div className="bg-nexus-900/50 border border-nexus-700 rounded-xl p-4 h-fit sticky top-0">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: getNodeColor(center || selected || {}) }}
-                    />
-                    <div className="text-white font-medium">
-                      {center?.label || center?.name || selected?.label || 'Selected Node'}
-                    </div>
-                  </div>
-
-                  <div className="text-[11px] text-slate-400 font-mono break-all">
-                    {center?.id || selected?.id}
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {center?.type && <TypeBadge text={center.type} />}
-                    {selected?.type && !center?.type && <TypeBadge text={selected.type} />}
-                    {selected?.ns && <TypeBadge text={selected.ns} />}
-                  </div>
-                </div>
-
-                <div className="space-y-5">
-                  {renderGroup('Identity', groupedEdges.identity)}
-                  {renderGroup('Hierarchy & Location', groupedEdges.hierarchy)}
-                  {renderGroup('Semantic Links', groupedEdges.semantics)}
-                  {renderGroup('Properties', groupedEdges.properties)}
-                  {renderGroup('Other Relations', groupedEdges.other)}
-
-                  {Object.values(groupedEdges).every((arr) => arr.length === 0) && (
-                    <div className="text-sm text-slate-500">No related triples found.</div>
-                  )}
-                </div>
-              </div>
+              <RadialInspector
+                centerNode={center || selected}
+                edges={focusedGraph?.edges || []}
+                nodesById={Object.fromEntries((focusedGraph?.nodes || []).map((n) => [n.id, n]))}
+                onSelectNode={handleSelectNode}
+              />
             )}
           </div>
         </div>

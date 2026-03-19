@@ -843,7 +843,8 @@ async def get_tree_root():
 
         b = bindings[0]
         uri = b["s"]["value"]
-        label = b.get("label", {}).get("value", prefixed(uri))
+        raw_label = b.get("label", {}).get("value", "").strip()
+        label = raw_label if raw_label and not raw_label.lower().startswith("node") else "CASE Project"
         rdf_type = b.get("type", {}).get("value", "")
 
         return {
@@ -858,7 +859,13 @@ async def get_tree_root():
 
 @router.get("/tree/children")
 async def get_tree_children(uri: str = Query(...)):
-    """Return hierarchical children of one node for the tree explorer."""
+    """Return hierarchical children of one node for the tree explorer.
+
+    Supports:
+    - direct semantic hierarchy edges
+    - IFC-LD relation-node patterns
+    - RDF list/container traversal used by IFC-LD for related objects/elements
+    """
     try:
         client = get_graphdb_client()
 
@@ -872,16 +879,22 @@ async def get_tree_children(uri: str = Query(...)):
 
         SELECT DISTINCT ?child ?childType ?label ?rel
         WHERE {{
+          # -----------------------------
+          # A. direct semantic hierarchy
+          # -----------------------------
           {{
             <{uri}> ?rel ?child .
             FILTER(?rel IN (
-              ifc4:isDecomposedBy, ifc2x3:isDecomposedBy,
-              ifc4:relatedObjects_IfcRelDecomposes, ifc2x3:relatedObjects_IfcRelDecomposes,
               brick1:hasPart, brick1:hasPoint,
               s223:hasPhysicalLocation, s223:hasZone
             ))
           }}
+
           UNION
+
+          # -----------------------------
+          # B. reverse semantic hierarchy
+          # -----------------------------
           {{
             ?child ?rel <{uri}> .
             FILTER(?rel IN (
@@ -889,14 +902,104 @@ async def get_tree_children(uri: str = Query(...)):
             ))
           }}
 
+          UNION
+
+          # ---------------------------------------------------------
+          # C. IFC-LD relation node: relatingobject -> relatedobjects
+          # direct object
+          # ---------------------------------------------------------
+          {{
+            ?relNode ifc4:relatingobject <{uri}> .
+            ?relNode ifc4:relatedobjects ?child .
+            FILTER(isURI(?child))
+            BIND(ifc4:relatedobjects AS ?rel)
+          }}
+
+          UNION
+
+          {{
+            ?relNode ifc2x3:relatingobject <{uri}> .
+            ?relNode ifc2x3:relatedobjects ?child .
+            FILTER(isURI(?child))
+            BIND(ifc2x3:relatedobjects AS ?rel)
+          }}
+
+          UNION
+
+          # ---------------------------------------------------------
+          # D. IFC-LD relation node: relatingobject -> relatedobjects
+          # RDF list/container traversal
+          # ---------------------------------------------------------
+          {{
+            ?relNode ifc4:relatingobject <{uri}> .
+            ?relNode ifc4:relatedobjects ?listNode .
+            ?listNode (rdf:rest*/rdf:first) ?child .
+            BIND(ifc4:relatedobjects AS ?rel)
+          }}
+
+          UNION
+
+          {{
+            ?relNode ifc2x3:relatingobject <{uri}> .
+            ?relNode ifc2x3:relatedobjects ?listNode .
+            ?listNode (rdf:rest*/rdf:first) ?child .
+            BIND(ifc2x3:relatedobjects AS ?rel)
+          }}
+
+          UNION
+
+          # ---------------------------------------------------------
+          # E. IFC spatial containment: relatingstructure -> relatedelements
+          # direct object
+          # ---------------------------------------------------------
+          {{
+            ?relNode ifc4:relatingstructure <{uri}> .
+            ?relNode ifc4:relatedelements ?child .
+            FILTER(isURI(?child))
+            BIND(ifc4:relatedelements AS ?rel)
+          }}
+
+          UNION
+
+          {{
+            ?relNode ifc2x3:relatingstructure <{uri}> .
+            ?relNode ifc2x3:relatedelements ?child .
+            FILTER(isURI(?child))
+            BIND(ifc2x3:relatedelements AS ?rel)
+          }}
+
+          UNION
+
+          # ---------------------------------------------------------
+          # F. IFC spatial containment: relatingstructure -> relatedelements
+          # RDF list/container traversal
+          # ---------------------------------------------------------
+          {{
+            ?relNode ifc4:relatingstructure <{uri}> .
+            ?relNode ifc4:relatedelements ?listNode .
+            ?listNode (rdf:rest*/rdf:first) ?child .
+            BIND(ifc4:relatedelements AS ?rel)
+          }}
+
+          UNION
+
+          {{
+            ?relNode ifc2x3:relatingstructure <{uri}> .
+            ?relNode ifc2x3:relatedelements ?listNode .
+            ?listNode (rdf:rest*/rdf:first) ?child .
+            BIND(ifc2x3:relatedelements AS ?rel)
+          }}
+
           ?child a ?childType .
 
-          OPTIONAL {{ ?child rdfs:label ?rdfsLabel }}
-          OPTIONAL {{ ?child ifc4:name ?ifc4Name }}
-          OPTIONAL {{ ?child ifc2x3:name ?ifc2x3Name }}
-          BIND(COALESCE(?rdfsLabel, ?ifc4Name, ?ifc2x3Name, REPLACE(STR(?child), "^.*/|^.*#", "")) AS ?label)
+          OPTIONAL { ?child rdfs:label ?rdfsLabel }
+          OPTIONAL { ?child ifc4:name ?ifc4Name }
+          OPTIONAL { ?child ifc2x3:name ?ifc2x3Name }
+          OPTIONAL { ?child ifc4:longname ?ifc4LongName }
+          OPTIONAL { ?child ifc2x3:longname ?ifc2x3LongName }
+          BIND(COALESCE(?rdfsLabel, ?ifc4Name, ?ifc2x3Name, ?ifc4LongName, ?ifc2x3LongName, REPLACE(STR(?child), "^.*/|^.*#", "")) AS ?label)
         }}
-        LIMIT 100
+        LIMIT 150
         """
 
         results = client.execute_sparql_query(query, output_format="json")
@@ -912,8 +1015,10 @@ async def get_tree_children(uri: str = Query(...)):
             seen.add(child)
 
             child_type = b.get("childType", {}).get("value", "")
-            label = b.get("label", {}).get("value", prefixed(child))
+            raw_label = b.get("label", {}).get("value", "").strip()
             rel = b.get("rel", {}).get("value", "")
+
+            label = raw_label if raw_label and not raw_label.lower().startswith("node") else prefixed(child)
 
             children.append({
                 "id": child,
@@ -928,3 +1033,29 @@ async def get_tree_children(uri: str = Query(...)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get tree children: {str(e)}")
+
+@router.get("/debug/triples")
+async def debug_triples(uri: str = Query(...)):
+    try:
+        client = get_graphdb_client()
+
+        query = f"""
+        SELECT ?s ?p ?o
+        WHERE {{
+          {{
+            BIND(<{uri}> AS ?s)
+            ?s ?p ?o .
+          }}
+          UNION
+          {{
+            ?s ?p <{uri}> .
+            BIND(<{uri}> AS ?o)
+          }}
+        }}
+        LIMIT 200
+        """
+
+        results = client.execute_sparql_query(query, output_format="json")
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Debug query failed: {str(e)}")

@@ -10,6 +10,7 @@ Flow:
 5. The response includes the SPARQL query used, the graph evidence, and tool actions
    so the frontend can update the Knowledge Graph Explorer and telemetry panels.
 """
+from __future__ import annotations
 import os
 import sys
 import pathlib
@@ -25,9 +26,6 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
-
-from ingest.graphdb_client import GraphDBClient
-# from rag.sparql_rag import SPARQLGraphRAG
 
 from api.case_graphrag_adapter import run_case_graphrag
 
@@ -74,7 +72,7 @@ class ChatRequest(BaseModel):
     asset_context: Optional[str] = None
 
 
-_rag: Optional[SPARQLGraphRAG] = None
+_rag: Optional["SPARQLGraphRAG"] = None
 _openai_client = None
 
 
@@ -342,7 +340,3 @@ def _slim_evidence(evidence: Dict[str, Any]) -> Dict[str, Any]:
         "edge_count": len(evidence.get("edges", [])),
         "seeds": [s["id"] for s in evidence.get("focus_seeds", [])[:5]],
     }
-
-
-from api.main import app  # noqa: E402
-app.include_router(router)
