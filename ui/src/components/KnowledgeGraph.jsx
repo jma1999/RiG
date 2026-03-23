@@ -188,8 +188,8 @@ function shortText(text, n = 42) {
 }
 
 function PlaygroundInspector({ selected, nodeTriples, onSelectNode }) {
-  const width = 1600;
-  const height = 1000;
+  const width = 1800;
+  const height = 1200;
   const cx = 120;
   const cy = height / 2;
   const radius = 430;
@@ -210,8 +210,8 @@ function PlaygroundInspector({ selected, nodeTriples, onSelectNode }) {
 
   return (
     <div className="w-full h-full overflow-auto bg-[#f3f4f6]">
-      <div className="min-w-[1600px] min-h-[1000px]">
-        <svg width={width} height={height}>
+      <div className="min-w-[1800px] min-h-[1200px]">
+        <svg width={1800} height={1200}>
           <rect x="0" y="0" width={width} height={height} fill="#f3f4f6" />
 
           {/* center node */}
@@ -544,7 +544,7 @@ const KnowledgeGraph = ({ onNodeClick }) => {
             </p>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-auto">
             {loadingFocus ? (
               <div className="flex items-center justify-center h-full bg-nexus-800">
                 <Loader2 size={20} className="animate-spin text-nexus-accent" />
