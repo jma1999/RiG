@@ -165,7 +165,8 @@ function radialPositions(cx, cy, count, radius) {
   if (count === 0) return [];
   const positions = [];
   const startAngle = -Math.PI / 2;
-  const sweep = Math.PI * 1.4;
+  const sweep = Math.PI * 1.35;
+
   for (let i = 0; i < count; i++) {
     const angle =
       startAngle +
@@ -181,36 +182,92 @@ function radialPositions(cx, cy, count, radius) {
   return positions;
 }
 
-function RadialInspector({ centerNode, edges, nodesById, onSelectNode }) {
-  const width = 1400;
-  const height = 900;
-  const cx = 240;
-  const cy = height / 2;
-  const radius = 380;
+function shortNodeText(node) {
+  if (!node) return 'Unknown';
+  const label = prettyLabel(node);
+  return label.length > 34 ? `${label.slice(0, 31)}...` : label;
+}
 
-  const triples = edges.map((e) => {
+function RadialInspector({ centerNode, edges, nodesById, onSelectNode }) {
+  const width = 1600;
+  const height = 1050;
+  const cx = 300;
+  const cy = height / 2;
+  const radius = 430;
+
+  const rows = edges.map((e) => {
     const target = nodesById[e.target];
+    const clickable =
+      target && !String(target.id).startsWith('_:') && target.type !== 'literal';
+
     return {
-      predicate: e.predicate,
+      predicate: e.predicate || '',
       target,
-      clickable: target && !String(target.id).startsWith('_:') && target.type !== 'literal',
+      clickable,
     };
   });
 
-  const positions = radialPositions(cx, cy, triples.length, radius);
+  const positions = radialPositions(cx, cy, rows.length, radius);
 
   return (
-    <div className="w-full h-full overflow-auto">
-      <div className="min-w-[1400px] min-h-[900px] bg-white">
+    <div className="w-full h-full overflow-auto bg-[#f8fafc]">
+      <div className="min-w-[1600px] min-h-[1050px]">
         <svg width={width} height={height}>
-          {triples.map((t, i) => {
+          {/* soft background */}
+          <rect x="0" y="0" width={width} height={height} fill="#f8fafc" />
+
+          {/* title */}
+          <text
+            x="28"
+            y="36"
+            fontSize="14"
+            fill="#475569"
+            fontFamily="Inter, system-ui, sans-serif"
+          >
+            Selected resource
+          </text>
+
+          {/* center node halo */}
+          <circle cx={cx} cy={cy} r={36} fill="#fff7ed" />
+          <circle cx={cx} cy={cy} r={22} fill="#ffffff" stroke="#f59e0b" strokeWidth="3" />
+
+          {/* center node label */}
+          <text
+            x={cx}
+            y={cy + 58}
+            textAnchor="middle"
+            fontSize="18"
+            fontWeight="600"
+            fill="#0f172a"
+            fontFamily="Inter, system-ui, sans-serif"
+          >
+            {shortNodeText(centerNode)}
+          </text>
+
+          <text
+            x={cx}
+            y={cy + 80}
+            textAnchor="middle"
+            fontSize="12"
+            fill="#64748b"
+            fontFamily='"SF Mono", Menlo, monospace'
+          >
+            {(centerNode?.type || '').slice(0, 40)}
+          </text>
+
+          {/* relations */}
+          {rows.map((row, i) => {
             const pos = positions[i];
-            const target = t.target;
-            const label = target?.label || target?.name || 'Unknown';
-            const predicateLabel = t.predicate || '';
+            const target = row.target;
+            const label = shortNodeText(target);
+            const predicate = row.predicate || '';
+            const midX = (cx + pos.x) / 2;
+            const midY = (cy + pos.y) / 2;
+            const isRight = pos.x >= cx;
 
             return (
-              <g key={`${predicateLabel}-${target?.id || i}`}>
+              <g key={`${predicate}-${target?.id || i}`}>
+                {/* connector */}
                 <line
                   x1={cx}
                   y1={cy}
@@ -220,61 +277,70 @@ function RadialInspector({ centerNode, edges, nodesById, onSelectNode }) {
                   strokeWidth="1.5"
                 />
 
+                {/* predicate chip */}
+                <rect
+                  x={midX - 54}
+                  y={midY - 11}
+                  rx="10"
+                  ry="10"
+                  width="108"
+                  height="22"
+                  fill="#ffffff"
+                  stroke="#e2e8f0"
+                />
                 <text
-                  x={(cx + pos.x) / 2 - 8}
-                  y={(cy + pos.y) / 2 - 6}
-                  textAnchor="end"
-                  fontSize="13"
-                  fill="#444"
+                  x={midX}
+                  y={midY + 4}
+                  textAnchor="middle"
+                  fontSize="11"
+                  fill="#334155"
+                  fontFamily='"SF Mono", Menlo, monospace'
                 >
-                  {predicateLabel}
+                  {predicate.length > 18 ? `${predicate.slice(0, 15)}...` : predicate}
                 </text>
 
+                {/* target node */}
                 <circle
                   cx={pos.x}
                   cy={pos.y}
-                  r={8}
-                  fill={target?.type === 'literal' ? '#ffffff' : '#e0f2fe'}
-                  stroke="#4fd1c5"
+                  r={9}
+                  fill={target?.type === 'literal' ? '#ffffff' : '#ecfeff'}
+                  stroke={target?.type === 'literal' ? '#94a3b8' : '#06b6d4'}
                   strokeWidth="2"
-                  style={{ cursor: t.clickable ? 'pointer' : 'default' }}
-                  onClick={() => t.clickable && onSelectNode(target)}
+                  style={{ cursor: row.clickable ? 'pointer' : 'default' }}
+                  onClick={() => row.clickable && onSelectNode(target)}
                 />
 
+                {/* target label */}
                 <text
-                  x={pos.x + 14}
+                  x={isRight ? pos.x + 16 : pos.x - 16}
                   y={pos.y + 4}
-                  textAnchor="start"
+                  textAnchor={isRight ? 'start' : 'end'}
                   fontSize="14"
-                  fill={t.clickable ? '#222' : '#444'}
-                  style={{ cursor: t.clickable ? 'pointer' : 'default' }}
-                  onClick={() => t.clickable && onSelectNode(target)}
+                  fill={row.clickable ? '#0f172a' : '#475569'}
+                  fontFamily="Inter, system-ui, sans-serif"
+                  style={{ cursor: row.clickable ? 'pointer' : 'default' }}
+                  onClick={() => row.clickable && onSelectNode(target)}
                 >
-                  {label.length > 42 ? `${label.slice(0, 39)}...` : label}
+                  {label}
                 </text>
+
+                {/* target type */}
+                {target?.type && (
+                  <text
+                    x={isRight ? pos.x + 16 : pos.x - 16}
+                    y={pos.y + 21}
+                    textAnchor={isRight ? 'start' : 'end'}
+                    fontSize="11"
+                    fill="#64748b"
+                    fontFamily='"SF Mono", Menlo, monospace'
+                  >
+                    {target.type.length > 24 ? `${target.type.slice(0, 21)}...` : target.type}
+                  </text>
+                )}
               </g>
             );
           })}
-
-          <circle
-            cx={cx}
-            cy={cy}
-            r={16}
-            fill="#fff7ed"
-            stroke="#f59e0b"
-            strokeWidth="3"
-          />
-
-          <text
-            x={cx - 24}
-            y={cy + 34}
-            textAnchor="start"
-            fontSize="18"
-            fill="#222"
-            fontWeight="600"
-          >
-            {centerNode?.label || centerNode?.name || 'Selected Node'}
-          </text>
         </svg>
       </div>
     </div>
@@ -622,7 +688,7 @@ const KnowledgeGraph = ({ onNodeClick }) => {
 
         {/* Right detail pane */}
         <div className="flex flex-col min-h-0">
-          <div className="flex-shrink-0 px-4 pt-3 pb-2 border-b border-nexus-700/50">
+          <div className="flex-shrink-0 px-4 pt-3 pb-2 border-b border-nexus-700/50 bg-nexus-800">
             <div className="flex items-center gap-2">
               <button
                 onClick={goBack}
@@ -642,7 +708,7 @@ const KnowledgeGraph = ({ onNodeClick }) => {
 
           <div className="flex-1 min-h-0 overflow-hidden">
             {loadingFocus ? (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex items-center justify-center h-full bg-nexus-800">
                 <Loader2 size={20} className="animate-spin text-nexus-accent" />
               </div>
             ) : (
