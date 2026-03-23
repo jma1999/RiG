@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ChevronRight,
   ChevronDown,
@@ -25,8 +25,6 @@ const NS_COLORS = {
   rdf: '#94a3b8',
   other: '#64748b',
 };
-
-const [nodeTriples, setNodeTriples] = useState(null);
 
 function getNodeColor(node) {
   if (node?.type === 'class') return '#f59e0b';
@@ -301,6 +299,7 @@ const KnowledgeGraph = ({ onNodeClick }) => {
   const [loadedChildren, setLoadedChildren] = useState({});
   const [selected, setSelected] = useState(null);
   const [focusedGraph, setFocusedGraph] = useState(null);
+  const [nodeTriples, setNodeTriples] = useState(null);
   const [loadingRoot, setLoadingRoot] = useState(true);
   const [loadingFocus, setLoadingFocus] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
