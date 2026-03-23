@@ -1191,7 +1191,12 @@ async def get_tree_children(uri: str = Query(...)):
         elif any("ifc:ifcsite" in t for t in child_types):
             children = [c for c in children if c["type"].lower() == "ifc:ifcsite"]
 
-        children.sort(key=lambda x: x["label"].lower())
+        def _sort_key(x):
+            lbl = (x["label"] or "").strip().lower()
+            generic = lbl in {"space", "storey", "building", "site", "project"}
+            return (generic, lbl)
+
+        children.sort(key=_sort_key)
         return {"children": children}
 
     except Exception as e:

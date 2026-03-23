@@ -42,25 +42,31 @@ function TypeBadge({ text }) {
 }
 
 function prettyLabel(node) {
-  const label = node?.label || node?.name || node?.id || '';
+  const label = (node?.label || node?.name || '').trim();
   const type = (node?.type || '').toLowerCase();
+  const id = node?.id || '';
 
-  if (label && !/^co:\d+$/i.test(label)) return label;
+  const generic = new Set([
+    'space',
+    'storey',
+    'building',
+    'site',
+    'project',
+  ]);
+
+  if (label && !/^co:\d+$/i.test(label) && !generic.has(label.toLowerCase())) {
+    return label;
+  }
+
+  const shortId = id.includes('#') ? id.split('#').pop() : id;
 
   if (type.includes('ifcproject')) return 'CASE Project';
   if (type.includes('ifcsite')) return 'Site';
-  if (type.includes('ifcbuilding')) return 'Building';
+  if (type.includes('ifcbuilding') && !type.includes('ifcbuildingstorey')) return 'Building';
+  if (type.includes('ifcbuildingstorey')) return `Storey ${shortId}`;
+  if (type.includes('ifcspace')) return `Space ${shortId}`;
 
-  if (type.includes('ifcbuildingstorey')) {
-    if (node?.id?.endsWith('#46')) return 'Storey 1';
-    if (node?.id?.endsWith('#50')) return 'Storey 2';
-    if (node?.id?.endsWith('#54')) return 'Storey 3';
-    return 'Storey';
-  }
-
-  if (type.includes('ifcspace')) return 'Space';
-
-  return label;
+  return label || shortId || 'Unnamed';
 }
 
 function TreeRow({
