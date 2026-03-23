@@ -365,7 +365,10 @@ async def get_top_nodes(limit: int = Query(80, ge=1, le=500)):
 @router.get("/node-triples")
 async def get_node_triples(uri: str = Query(..., description="Full URI of the subject")):
     """Return all predicate–object pairs for a given subject URI,
-    structured for JSON-LD playground-style visualisation."""
+    structured for playground-style single-node visualisation.
+
+    Resolves common IFC-LD blank-node-backed scalar values through rdf:value.
+    """
     try:
         client = get_graphdb_client()
 
@@ -373,39 +376,62 @@ async def get_node_triples(uri: str = Query(..., description="Full URI of the su
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
-            SELECT ?p ?o WHERE {{
+            SELECT ?p ?o ?resolvedValue
+            WHERE {{
               <{uri}> ?p ?o .
+
+              OPTIONAL {{
+                ?o rdf:value ?resolvedValue .
+              }}
             }}
-            LIMIT 200
+            LIMIT 300
         """
 
         results = client.execute_sparql_query(query, output_format="json")
         bindings = results.get("results", {}).get("bindings", [])
 
         triples = []
+        label = prefixed(uri)
+
         for b in bindings:
             p_uri = b.get("p", {}).get("value", "")
             o = b.get("o", {})
             o_type = o.get("type", "")
             o_val = o.get("value", "")
+            resolved = b.get("resolvedValue", {}).get("value", "")
 
             is_uri = o_type == "uri"
-            display_val = o_val if len(o_val) <= 80 else o_val[:77] + "..."
+
+            # Prefer resolved rdf:value when present for blank-node-backed IFC values
+            if resolved:
+                display_val = resolved
+                raw_val = resolved
+                is_uri = False
+                ns = None
+            else:
+                raw_val = o_val
+                display_val = prefixed(o_val) if is_uri else o_val
+                ns = namespace_of(o_val) if is_uri else None
+
+            if isinstance(display_val, str) and len(display_val) > 80:
+                display_val = display_val[:77] + "..."
 
             triples.append({
                 "predicate": prefixed(p_uri),
                 "predicateUri": p_uri,
-                "value": prefixed(o_val) if is_uri else display_val,
-                "rawValue": o_val,
+                "value": display_val,
+                "rawValue": raw_val,
                 "isUri": is_uri,
-                "ns": namespace_of(o_val) if is_uri else None,
+                "ns": ns,
             })
 
-        label = prefixed(uri)
-        for t in triples:
-            if t["predicateUri"] == "http://www.w3.org/2000/01/rdf-schema#label":
-                label = t["rawValue"]
-                break
+            # Better selected-node label preference
+            if p_uri == "http://www.w3.org/2000/01/rdf-schema#label" and raw_val:
+                label = raw_val
+            elif p_uri.endswith("#longname") and resolved:
+                label = resolved
+            elif p_uri.endswith("#name") and resolved and label == prefixed(uri):
+                label = resolved
 
         return {
             "uri": uri,
@@ -416,7 +442,6 @@ async def get_node_triples(uri: str = Query(..., description="Full URI of the su
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get node triples: {str(e)}")
-
 
 @router.get("/semantic-layers")
 async def get_semantic_layers():

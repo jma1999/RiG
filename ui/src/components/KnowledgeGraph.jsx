@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ChevronRight,
   ChevronDown,
@@ -25,6 +25,8 @@ const NS_COLORS = {
   rdf: '#94a3b8',
   other: '#64748b',
 };
+
+const [nodeTriples, setNodeTriples] = useState(null);
 
 function getNodeColor(node) {
   if (node?.type === 'class') return '#f59e0b';
@@ -182,92 +184,59 @@ function radialPositions(cx, cy, count, radius) {
   return positions;
 }
 
-function shortNodeText(node) {
-  if (!node) return 'Unknown';
-  const label = prettyLabel(node);
-  return label.length > 34 ? `${label.slice(0, 31)}...` : label;
+function shortText(text, n = 42) {
+  if (!text) return '';
+  return text.length > n ? `${text.slice(0, n - 3)}...` : text;
 }
 
-function RadialInspector({ centerNode, edges, nodesById, onSelectNode }) {
+function PlaygroundInspector({ selected, nodeTriples, onSelectNode }) {
   const width = 1600;
-  const height = 1050;
-  const cx = 300;
+  const height = 1000;
+  const cx = 120;
   const cy = height / 2;
   const radius = 430;
 
-  const rows = edges.map((e) => {
-    const target = nodesById[e.target];
-    const clickable =
-      target && !String(target.id).startsWith('_:') && target.type !== 'literal';
+  if (!nodeTriples) return null;
 
-    return {
-      predicate: e.predicate || '',
-      target,
-      clickable,
-    };
-  });
+  const triples = nodeTriples.triples || [];
+
+  const rows = triples.map((t) => ({
+    predicate: t.predicate,
+    value: t.value,
+    rawValue: t.rawValue,
+    isUri: t.isUri,
+    ns: t.ns,
+  }));
 
   const positions = radialPositions(cx, cy, rows.length, radius);
 
   return (
-    <div className="w-full h-full overflow-auto bg-[#f8fafc]">
-      <div className="min-w-[1600px] min-h-[1050px]">
+    <div className="w-full h-full overflow-auto bg-[#f3f4f6]">
+      <div className="min-w-[1600px] min-h-[1000px]">
         <svg width={width} height={height}>
-          {/* soft background */}
-          <rect x="0" y="0" width={width} height={height} fill="#f8fafc" />
+          <rect x="0" y="0" width={width} height={height} fill="#f3f4f6" />
 
-          {/* title */}
+          {/* center node */}
+          <circle cx={cx} cy={cy} r={16} fill="#fff7ed" stroke="#eab308" strokeWidth="3" />
+
           <text
-            x="28"
-            y="36"
-            fontSize="14"
-            fill="#475569"
+            x={cx - 22}
+            y={cy + 6}
+            textAnchor="end"
+            fontSize="16"
+            fill="#374151"
             fontFamily="Inter, system-ui, sans-serif"
           >
-            Selected resource
+            {shortText(prettyLabel(selected), 22)}
           </text>
 
-          {/* center node halo */}
-          <circle cx={cx} cy={cy} r={36} fill="#fff7ed" />
-          <circle cx={cx} cy={cy} r={22} fill="#ffffff" stroke="#f59e0b" strokeWidth="3" />
-
-          {/* center node label */}
-          <text
-            x={cx}
-            y={cy + 58}
-            textAnchor="middle"
-            fontSize="18"
-            fontWeight="600"
-            fill="#0f172a"
-            fontFamily="Inter, system-ui, sans-serif"
-          >
-            {shortNodeText(centerNode)}
-          </text>
-
-          <text
-            x={cx}
-            y={cy + 80}
-            textAnchor="middle"
-            fontSize="12"
-            fill="#64748b"
-            fontFamily='"SF Mono", Menlo, monospace'
-          >
-            {(centerNode?.type || '').slice(0, 40)}
-          </text>
-
-          {/* relations */}
           {rows.map((row, i) => {
             const pos = positions[i];
-            const target = row.target;
-            const label = shortNodeText(target);
-            const predicate = row.predicate || '';
-            const midX = (cx + pos.x) / 2;
-            const midY = (cy + pos.y) / 2;
-            const isRight = pos.x >= cx;
+            const label = `${row.predicate}: ${row.value}`;
+            const clickable = row.isUri && row.rawValue && !String(row.rawValue).startsWith('_:');
 
             return (
-              <g key={`${predicate}-${target?.id || i}`}>
-                {/* connector */}
+              <g key={`${row.predicate}-${row.rawValue || row.value}-${i}`}>
                 <line
                   x1={cx}
                   y1={cy}
@@ -277,67 +246,45 @@ function RadialInspector({ centerNode, edges, nodesById, onSelectNode }) {
                   strokeWidth="1.5"
                 />
 
-                {/* predicate chip */}
-                <rect
-                  x={midX - 54}
-                  y={midY - 11}
-                  rx="10"
-                  ry="10"
-                  width="108"
-                  height="22"
-                  fill="#ffffff"
-                  stroke="#e2e8f0"
-                />
-                <text
-                  x={midX}
-                  y={midY + 4}
-                  textAnchor="middle"
-                  fontSize="11"
-                  fill="#334155"
-                  fontFamily='"SF Mono", Menlo, monospace'
-                >
-                  {predicate.length > 18 ? `${predicate.slice(0, 15)}...` : predicate}
-                </text>
-
-                {/* target node */}
                 <circle
                   cx={pos.x}
                   cy={pos.y}
-                  r={9}
-                  fill={target?.type === 'literal' ? '#ffffff' : '#ecfeff'}
-                  stroke={target?.type === 'literal' ? '#94a3b8' : '#06b6d4'}
+                  r={8}
+                  fill="#ecfeff"
+                  stroke="#2dd4bf"
                   strokeWidth="2"
-                  style={{ cursor: row.clickable ? 'pointer' : 'default' }}
-                  onClick={() => row.clickable && onSelectNode(target)}
+                  style={{ cursor: clickable ? 'pointer' : 'default' }}
+                  onClick={() =>
+                    clickable &&
+                    onSelectNode({
+                      id: row.rawValue,
+                      label: row.value,
+                      type: '',
+                      ns: row.ns || 'other',
+                    })
+                  }
                 />
 
-                {/* target label */}
                 <text
-                  x={isRight ? pos.x + 16 : pos.x - 16}
+                  x={pos.x + 14}
                   y={pos.y + 4}
-                  textAnchor={isRight ? 'start' : 'end'}
+                  textAnchor="start"
                   fontSize="14"
-                  fill={row.clickable ? '#0f172a' : '#475569'}
+                  fill={clickable ? "#2f2f2f" : "#4b5563"}
                   fontFamily="Inter, system-ui, sans-serif"
-                  style={{ cursor: row.clickable ? 'pointer' : 'default' }}
-                  onClick={() => row.clickable && onSelectNode(target)}
+                  style={{ cursor: clickable ? 'pointer' : 'default' }}
+                  onClick={() =>
+                    clickable &&
+                    onSelectNode({
+                      id: row.rawValue,
+                      label: row.value,
+                      type: '',
+                      ns: row.ns || 'other',
+                    })
+                  }
                 >
-                  {label}
+                  {shortText(label, 58)}
                 </text>
-
-                {/* target type */}
-                {target?.type && (
-                  <text
-                    x={isRight ? pos.x + 16 : pos.x - 16}
-                    y={pos.y + 21}
-                    textAnchor={isRight ? 'start' : 'end'}
-                    fontSize="11"
-                    fill="#64748b"
-                    fontFamily='"SF Mono", Menlo, monospace'
-                  >
-                    {target.type.length > 24 ? `${target.type.slice(0, 21)}...` : target.type}
-                  </text>
-                )}
               </g>
             );
           })}
@@ -415,32 +362,38 @@ const KnowledgeGraph = ({ onNodeClick }) => {
   const loadFocus = async (uri, pushHistory = true) => {
     setLoadingFocus(true);
     try {
-      const res = await fetch(`${API_BASE}/graphdb/focus?uri=${encodeURIComponent(uri)}&limit=40`);
-      const data = await res.json();
-
+      const [focusRes, triplesRes] = await Promise.all([
+        fetch(`${API_BASE}/graphdb/focus?uri=${encodeURIComponent(uri)}&limit=40`),
+        fetch(`${API_BASE}/graphdb/node-triples?uri=${encodeURIComponent(uri)}`)
+      ]);
+  
+      const focusData = await focusRes.json();
+      const triplesData = await triplesRes.json();
+  
       const centerNode =
-        data.nodes?.find((n) => n.id === uri) || {
+        focusData.nodes?.find((n) => n.id === uri) || {
           id: uri,
-          label: uri,
-          name: uri,
+          label: triplesData.label || uri,
+          name: triplesData.label || uri,
         };
-
+  
       if (pushHistory && selected?.id && selected.id !== uri) {
         setNavHistory((prev) => [...prev, selected]);
       }
-
+  
       const nextSelected = {
         id: uri,
         uri,
-        label: centerNode.label || centerNode.name || uri,
-        name: centerNode.name || centerNode.label || uri,
+        label: triplesData?.label || centerNode.label || centerNode.name || uri,
+        name: triplesData?.label || centerNode.name || centerNode.label || uri,
         type: centerNode.type || '',
         ns: centerNode.ns || 'other',
       };
-
+  
       setSelected(nextSelected);
-      setFocusedGraph(data);
-
+      setFocusedGraph(focusData);
+      setNodeTriples(triplesData);
+  
       if (onNodeClick) {
         onNodeClick({
           id: uri,
@@ -510,53 +463,6 @@ const KnowledgeGraph = ({ onNodeClick }) => {
     await loadFocus(prev.id, false);
   };
 
-  const groupedEdges = useMemo(() => {
-    const edges = focusedGraph?.edges || [];
-    const nodesById = Object.fromEntries((focusedGraph?.nodes || []).map((n) => [n.id, n]));
-
-    const groups = {
-      identity: [],
-      hierarchy: [],
-      semantics: [],
-      properties: [],
-      other: [],
-    };
-
-    edges.forEach((e, i) => {
-      const target = nodesById[e.target];
-      const row = {
-        key: `${e.source}-${e.target}-${e.predicate}-${i}`,
-        edge: e,
-        target,
-      };
-
-      const p = (e.predicate || '').toLowerCase();
-
-      if (p.includes('label') || p.includes('type') || p === 'rdf:type') {
-        groups.identity.push(row);
-      } else if (
-        p.includes('part') ||
-        p.includes('zone') ||
-        p.includes('location') ||
-        p.includes('decomposes')
-      ) {
-        groups.hierarchy.push(row);
-      } else if (
-        p.includes('exactmatch') ||
-        p.includes('observes') ||
-        p.includes('point')
-      ) {
-        groups.semantics.push(row);
-      } else if (target?.type === 'literal') {
-        groups.properties.push(row);
-      } else {
-        groups.other.push(row);
-      }
-    });
-
-    return groups;
-  }, [focusedGraph]);
-
   if (loadingRoot) {
     return (
       <div className="h-full w-full flex items-center justify-center bg-nexus-800 rounded-lg border border-nexus-600">
@@ -574,73 +480,6 @@ const KnowledgeGraph = ({ onNodeClick }) => {
   }
 
   const center = focusedGraph?.nodes?.find((n) => n.id === focusedGraph.center);
-  const renderGroup = (title, rows) => {
-    if (!rows || rows.length === 0) return null;
-
-    return (
-      <div className="space-y-2">
-        <div className="text-[10px] uppercase tracking-widest font-mono text-slate-500">
-          {title}
-        </div>
-        {rows.map(({ key, edge, target }) => {
-          const clickable =
-            target && !String(target.id).startsWith('_:') && target.type !== 'literal';
-
-          return (
-            <div
-              key={key}
-              className="flex items-center gap-3 rounded-xl border border-nexus-700/40 bg-nexus-900/30 p-3"
-            >
-              <div className="min-w-[150px] text-[11px] font-mono text-nexus-accent">
-                {edge.predicate}
-              </div>
-
-              <div className="text-slate-500">→</div>
-
-              {target ? (
-                clickable ? (
-                  <button
-                    onClick={() => handleSelectNode(target)}
-                    className="flex items-center gap-2 rounded-lg px-2 py-1 text-left hover:bg-nexus-800/60 transition-colors"
-                  >
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: getNodeColor(target) }}
-                    />
-                    <div>
-                      <div className="text-sm text-white">
-                        {target.label || target.name}
-                      </div>
-                      <div className="max-w-[420px] truncate text-[10px] font-mono text-slate-500">
-                        {target.id}
-                      </div>
-                    </div>
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 px-2 py-1">
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: getNodeColor(target) }}
-                    />
-                    <div>
-                      <div className="text-sm text-slate-200">
-                        {target.label || target.name}
-                      </div>
-                      <div className="max-w-[420px] truncate text-[10px] font-mono text-slate-500">
-                        {target.id}
-                      </div>
-                    </div>
-                  </div>
-                )
-              ) : (
-                <div className="text-sm text-slate-400">Unknown target</div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
 
   return (
     <div className="h-full w-full bg-nexus-800 rounded-lg border border-nexus-600 overflow-hidden">
@@ -712,10 +551,9 @@ const KnowledgeGraph = ({ onNodeClick }) => {
                 <Loader2 size={20} className="animate-spin text-nexus-accent" />
               </div>
             ) : (
-              <RadialInspector
-                centerNode={center || selected}
-                edges={focusedGraph?.edges || []}
-                nodesById={Object.fromEntries((focusedGraph?.nodes || []).map((n) => [n.id, n]))}
+              <PlaygroundInspector
+                selected={selected}
+                nodeTriples={nodeTriples}
                 onSelectNode={handleSelectNode}
               />
             )}

@@ -24,13 +24,13 @@ Allowed answer_type values:
 - unknown
 
 Rules:
-- graph_only: asks about room/sensor/canonical identity or graph-wide counts of spaces/sensors without telemetry
-- timeseries_only: asks only about telemetry values, averages, aggregates, metric availability, telemetry-backed counts, telemetry-backed membership, telemetry-backed coverage, or comfort judgements that can be derived from telemetry
-- graph_plus_timeseries: needs graph grounding plus telemetry, especially when a sensor/device/room first needs semantic resolution before SQL retrieval
+- graph_only: asks about room/sensor/canonical identity without telemetry or operational room-mapping needs
+- timeseries_only: asks about telemetry values, averages, metric availability, telemetry-backed counts, telemetry-backed membership, telemetry-backed coverage, comfort judgments, or supported project room counts from the operational mapping
+- graph_plus_timeseries: needs graph grounding plus telemetry
 - unsupported: cannot be answered from the known schemas
 
 Important:
-- "How many rooms are in this project?" is a graph-only count question.
+- "How many rooms are in this project?" should be treated as a count over supported project spaces and can be answered from sensor_space_enriched_clean.
 - "What is the average temperature in the office?" is a timeseries question and may require entity normalization.
 - "Is the temperature in the office comfortable?" is a timeseries question with derived reasoning.
 - "comfortable", "too hot", "too cold" imply derived reasoning after retrieval.

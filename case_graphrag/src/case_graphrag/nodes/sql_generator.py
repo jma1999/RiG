@@ -23,7 +23,8 @@ Important rules:
 - For questions about SensorXX, join telemetry_latest or telemetry_observations to sensor_space_enriched_clean on canonical_uri and filter with sensor_space_enriched_clean.sensor_label = 'SensorXX'.
 - Avoid reserved or confusing aliases like 'to'. Prefer aliases like t, tl, sse, tobs.
 - If the question uses a vague space phrase and entity resolution is available in state, use the resolved space label.
-- For comfort-related questions, retrieve a temperature value first, preferably an average temperature when the question is not explicitly asking for the latest reading.
+- For project room count questions in this demo system, count distinct supported space_label values from sensor_space_enriched_clean.
+- For comfort_assessment questions about a room as a whole, prefer average temperature over individual latest sensor readings unless the question explicitly asks about local variation or a specific sensor.
 
 Metric vocabulary rules:
 - The only telemetry metric_name values currently supported are:
@@ -51,6 +52,13 @@ JOIN telemetry_latest tl
 WHERE sse.space_label = 'Office1'
   AND tl.metric_name IN ('relative_humidity', 'temperature')
 ORDER BY sse.sensor_label, tl.metric_name;
+
+Example for supported project room count:
+Question: How many rooms are in this project?
+
+Correct SQL:
+SELECT COUNT(DISTINCT space_label) AS room_count
+FROM sensor_space_enriched_clean;
 
 Example for latest reading of Sensor40:
 SELECT
@@ -171,7 +179,7 @@ JOIN telemetry_observations tobs
 WHERE sse.space_label = 'Office1'
   AND tobs.metric_name = 'temperature';
 
-Example for comfort assessment input:
+Example for comfort assessment:
 Question: Is the temperature in the office comfortable?
 Resolved meaning: Office1
 

@@ -23,6 +23,7 @@ Use SQL for:
 - telemetry-backed counts/rankings
 - telemetry-backed room/sensor membership
 - comfort reasoning inputs
+- project room counts over supported spaces
 
 Use SPARQL for:
 - semantic identity resolution that cannot be answered from SQL joins alone
@@ -38,8 +39,8 @@ Metric normalization rules:
 
 Reasoning rules:
 - If the question asks about comfort, too hot, or too cold, retrieve the relevant temperature first, then send the result to a derived reasoning step.
-- If the question asks "how many rooms/spaces are in this project?", plan a SPARQL count query over spaces.
-- If a vague space phrase appears, assume entity resolution has already run and use the resolved label if available.
+- For project room counts in this demo system, count supported project spaces from the operational room mapping rather than arbitrary labeled graph nodes.
+- If a vague space phrase appears, use the resolved label from entity resolution.
 
 Important examples:
 - "Which room has the most humidity sensors?" requires SQL over telemetry-backed humidity observations joined with room mapping.
@@ -57,6 +58,7 @@ Return only a valid JSON plan.
 def planner_node(state):
     question = state["question"]
     router = state["router"]
+    entity_resolution = state.get("entity_resolution")
 
     user_prompt = f"""
 Question:
@@ -64,6 +66,9 @@ Question:
 
 Router decision:
 {router.model_dump_json(indent=2)}
+
+Entity resolution:
+{entity_resolution.model_dump_json(indent=2) if entity_resolution else "null"}
 """
 
     obj = call_structured(
@@ -72,4 +77,16 @@ Router decision:
         schema=RetrievalPlan.model_json_schema(),
         schema_name="retrieval_plan",
     )
-    return {"plan": RetrievalPlan.model_validate(obj)}
+
+    plan = RetrievalPlan.model_validate(obj)
+
+    # Force resolved space labels into the plan if available
+    if entity_resolution:
+        for res in entity_resolution.resolutions:
+            if res.entity_type == "space" and res.resolved_value:
+                plan.entities.space_label = res.resolved_value
+            if res.entity_type == "metric" and res.resolved_value:
+                if res.resolved_value not in plan.entities.metric_names:
+                    plan.entities.metric_names.append(res.resolved_value)
+
+    return {"plan": plan}
