@@ -66,9 +66,9 @@
   {
     "question_id": "Q5",
     "answer_type": "ranking / count",
-    "router_intent": "graph_plus_timeseries",
+    "router_intent": "timeseries_only",
     "sql_ok": true,
-    "sparql_ok": true,
+    "sparql_ok": null,
     "space_match": true,
     "sensor_recall": null,
     "metric_recall": null,
